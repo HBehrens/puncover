@@ -1,0 +1,17 @@
+{
+  "uuid": "e2b3c3c7-c4e4-4616-b7f0-fdc8eb3844ce",
+  "shortName": "puncover",
+  "longName": "puncover",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
