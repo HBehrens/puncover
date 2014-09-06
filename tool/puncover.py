@@ -1,5 +1,6 @@
 from __future__ import print_function
 import fnmatch
+import json
 import os
 from pprint import pprint
 import re
@@ -190,6 +191,23 @@ def symbol_url_filter(context, value):
     return path_filter(context, file_name)
 
 
+class JSONRenderer:
+
+    def __init__(self, collector):
+        self.collector = collector
+
+    def render(self):
+        data = []
+        for symbol in self.collector.all_symbols():
+            if symbol.has_key(FILE) and symbol.has_key(LINE):
+                entry = {}
+                for key in [NAME, BASE_FILE, LINE, STACK_SIZE, SIZE]:
+                    if symbol.has_key(key):
+                        entry[key] = symbol[key]
+                data.append(entry)
+
+        return json.dumps(data, indent=2)
+
 class HTMLRenderer:
 
     def __init__(self, collector):
@@ -260,10 +278,14 @@ if __name__ == "__main__":
     c = Collector()
     c.parse_pebble_build_dir(build_dir)
     # pprint(c.symbols)
-    r = HTMLRenderer(c)
+    # r = HTMLRenderer(c)
 
     # print(r.render_overview("index.html"))
     # print(r.render_file("puncover.c/index.html"))
     # print(r.render_symbol(c.symbol("puncover.c/main"), "puncover.c/symbol__main.html"))
 
-    r.render_to_path(os.path.join(build_dir, "puncover"))
+    # r.render_to_path(os.path.join(build_dir, "puncover"))
+
+    json_renderer = JSONRenderer(c)
+    print(json_renderer.render())
+
