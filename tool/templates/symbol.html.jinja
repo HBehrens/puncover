@@ -1,10 +1,6 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>puncover</title>
-</head>
-<body>
+{% extends "base.html.jinja" %}
+{% block title %}Symbol{% endblock %}
+{% block content %}
     <h1>{{ symbol.name }}</h1>
     {{ symbol.stack_size }} {{ symbol.stack_qualifiers }}
     {{ symbol.base_file }}:{{ symbol.line }}
@@ -12,5 +8,4 @@
         {% for line in symbol.asm %}{{ line }}
         {% endfor %}
     </pre>
-</body>
-</html>
+{% endblock %}

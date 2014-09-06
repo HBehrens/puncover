@@ -1,0 +1,9 @@
+{% extends "base.html.jinja" %}
+{% block title %}Single File{% endblock %}
+{% block content %}
+    <ul>
+    {% for symbol in symbols_with_size %}
+        <li>{{ symbol|symbol_url }}</li>
+    {% endfor %}
+    </ul>
+{% endblock %}

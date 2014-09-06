@@ -1,14 +1,8 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>puncover</title>
-</head>
-<body>
+{% extends "base.html.jinja" %}
+{% block content %}
     <ul>
     {% for symbol in symbols_with_size[:10] %}
         <li>{{ symbol|symbol_url }} {{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</li>
     {% endfor %}
     </ul>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {% block head %}
+    <link rel="stylesheet" href="{{ "css/style.css" | path }}" />
+    <title>{% block title %}{% endblock %} - puncover</title>
+    {% endblock %}
+</head>
+<body>
+    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="footer">
+        {% block footer %}
+        &copy; Copyright 2014 by me.
+        {% endblock %}
+    </div>
+</body>
+</html>

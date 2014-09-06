@@ -3,6 +3,7 @@ import fnmatch
 import os
 from pprint import pprint
 import re
+import shutil
 import subprocess
 import sys
 import jinja2
@@ -166,9 +167,18 @@ class Collector:
         for l in get_stack_usage_lines(build_dir):
             c.parse_stack_usage_line(l)
 
+@jinja2.contextfilter
+def path_filter(context, file_name):
+    if context:
+        current_file = os.path.dirname(context.parent["file_name"])
+        return os.path.relpath(file_name, current_file)
+    else:
+        return file_name
 
-def symbol_url_part(value):
-    return os.path.join(value.get(BASE_FILE, '__builtin'), "%s.html" % value["name"])
+@jinja2.contextfilter
+def symbol_url_filter(context, value):
+    file_name = os.path.join(value.get(BASE_FILE, '__builtin'), "symbol_%s.html" % value["name"])
+    return path_filter(context, file_name)
 
 
 class HTMLRenderer:
@@ -177,25 +187,37 @@ class HTMLRenderer:
         self.collector = collector
         self.template_loader = jinja2.FileSystemLoader(searchpath="templates")
         self.template_env = jinja2.Environment(loader=self.template_loader)
-        self.template_env.filters["symbol_url"] = symbol_url_part
+        self.template_env.filters["symbol_url"] = symbol_url_filter
+        self.template_env.filters["path"] = path_filter
+
         self.template_vars = {
             "symbols": collector.symbols.values(),
             "symbols_with_size": list(reversed(sorted([s for s in collector.symbols.values() if s.has_key(SIZE)], key=lambda s: s[SIZE])))
         }
 
-    def render_overview(self):
-        return self.render_template("overview.html.jinja")
+    def render_overview(self, file_name):
+        return self.render_template("overview.html", file_name)
 
-    def render_template(self, template_name):
-        template = self.template_env.get_template(template_name)
+    def render_template(self, template_name, file_name):
+        self.template_vars["file_name"] = file_name
+        template = self.template_env.get_template(template_name + ".jinja")
         output = template.render(self.template_vars)
         return output
 
-    def render_symbol(self, symbol):
+    def render_symbol(self, symbol, file_name):
         self.template_vars["symbol"] = symbol
-        return self.render_template("symbol.html.jinja")
+        return self.render_template("symbol.html", file_name)
 
-    def render_to_path(self, dir):
+    def render_file(self, file_name):
+        return self.render_template("file.html", file_name)
+
+    def copy_static_assets_to_path(self, output_dir):
+        css_output = os.path.join(output_dir, "css")
+        if os.path.exists(css_output):
+            shutil.rmtree(css_output)
+        shutil.copytree("templates/css", css_output)
+
+    def render_to_path(self, output_dir):
         # todo: collect files that exist before and delete them afterwards if they hadn't been regenerated
 
         def ensure_path(p):
@@ -203,15 +225,23 @@ class HTMLRenderer:
                 os.makedirs(p)
 
         def write(name, content):
-            file_name = os.path.join(dir, name)
+            file_name = os.path.join(output_dir, name)
             ensure_path(os.path.dirname(file_name))
 
             with open(file_name, "w") as f:
                 f.write(content)
 
-        write("index.html", self.render_overview())
+        ensure_path(output_dir)
+        self.copy_static_assets_to_path(output_dir)
+
+        write("index.html", self.render_overview("index.html"))
+
+        # todo: render file overview
+
+        # todo: only render functions
         for s in self.collector.symbols.values():
-            write(symbol_url_part(s), self.render_symbol(s))
+            file_name = symbol_url_filter(None, s)
+            write(file_name, self.render_symbol(s, file_name))
 
 
 if __name__ == "__main__":
@@ -222,6 +252,8 @@ if __name__ == "__main__":
     # pprint(c.symbols)
     r = HTMLRenderer(c)
 
-    # print(r.render_overview())
-    # print(r.render_symbol(c.symbol("puncover.c/main")))
+    # print(r.render_overview("index.html"))
+    # print(r.render_file("puncover.c/index.html"))
+    # print(r.render_symbol(c.symbol("puncover.c/main"), "puncover.c/symbol__main.html"))
+
     r.render_to_path(os.path.join(build_dir, "puncover"))
