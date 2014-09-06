@@ -5,6 +5,7 @@
     {{ symbol.stack_size }} {{ symbol.stack_qualifiers }}
     {{ symbol.base_file }}:{{ symbol.line }}
     <pre>
+        <a href="#">link test</a>
         {% for line in symbol.asm %}{{ line }}
         {% endfor %}
     </pre>

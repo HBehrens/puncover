@@ -17,6 +17,8 @@ ASM = "asm"
 STACK_SIZE = "stack_size"
 STACK_QUALIFIERS = "stack_qualifiers"
 ADDRESS = "address"
+TYPE = "type"
+TYPE_FUNCTION = "function"
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -50,6 +52,7 @@ class Collector:
             sym[LINE] = line
         if assembly_lines:
             sym[ASM] = assembly_lines
+            sym[TYPE] = TYPE_FUNCTION
         sym[ADDRESS] = address
 
         self.symbols[address] = sym
@@ -167,6 +170,12 @@ class Collector:
         for l in get_stack_usage_lines(build_dir):
             c.parse_stack_usage_line(l)
 
+    def all_symbols(self):
+        return self.symbols.values()
+
+    def all_functions(self):
+        return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_FUNCTION])
+
 @jinja2.contextfilter
 def path_filter(context, file_name):
     if context:
@@ -191,8 +200,9 @@ class HTMLRenderer:
         self.template_env.filters["path"] = path_filter
 
         self.template_vars = {
-            "symbols": collector.symbols.values(),
-            "symbols_with_size": list(reversed(sorted([s for s in collector.symbols.values() if s.has_key(SIZE)], key=lambda s: s[SIZE])))
+            "symbols": collector.all_symbols(),
+            "functions": collector.all_functions(),
+            "functions_with_size": list(reversed(sorted([s for s in collector.all_functions() if s.has_key(SIZE)], key=lambda s: s[SIZE])))
         }
 
     def render_overview(self, file_name):
