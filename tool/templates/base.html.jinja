@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     {% block head %}
+    <link rel="stylesheet" href="{{ "css/bootstrap.min.css" | path }}" />
     <link rel="stylesheet" href="{{ "css/style.css" | path }}" />
+
+    <script src="{{ "js/bootstrap.min.js" | path }}"></script>
+
     <title>{% block title %}{% endblock %} - puncover</title>
     {% endblock %}
 </head>
 <body>
-    <div id="content">{% block content %}{% endblock %}</div>
+    <div class="container" id="content">
+        <div class="page-header">
+            {% block page_header %}{% endblock %}
+        </div>
+        {% block content %}{% endblock %}
     <div id="footer">
         {% block footer %}
         &copy; Copyright 2014 by me.
         {% endblock %}
+    </div>
     </div>
 </body>
 </html>

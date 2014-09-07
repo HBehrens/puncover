@@ -2,7 +2,7 @@
 {% block content %}
     <ul>
     {% for symbol in functions_with_size[:10] %}
-        <li>{{ symbol|symbol_url }} {{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</li>
+        <li><a href="{{ symbol|symbol_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
     {% endfor %}
     </ul>
 {% endblock %}

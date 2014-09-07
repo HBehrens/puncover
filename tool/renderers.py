@@ -20,6 +20,11 @@ def symbol_url_filter(context, value):
     return path_filter(context, file_name)
 
 
+@jinja2.contextfilter
+def symbol_file_url_filter(context, value):
+    return value
+
+
 class JSONRenderer:
 
     def __init__(self, c):
@@ -65,6 +70,7 @@ class HTMLRenderer:
         self.template_loader = jinja2.FileSystemLoader(searchpath=os.path.join(os.path.dirname(__file__), "templates"))
         self.template_env = jinja2.Environment(loader=self.template_loader)
         self.template_env.filters["symbol_url"] = symbol_url_filter
+        self.template_env.filters["symbol_file_url"] = symbol_file_url_filter
         self.template_env.filters["path"] = path_filter
 
         self.template_vars = {
@@ -90,11 +96,16 @@ class HTMLRenderer:
         return self.render_template("file.html", file_name)
 
     def copy_static_assets_to_path(self, output_dir):
-        css_output = os.path.join(output_dir, "css")
-        if os.path.exists(css_output):
-            shutil.rmtree(css_output)
+        def handle_static(input, output):
+            output = os.path.join(output_dir, output)
+            if os.path.exists(output):
+                shutil.rmtree(output)
 
-        shutil.copytree(os.path.join(os.path.dirname(__file__), "templates/css"), css_output)
+            shutil.copytree(os.path.join(os.path.dirname(__file__), input), output)
+
+        handle_static("templates/css", "css")
+        handle_static("templates/js", "js")
+
 
     def render_to_path(self, output_dir):
         # todo: collect files that exist before and delete them afterwards if they hadn't been regenerated

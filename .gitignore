@@ -1,3 +1,5 @@
 **/.idea/workspace.xml
 xcuserdata
 *.pyc
+.gutter.json
+tool/html_out

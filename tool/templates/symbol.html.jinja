@@ -1,9 +1,31 @@
 {% extends "base.html.jinja" %}
 {% block title %}Symbol{% endblock %}
-{% block content %}
+{% block page_header %}
     <h1>{{ symbol.name }}</h1>
-    {{ symbol.stack_size }} {{ symbol.stack_qualifiers }}
-    {{ symbol.base_file }}:{{ symbol.line }}
+    <table class="table table-condensed">
+        <tr>
+            <th>file name</th>
+            <td><code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+            (0x{{ symbol.address }})
+            </td>
+        </tr>
+        <tr>
+            <th>function size</th>
+            <td>{{ symbol.size }} bytes</td>
+        </tr>
+        <tr>
+            <th>stack size</th>
+        {% if symbol.stack_size %}
+            <td>{{ symbol.stack_size }} bytes ({{ symbol.stack_qualifiers }})</td>
+        {% else %}
+            <td>unknown</td>
+        {% endif %}
+        </tr>
+    </table>
+
+
+{% endblock %}
+{% block content %}
     <pre>
         <a href="#">link test</a>
         {% for line in symbol.asm %}{{ line }}
