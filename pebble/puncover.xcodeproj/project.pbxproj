@@ -12,10 +12,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0FC3785E27A24D7FA633DCB1 /* puncover.c */ = {isa = PBXFileReference; includeInIndex = 1; path = puncover.c; sourceTree = "<group>"; };
+		0FC3785E27A24D7FA633DCB1 /* puncover.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = puncover.c; sourceTree = "<group>"; };
 		2242C157A8A84C2CBF6728BD /* fake-iOS-target.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "fake-iOS-target.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		335F023F904B493EB37456B9 /* appinfo.json */ = {isa = PBXFileReference; includeInIndex = 1; path = appinfo.json; sourceTree = "<group>"; };
-		3FE43695D0904AB0B495EE30 /* resources */ = {isa = PBXFileReference; includeInIndex = 1; path = resources; sourceTree = "<group>"; };
+		335F023F904B493EB37456B9 /* appinfo.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = appinfo.json; sourceTree = "<group>"; };
+		3FE43695D0904AB0B495EE30 /* resources */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = resources; sourceTree = "<group>"; };
 		B0258E38AB4944368CC8515B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
@@ -63,14 +63,16 @@
 /* Begin PBXLegacyTarget section */
 		D37FC42269CF48B19898D805 /* Pebble */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "build --pebble_sdk=/Users/behrens/pebble-dev/PebbleSDK-current";
+			buildArgumentsString = "";
 			buildConfigurationList = 98C49EAFBBCF4530BB8648AC /* Build configuration list for PBXLegacyTarget "Pebble" */;
 			buildPhases = (
 			);
-			buildToolPath = /usr/bin/pebblex;
+			buildToolPath = /Users/behrens/Documents/projects/pebble/puncover/pebble/build_xcode.sh;
+			buildWorkingDirectory = "";
 			dependencies = (
 			);
 			name = Pebble;
+			passBuildSettingsInEnvironment = 0;
 			productName = Pebble;
 		};
 /* End PBXLegacyTarget section */
@@ -110,8 +112,6 @@
 			mainGroup = FEF62DACBB624F8CB92C52A7;
 			productRefGroup = C41046677F3B4DD79CAEA804 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-			);
 			projectRoot = "";
 			targets = (
 				D37FC42269CF48B19898D805 /* Pebble */,

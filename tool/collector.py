@@ -22,8 +22,9 @@ def warning(*objs):
 
 class Collector:
 
-    def __init__(self):
+    def __init__(self, pebble_sdk=None):
         self.symbols = {}
+        self.pebble_sdk = pebble_sdk
 
     def qualified_symbol_name(self, symbol):
         return "%s/%s" % (symbol[BASE_FILE], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
@@ -131,13 +132,16 @@ class Collector:
         return False
 
     def parse_pebble_build_dir(self, dir):
+        def in_pebble_sdk(name):
+            return os.path.join(self.pebble_sdk, 'arm-cs-tools/bin', name) if self.pebble_sdk else name
+
         def get_assembly_lines(dir):
-            proc = subprocess.Popen(['arm-none-eabi-objdump','-dslw', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
+            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-dslw', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
             return proc.stdout.readlines()
 
 
         def get_size_lines(dir):
-            proc = subprocess.Popen(['arm-none-eabi-nm','-Sl', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
+            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-nm'),'-Sl', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
             return proc.stdout.readlines()
 
 

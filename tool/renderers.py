@@ -41,7 +41,7 @@ class HTMLRenderer:
 
     def __init__(self, c):
         self.collector = c
-        self.template_loader = jinja2.FileSystemLoader(searchpath="templates")
+        self.template_loader = jinja2.FileSystemLoader(searchpath=os.path.join(os.path.dirname(__file__), "templates"))
         self.template_env = jinja2.Environment(loader=self.template_loader)
         self.template_env.filters["symbol_url"] = symbol_url_filter
         self.template_env.filters["path"] = path_filter
@@ -72,7 +72,8 @@ class HTMLRenderer:
         css_output = os.path.join(output_dir, "css")
         if os.path.exists(css_output):
             shutil.rmtree(css_output)
-        shutil.copytree("templates/css", css_output)
+
+        shutil.copytree(os.path.join(os.path.dirname(__file__), "templates/css"), css_output)
 
     def render_to_path(self, output_dir):
         # todo: collect files that exist before and delete them afterwards if they hadn't been regenerated
