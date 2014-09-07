@@ -26,7 +26,7 @@ def json(project_dir, output, pebble_sdk=None):
     c = build_collector(project_dir, pebble_sdk)
     json_renderer = JSONRenderer(c)
     with open(output, "w") as f:
-        f.writelines(json_renderer.render())
+        f.writelines(json_renderer.render(os.path.dirname(os.path.abspath(output))))
 
 @click.command()
 @click.option('--project_dir', default=os.getcwd())

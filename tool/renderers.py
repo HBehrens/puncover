@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import datetime
 import jinja2
 import collector
 
@@ -24,17 +25,37 @@ class JSONRenderer:
     def __init__(self, c):
         self.collector = c
 
-    def render(self):
-        data = []
+    def render(self, base_dir=None):
+        symbols_by_file = {}
+        entries = []
         for symbol in self.collector.all_symbols():
             if symbol.has_key(collector.FILE) and symbol.has_key(collector.LINE):
-                entry = {}
-                for key in [collector.NAME, collector.BASE_FILE, collector.LINE, collector.STACK_SIZE, collector.SIZE]:
-                    if symbol.has_key(key):
-                        entry[key] = symbol[key]
-                data.append(entry)
+                entry = {
+                    "name": symbol[collector.NAME],
+                    "line": symbol[collector.LINE],
+                }
+                if symbol.get(collector.STACK_SIZE):
+                    # TODO: stack qualifier
+                    entry["short_text"] = "%d %d" % (symbol[collector.SIZE], symbol[collector.STACK_SIZE])
+                    entry["long_text"] = "size: %d, stack size: %d" % (symbol[collector.SIZE], symbol[collector.STACK_SIZE])
+                else:
+                    entry["short_text"] = "%d" % symbol[collector.SIZE]
+                    entry["long_text"] = "size: %d" % symbol[collector.SIZE]
 
-        return json.dumps(data, indent=2)
+                file_name = symbol[collector.FILE]
+                if base_dir:
+                    file_name = os.path.relpath(file_name, base_dir)
+                entries = symbols_by_file.get(file_name, [])
+                entries.append(entry)
+                symbols_by_file[file_name] = entries
+        data = {
+            "meta": {
+                "timestamp": datetime.datetime.now().isoformat(" "),
+            },
+            "symbols_by_file": symbols_by_file,
+        }
+
+        return json.dumps(data, indent=2, sort_keys=True)
 
 
 class HTMLRenderer:
