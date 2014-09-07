@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import datetime
 import jinja2
@@ -23,6 +24,21 @@ def symbol_url_filter(context, value):
 @jinja2.contextfilter
 def symbol_file_url_filter(context, value):
     return value
+
+
+@jinja2.contextfilter
+def assembly_filter(context, value):
+    def linked_symbol_name(name):
+        if context:
+            renderer = context.parent.get("renderer", None)
+            url = renderer.url_for_symbol_name(name, context)
+            if url:
+                return '<a href="%s">%s</a>' % (url, name)
+        return name
+
+    #   b8:	f000 f8de 	bleq	278 <__aeabi_dmul+0x1dc>
+    pattern = re.compile("<(\w+)")
+    return pattern.sub(lambda match: "<"+linked_symbol_name(match.group(1)), value)
 
 
 class JSONRenderer:
@@ -71,9 +87,11 @@ class HTMLRenderer:
         self.template_env = jinja2.Environment(loader=self.template_loader)
         self.template_env.filters["symbol_url"] = symbol_url_filter
         self.template_env.filters["symbol_file_url"] = symbol_file_url_filter
+        self.template_env.filters["assembly"] = assembly_filter
         self.template_env.filters["path"] = path_filter
 
         self.template_vars = {
+            "renderer": self,
             "symbols": c.all_symbols(),
             "functions": c.all_functions(),
             "functions_with_size": list(reversed(sorted([s for s in c.all_functions() if s.has_key(collector.SIZE)], key=lambda s: s[collector.SIZE])))
@@ -106,6 +124,9 @@ class HTMLRenderer:
         handle_static("templates/css", "css")
         handle_static("templates/js", "js")
 
+    def url_for_symbol_name(self, name, context=None):
+        symbol = self.collector.symbol(name)
+        return symbol_url_filter(context, symbol) if symbol else None
 
     def render_to_path(self, output_dir):
         # todo: collect files that exist before and delete them afterwards if they hadn't been regenerated

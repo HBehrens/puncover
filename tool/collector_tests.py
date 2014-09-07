@@ -43,6 +43,20 @@ __aeabi_dmul():
         self.assertTrue(c.symbols.has_key("00000098"))
         self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
 
+    def test_parses_assembly_and_ignores_c(self):
+        assembly = """
+00000098 <pbl_table_addr>:
+/path/to.c:8
+pbl_table_addr():
+  98:	a8a8a8a8 	.word	0xa8a8a8a8
+"""
+        c = Collector()
+        self.assertEqual(1, c.parse_assembly_text(assembly))
+        self.assertTrue(c.symbols.has_key("00000098"))
+        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
+        self.assertEqual(len(c.symbols["00000098"]["asm"]), 3)
+        self.assertEqual(c.symbols["00000098"]["asm"][0], "pbl_table_addr():")
+
     def test_stack_usage_line(self):
         line = "puncover.c:14:40:0	16	dynamic,bounded"
         c = Collector()

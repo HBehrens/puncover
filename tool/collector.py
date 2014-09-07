@@ -91,6 +91,9 @@ class Collector:
 
         # 00000098 <pbl_table_addr>:
         function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)>:")
+
+        # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
+        c_reference_pattern = re.compile(r"^[^:]+:\d+\s*")
         for line in assembly.split("\n"):
             match = function_start_pattern.match(line)
             if match:
@@ -99,7 +102,8 @@ class Collector:
                 name = match.group(2)
                 assembly_lines = []
             else:
-                assembly_lines.append(line)
+                if not c_reference_pattern.match(line):
+                    assembly_lines.append(line)
 
         found_symbols += flush_current_symbol()
         return found_symbols

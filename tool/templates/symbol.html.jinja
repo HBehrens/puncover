@@ -27,8 +27,7 @@
 {% endblock %}
 {% block content %}
     <pre>
-        <a href="#">link test</a>
-        {% for line in symbol.asm %}{{ line }}
+        {% for line in symbol.asm %}{{ line | assembly }}
         {% endfor %}
     </pre>
 {% endblock %}
