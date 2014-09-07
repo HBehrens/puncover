@@ -1,13 +1,14 @@
 #include <pebble.h>
 
 static uint32_t used;
-static void use_ptr(uint32_t value) {
+static void __attribute__ ((noinline)) use_ptr(uint32_t value) {
   used = value;
 }
 
-static void __attribute__ ((noinline))    dynamic_stack2(int i) {
+static void __attribute__ ((noinline)) dynamic_stack2(int i) {
   uint16_t dyn_stack[i];
   use_ptr((uint32_t)&dyn_stack);
+//  use_ptr(i);
 }
 
 static double some_double_value;

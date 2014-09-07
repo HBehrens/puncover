@@ -116,7 +116,8 @@ class Collector:
             return 0
 
         # 00000098 <pbl_table_addr>:
-        function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)>:")
+        # 00000098 <pbl_table_addr.constprop.0>:
+        function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)(\..*)?>:")
 
         # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
         c_reference_pattern = re.compile(r"^[^:]+:\d+\s*")

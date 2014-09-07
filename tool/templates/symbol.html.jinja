@@ -5,7 +5,13 @@
     <table class="table table-condensed">
         <tr>
             <th>file name</th>
-            <td><code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+            <td>
+                {% if symbol.base_file %}
+                <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+                {% else %}
+                unknown file
+                {% endif %}
+
             (0x{{ symbol.address }})
             </td>
         </tr>
