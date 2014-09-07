@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 from __future__ import print_function
 import fnmatch
-import json
+from json import dumps
 import os
 from pprint import pprint
 import re
@@ -8,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import jinja2
+import click
 
 NAME = "name"
 SIZE = "size"
@@ -165,11 +167,11 @@ class Collector:
             lines = gen_cat(files)
             return lines
 
-        c.parse_assembly_text("".join(get_assembly_lines(build_dir)))
-        for l in get_size_lines(build_dir):
-            c.parse_size_line(l)
-        for l in get_stack_usage_lines(build_dir):
-            c.parse_stack_usage_line(l)
+        self.parse_assembly_text("".join(get_assembly_lines(dir)))
+        for l in get_size_lines(dir):
+            self.parse_size_line(l)
+        for l in get_stack_usage_lines(dir):
+            self.parse_stack_usage_line(l)
 
     def all_symbols(self):
         return self.symbols.values()
@@ -206,7 +208,7 @@ class JSONRenderer:
                         entry[key] = symbol[key]
                 data.append(entry)
 
-        return json.dumps(data, indent=2)
+        return dumps(data, indent=2)
 
 class HTMLRenderer:
 
@@ -271,21 +273,54 @@ class HTMLRenderer:
             file_name = symbol_url_filter(None, s)
             write(file_name, self.render_symbol(s, file_name))
 
+@click.group()
+def cli():
+    pass
+
+
+def build_collector(project_dir):
+    c = Collector()
+    c.parse_pebble_build_dir(os.path.join(project_dir, "build"))
+    return c
+
+
+@click.command()
+@click.option('--project_dir', default=".")
+@click.argument('output')
+def json(project_dir, output):
+    c = build_collector(project_dir)
+    json_renderer = JSONRenderer(c)
+    with open(output, "w") as f:
+        f.writelines(json_renderer.render())
+
+@click.command()
+@click.option('--project_dir', default=".")
+@click.argument('output')
+def html(project_dir, output):
+    c = build_collector(project_dir)
+    html_renderer = HTMLRenderer(c)
+    html_renderer.render_to_path(output)
+
+
+cli.add_command(json)
+cli.add_command(html)
 
 if __name__ == "__main__":
-    build_dir = "/Users/behrens/Documents/projects/pebble/puncover/pebble/build"
+    cli()
 
-    c = Collector()
-    c.parse_pebble_build_dir(build_dir)
-    # pprint(c.symbols)
-    # r = HTMLRenderer(c)
-
-    # print(r.render_overview("index.html"))
-    # print(r.render_file("puncover.c/index.html"))
-    # print(r.render_symbol(c.symbol("puncover.c/main"), "puncover.c/symbol__main.html"))
-
-    # r.render_to_path(os.path.join(build_dir, "puncover"))
-
-    json_renderer = JSONRenderer(c)
-    print(json_renderer.render())
+    # build_dir = "/Users/behrens/Documents/projects/pebble/puncover/pebble/build"
+    #
+    # c = Collector()
+    # c.parse_pebble_build_dir(build_dir)
+    # # pprint(c.symbols)
+    # # r = HTMLRenderer(c)
+    #
+    # # print(r.render_overview("index.html"))
+    # # print(r.render_file("puncover.c/index.html"))
+    # # print(r.render_symbol(c.symbol("puncover.c/main"), "puncover.c/symbol__main.html"))
+    #
+    # # r.render_to_path(os.path.join(build_dir, "puncover"))
+    #
+    # json_renderer = JSONRenderer(c)
+    # print(json_renderer.render())
 
