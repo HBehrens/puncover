@@ -1,11 +1,15 @@
 import unittest
-from collector import Collector
+from collector import Collector, left_strip_from_list
 
 
 class TestCollector(unittest.TestCase):
 
     def setUp(self):
         pass
+
+    def test_left_strip_from_list(self):
+        self.assertEqual(left_strip_from_list(["  a", "   b"]), ["a", " b"])
+
 
     def test_parses_line(self):
         c = Collector()
@@ -56,6 +60,22 @@ pbl_table_addr():
         self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
         self.assertEqual(len(c.symbols["00000098"]["asm"]), 3)
         self.assertEqual(c.symbols["00000098"]["asm"][0], "pbl_table_addr():")
+
+
+    def test_enhances_assembly(self):
+        assembly = """
+00000098 <pbl_table_addr>:
+pbl_table_addr():
+ 568:	f7ff ffca 	bl	98
+"""
+        c = Collector()
+        self.assertEqual(1, c.parse_assembly_text(assembly))
+        self.assertTrue(c.symbols.has_key("00000098"))
+        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
+        self.assertEqual(c.symbols["00000098"]["asm"][1], " 568:\tf7ff ffca \tbl\t98")
+
+        c.enhance_assembly()
+        self.assertEqual(c.symbols["00000098"]["asm"][1], " 568:\tf7ff ffca \tbl\t98 <pbl_table_addr>")
 
     def test_stack_usage_line(self):
         line = "puncover.c:14:40:0	16	dynamic,bounded"

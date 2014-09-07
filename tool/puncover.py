@@ -35,6 +35,7 @@ def json(project_dir, output, pebble_sdk=None):
 def html(project_dir, output, pebble_sdk=None):
     print("using project dir: " + project_dir)
     c = build_collector(project_dir, pebble_sdk)
+    c.enhance_assembly()
     html_renderer = HTMLRenderer(c)
     html_renderer.render_to_path(output)
 

@@ -36,9 +36,12 @@ def assembly_filter(context, value):
                 return '<a href="%s">%s</a>' % (url, name)
         return name
 
-    #   b8:	f000 f8de 	bleq	278 <__aeabi_dmul+0x1dc>
-    pattern = re.compile("<(\w+)")
-    return pattern.sub(lambda match: "<"+linked_symbol_name(match.group(1)), value)
+    #   b8:	f000 f8de 	bleq	278 &lt:__aeabi_dmul+0x1dc&gt:
+    pattern = re.compile(r"&lt;(\w+)")
+    value = str(value)
+    s = pattern.sub(lambda match: "&lt;"+linked_symbol_name(match.group(1)), value)
+    return s
+    # return str("&lt;")
 
 
 class JSONRenderer:
@@ -125,7 +128,7 @@ class HTMLRenderer:
         handle_static("templates/js", "js")
 
     def url_for_symbol_name(self, name, context=None):
-        symbol = self.collector.symbol(name)
+        symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
 
     def render_to_path(self, output_dir):

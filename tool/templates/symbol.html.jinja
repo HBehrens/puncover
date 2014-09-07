@@ -27,7 +27,7 @@
 {% endblock %}
 {% block content %}
     <pre>
-        {% for line in symbol.asm %}{{ line | assembly }}
-        {% endfor %}
+{% for line in symbol.asm %}{{ line | e | assembly }}
+{% endfor %}
     </pre>
 {% endblock %}

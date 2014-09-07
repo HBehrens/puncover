@@ -20,6 +20,23 @@ TYPE_FUNCTION = "function"
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
 
+
+def left_strip_from_list(lines):
+    if len(lines) <= 0:
+        return lines
+
+    # detect longest common sequence of white spaces
+    longest_match = re.match(r"^\s*", lines[0]).group(0)
+
+
+    for line in lines:
+        while not line.startswith(longest_match):
+            longest_match = longest_match[:-1]
+
+    # remove from each string
+    return list([line[len(longest_match):] for line in lines])
+
+
 class Collector:
 
     def __init__(self, pebble_sdk=None):
@@ -29,9 +46,16 @@ class Collector:
     def qualified_symbol_name(self, symbol):
         return "%s/%s" % (symbol[BASE_FILE], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
 
-    def symbol(self, name):
+    def symbol(self, name, qualified=True):
         for s in self.symbols.values():
-            if self.qualified_symbol_name(s) == name:
+            if self.qualified_symbol_name(s) == name or (not qualified and s[NAME] == name):
+                return s
+        return None
+
+    def symbol_by_addr(self, addr):
+        addr = int(addr, 16)
+        for s in self.symbols.values():
+            if int(s[ADDRESS],16) == addr:
                 return s
         return None
 
@@ -49,6 +73,8 @@ class Collector:
         if line:
             sym[LINE] = line
         if assembly_lines:
+            assembly_lines = left_strip_from_list(assembly_lines)
+
             sym[ASM] = assembly_lines
             sym[TYPE] = TYPE_FUNCTION
         sym[ADDRESS] = address
@@ -102,7 +128,7 @@ class Collector:
                 name = match.group(2)
                 assembly_lines = []
             else:
-                if not c_reference_pattern.match(line):
+                if not c_reference_pattern.match(line) and line.strip() != "":
                     assembly_lines.append(line)
 
         found_symbols += flush_current_symbol()
@@ -180,3 +206,18 @@ class Collector:
 
     def all_functions(self):
         return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_FUNCTION])
+
+    def enhance_assembly(self):
+        for key, symbol in self.symbols.items():
+            if symbol.has_key(ASM):
+                symbol[ASM] = list([self.enhanced_assembly_line(l) for l in symbol[ASM]])
+
+    def enhanced_assembly_line(self, line):
+        #   98: a8a8a8a8  bl 98
+        pattern = re.compile(r"^\s*\d+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
+        match = pattern.match(line)
+        if match:
+            symbol = self.symbol_by_addr(match.group(1))
+            if symbol:
+                return line+ " <%s>" % (symbol["name"])
+        return line
