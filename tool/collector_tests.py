@@ -1,5 +1,6 @@
 import unittest
-from puncover import Collector
+from collector import Collector
+
 
 class TestCollector(unittest.TestCase):
 
@@ -10,13 +11,8 @@ class TestCollector(unittest.TestCase):
         c = Collector()
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000550': {
-            'file': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c',
-            'base_file': 'puncover.c',
-            'line': 25,
-            'name': 'main',
-            'size': 52}
-        })
+        print c.symbols
+        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52}})
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector()
