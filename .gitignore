@@ -3,3 +3,4 @@ xcuserdata
 *.pyc
 .gutter.json
 tool/html_out
+puncover.xccheckout
