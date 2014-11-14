@@ -17,6 +17,7 @@ STACK_QUALIFIERS = "stack_qualifiers"
 ADDRESS = "address"
 TYPE = "type"
 TYPE_FUNCTION = "function"
+TYPE_VARIABLE = "variable"
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -78,7 +79,7 @@ class Collector:
                 return s
         return None
 
-    def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None):
+    def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None):
         sym = self.symbols.get(address, {})
         if sym.has_key(NAME) and sym[NAME] != name:
             warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
@@ -96,6 +97,9 @@ class Collector:
 
             sym[ASM] = assembly_lines
             sym[TYPE] = TYPE_FUNCTION
+        if type:
+            sym[TYPE] = type
+
         sym[ADDRESS] = address
 
         self.symbols[address] = sym
@@ -118,7 +122,9 @@ class Collector:
             file = None
             line = None
 
-        self.add_symbol(name, address=addr, size=size, file=file, line=line)
+        types = {"T": TYPE_FUNCTION, "D": TYPE_VARIABLE, "B": TYPE_VARIABLE}
+
+        self.add_symbol(name, address=addr, size=size, file=file, line=line, type = types.get(type.upper(), None))
 
         return True
 
@@ -192,6 +198,7 @@ class Collector:
 
 
         def get_size_lines(elf_file):
+            # http://linux.die.net/man/1/nm
             proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
@@ -229,10 +236,13 @@ class Collector:
         self.parse(elf_file, su_dir)
 
     def all_symbols(self):
-        return self.symbols.values()
+        return sorted(self.symbols.values(), key=lambda k: k.get("size", 0), reverse=True)
 
     def all_functions(self):
         return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_FUNCTION])
+
+    def all_variables(self):
+        return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_VARIABLE])
 
     def enhance_assembly(self):
         for key, symbol in self.symbols.items():

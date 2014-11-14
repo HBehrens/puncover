@@ -1,8 +1,17 @@
 {% extends "base.html.jinja" %}
 {% block content %}
+    <h2>Functions</h2>
     <ul>
-    {% for symbol in functions_with_size[:10] %}
+    {% for symbol in all_functions[:10] %}
         <li><a href="{{ symbol|symbol_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
     {% endfor %}
     </ul>
+
+    <h2>Variables</h2>
+    <ul>
+    {% for symbol in all_variables[:10] %}
+        <li><a href="{{ symbol|symbol_file_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
+    {% endfor %}
+    </ul>
+
 {% endblock %}

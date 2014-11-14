@@ -11,12 +11,25 @@ class TestCollector(unittest.TestCase):
         self.assertEqual(left_strip_from_list(["  a", "   b"]), ["a", " b"])
 
 
-    def test_parses_line(self):
+    def test_parses_function_line(self):
         c = Collector()
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
         print c.symbols
-        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52}})
+        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+
+    def test_parses_variable_line_from_initialized_data_section(self):
+        c = Collector()
+        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:15"
+        self.assertTrue(c.parse_size_line(line))
+        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+
+    def test_parses_variable_line_from_uninitialized_data_section(self):
+        c = Collector()
+        line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
+        self.assertTrue(c.parse_size_line(line))
+        print c.symbols
+        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector()

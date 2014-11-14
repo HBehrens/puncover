@@ -1,5 +1,6 @@
 import json
 import os
+from pprint import pprint
 import re
 import shutil
 import datetime
@@ -112,8 +113,8 @@ class HTMLRenderer:
         self.template_vars = {
             "renderer": self,
             "all_symbols": c.all_symbols(),
-            "functions": c.all_functions(),
-            "functions_with_size": list(reversed(sorted([s for s in c.all_functions() if s.has_key(collector.SIZE)], key=lambda s: s[collector.SIZE])))
+            "all_functions": c.all_functions(),
+            "all_variables": c.all_variables(),
         }
 
     def render_overview(self, file_name):
@@ -131,7 +132,8 @@ class HTMLRenderer:
 
     def render_file(self, file_name, symbols, output_file_name):
         self.template_vars["file_name"] = file_name
-        self.template_vars["symbols"] = symbols
+        for k in ["symbols", "functions", "variables"]:
+            self.template_vars[k] = symbols[k]
         return self.render_template("file.html", output_file_name)
 
     def copy_static_assets_to_path(self, output_dir):
@@ -171,18 +173,22 @@ class HTMLRenderer:
         ensure_path(output_dir)
         self.copy_static_assets_to_path(output_dir)
 
+        # pprint(self.collector.all_symbols())
+
         write("index.html", self.render_overview("index.html"))
 
         containing_files = {}
-        for s in self.collector.symbols.values():
+        for s in self.collector.all_symbols():
             c_file = symbol_file(s)
-            symbols_on_file = containing_files[c_file] = containing_files.get(c_file, [])
-            symbols_on_file.append(s)
+            symbols_on_file = containing_files[c_file] = containing_files.get(c_file, {
+                "symbols": [], "functions": [], "variables": [], "others": []
+            })
+            symbols_on_file["symbols"].append(s)
+            symbols_on_file[s.get(collector.TYPE, "other")+"s"].append(s)
 
             html_file = symbol_url_filter(None, s)
             write(html_file, self.render_symbol(s, html_file))
 
         for f, symbols in containing_files.items():
-            html_file = symbol_file_url_filter(None, symbols[0])
-            symbols = sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
+            html_file = symbol_file_url_filter(None, symbols["symbols"][0])
             write(html_file, self.render_file(f, symbols, html_file))
