@@ -48,7 +48,9 @@
                 </td>
             </tr>
             <tr>
-                <th>Callees</th>
+                <th>Callees
+                    {% if symbol.callees|sum(attribute='size') %}(&Sigma;={{ symbol.callees|sum(attribute='size') }}){% endif %}</th>
+                </th>
                 <td>
                 {% for function in symbol.callees %}
                     <a href="{{ function|symbol_url }}">{{ function.name|e }} {{ '(%d)' % function.size if function.size}}</a>

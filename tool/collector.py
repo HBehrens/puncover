@@ -253,10 +253,11 @@ class Collector:
                 symbol[ASM] = list([self.enhanced_assembly_line(l) for l in symbol[ASM]])
 
     def add_function_call(self, caller, callee):
-        if not callee in caller["callees"]:
-            caller["callees"].append(callee)
-        if not caller in callee["callers"]:
-            callee["callers"].append(caller)
+        if caller != callee:
+            if not callee in caller["callees"]:
+                caller["callees"].append(callee)
+            if not caller in callee["callers"]:
+                callee["callers"].append(caller)
 
     def enhance_call_tree_from_assembly_line(self, function, line):
         #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
