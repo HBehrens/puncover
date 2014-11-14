@@ -3,32 +3,65 @@
 {% block page_header %}
     <h1>{{ symbol.name }}</h1>
     <table class="table table-condensed">
-        <tr>
-            <th>file name</th>
-            <td>
-                {% if symbol.base_file %}
-                <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+        <tbody>
+            <tr>
+                <th>File name</th>
+                <td>
+                    {% if symbol.base_file %}
+                    <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+                    {% else %}
+                    unknown file
+                    {% endif %}
+
+                (0x{{ symbol.address }})
+                </td>
+            </tr>
+            <tr>
+                <th>Function size</th>
+                <td>
+                    {% if symbol.stack_size %}
+                        {{ symbol.size }} bytes
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>Stack size</th>
+            {% if symbol.stack_size %}
+                <td>{{ symbol.stack_size }} bytes ({{ symbol.stack_qualifiers }})</td>
+            {% else %}
+                <td>Unknown</td>
+            {% endif %}
+            </tr>
+            <tr>
+                <th>Callers</th>
+                <td>
+                {% for function in symbol.callers %}
+                    <a href="{{ function|symbol_url }}">{{ function.name|e }} {{ '(%d)' % function.size if function.size}}</a>
+                    {% if not loop.last %}
+                        ,
+                    {% endif %}
                 {% else %}
-                unknown file
-                {% endif %}
-
-            (0x{{ symbol.address }})
-            </td>
-        </tr>
-        <tr>
-            <th>function size</th>
-            <td>{{ symbol.size }} bytes</td>
-        </tr>
-        <tr>
-            <th>stack size</th>
-        {% if symbol.stack_size %}
-            <td>{{ symbol.stack_size }} bytes ({{ symbol.stack_qualifiers }})</td>
-        {% else %}
-            <td>unknown</td>
-        {% endif %}
-        </tr>
+                    None
+                {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <th>Callees</th>
+                <td>
+                {% for function in symbol.callees %}
+                    <a href="{{ function|symbol_url }}">{{ function.name|e }} {{ '(%d)' % function.size if function.size}}</a>
+                    {% if not loop.last %}
+                        ,
+                    {% endif %}
+                {% else %}
+                    None
+                {% endfor %}
+                </td>
+            </tr>
+        </tbody>
     </table>
-
 
 {% endblock %}
 {% block content %}

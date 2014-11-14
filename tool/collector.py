@@ -235,8 +235,11 @@ class Collector:
         su_dir = os.path.join(project_dir, "build", "src")
         self.parse(elf_file, su_dir)
 
+    def sorted_by_size(self, symbols):
+        return sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
+
     def all_symbols(self):
-        return sorted(self.symbols.values(), key=lambda k: k.get("size", 0), reverse=True)
+        return self.sorted_by_size(self.symbols.values())
 
     def all_functions(self):
         return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_FUNCTION])
@@ -249,12 +252,53 @@ class Collector:
             if symbol.has_key(ASM):
                 symbol[ASM] = list([self.enhanced_assembly_line(l) for l in symbol[ASM]])
 
+    def add_function_call(self, caller, callee):
+        if not callee in caller["callees"]:
+            caller["callees"].append(callee)
+        if not caller in callee["callers"]:
+            callee["callers"].append(caller)
+
+    def enhance_call_tree_from_assembly_line(self, function, line):
+        #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
+        # 8e4:	f000 f824 	bl	930 <app_log>
+
+        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+b\S+\s+([\d\sa-f]+)")
+        match = pattern.match(line)
+
+        if match:
+            callee = self.symbol_by_addr(match.group(1))
+            if callee:
+                self.add_function_call(function, callee)
+                return True
+
+        return False
+
+    def enhance_call_tree(self):
+        for f in self.all_functions():
+            for k in ["callers", "callees"]:
+                f[k] = f.get(k, [])
+
+        for f in self.all_functions():
+            if f.has_key(ASM):
+                [self.enhance_call_tree_from_assembly_line(f, l) for l in f[ASM]]
+
+        for f in self.all_functions():
+            for k in ["callers", "callees"]:
+                f[k] = self.sorted_by_size(f[k])
+
+
+
+    def enhance(self):
+        self.enhance_assembly()
+        self.enhance_call_tree()
+
     def enhanced_assembly_line(self, line):
         #   98: a8a8a8a8  bl 98
-        pattern = re.compile(r"^\s*\d+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
+        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
         match = pattern.match(line)
         if match:
             symbol = self.symbol_by_addr(match.group(1))
             if symbol:
                 return line+ " <%s>" % (symbol["name"])
         return line
+

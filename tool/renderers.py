@@ -184,10 +184,12 @@ class HTMLRenderer:
                 "symbols": [], "functions": [], "variables": [], "others": []
             })
             symbols_on_file["symbols"].append(s)
-            symbols_on_file[s.get(collector.TYPE, "other")+"s"].append(s)
+            type = s.get(collector.TYPE, "other")
+            symbols_on_file[type +"s"].append(s)
 
-            html_file = symbol_url_filter(None, s)
-            write(html_file, self.render_symbol(s, html_file))
+            if type == collector.TYPE_FUNCTION:
+                html_file = symbol_url_filter(None, s)
+                write(html_file, self.render_symbol(s, html_file))
 
         for f, symbols in containing_files.items():
             html_file = symbol_file_url_filter(None, symbols["symbols"][0])
