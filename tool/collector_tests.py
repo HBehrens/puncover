@@ -178,3 +178,29 @@ $t():
             "line": 8,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
+
+    def test_count_bytes(self):
+        c = Collector()
+        self.assertEqual(0, c.count_assembly_code_bytes("dynamic_stack2():"))
+        self.assertEqual(2, c.count_assembly_code_bytes(" 88e:	4668      	mov	r0, sp"))
+        self.assertEqual(4, c.count_assembly_code_bytes(" 88a:	ebad 0d03 	sub.w	sp, sp, r3"))
+        self.assertEqual(4, c.count_assembly_code_bytes("878:	000001ba 	.word	0x000001ba"))
+
+    def test_count_bytes(self):
+        c = Collector()
+        c.symbols = { "0000009c" : {
+            collector.ADDRESS: "0000009c",
+            collector.ASM: """
+$t():
+  9c:	f081 4100 	eor.w	r1, r1, #2147483648	; 0x80000000
+  a0:	e002      	b.n	a8 <__adddf3>
+  a2:	bf00      	nop
+            """.split("\n")
+        }}
+
+        s = c.symbol_by_addr("9c")
+        self.assertFalse(s.has_key(collector.SIZE))
+        c.enhance_function_size_from_assembly()
+        self.assertEqual(8, s[collector.SIZE])
+
+

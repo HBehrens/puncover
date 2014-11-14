@@ -289,6 +289,7 @@ class Collector:
 
 
     def enhance(self):
+        self.enhance_function_size_from_assembly()
         self.enhance_assembly()
         self.enhance_call_tree()
 
@@ -301,4 +302,19 @@ class Collector:
             if symbol:
                 return line+ " <%s>" % (symbol["name"])
         return line
+
+    def count_assembly_code_bytes(self, line):
+        # 88a:	ebad 0d03 	sub.w	sp, sp, r3
+        pattern = re.compile(r"^\s*[\da-f]+:\s+([\d\sa-f]{9})")
+        match = pattern.match(line)
+        if match:
+            return len(match.group(1).replace(" ", "")) / 2
+        return 0
+
+    def enhance_function_size_from_assembly(self):
+        for f in self.all_symbols():
+            if not f.get(SIZE, 0) and f.has_key(ASM):
+                f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
+
+
 
