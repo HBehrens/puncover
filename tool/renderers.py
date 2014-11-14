@@ -6,25 +6,41 @@ import datetime
 import jinja2
 import collector
 
+KEY_OUTPUT_FILE_NAME = "output_file_name"
 
 @jinja2.contextfilter
 def path_filter(context, file_name):
+    if context and file_name:
+        current_file = context.parent[KEY_OUTPUT_FILE_NAME]
+        if current_file:
+            current_file = os.path.dirname(current_file)
+            return os.path.relpath(file_name, current_file)
+
+    return file_name
+
+def renderer_from_context(context):
+    if isinstance(context, HTMLRenderer):
+        return context
     if context:
-        current_file = os.path.dirname(context.parent["file_name"])
-        return os.path.relpath(file_name, current_file)
-    else:
-        return file_name
+        return context.parent.get("renderer", None)
+
+    return None
+
+def symbol_file(value):
+    return value.get(collector.BASE_FILE, '__builtin')
 
 @jinja2.contextfilter
 def symbol_url_filter(context, value):
-    file_name = os.path.join(value.get(collector.BASE_FILE, '__builtin'), "symbol_%s.html" % value["name"])
-    return path_filter(context, file_name)
+    # renderer = renderer_from_context(context)
+    # if renderer:
+    #     return path_filter(context, renderer.url_for_symbol_name(value))
 
+    file_name = os.path.join(symbol_file(value), "symbol_%s.html" % value["name"])
+    return path_filter(context, file_name)
 
 @jinja2.contextfilter
 def symbol_file_url_filter(context, value):
-    return value
-
+    return path_filter(context, os.path.join(symbol_file(value), "index.html"))
 
 @jinja2.contextfilter
 def assembly_filter(context, value):
@@ -95,7 +111,7 @@ class HTMLRenderer:
 
         self.template_vars = {
             "renderer": self,
-            "symbols": c.all_symbols(),
+            "all_symbols": c.all_symbols(),
             "functions": c.all_functions(),
             "functions_with_size": list(reversed(sorted([s for s in c.all_functions() if s.has_key(collector.SIZE)], key=lambda s: s[collector.SIZE])))
         }
@@ -104,7 +120,7 @@ class HTMLRenderer:
         return self.render_template("overview.html", file_name)
 
     def render_template(self, template_name, file_name):
-        self.template_vars["file_name"] = file_name
+        self.template_vars[KEY_OUTPUT_FILE_NAME] = file_name
         template = self.template_env.get_template(template_name + ".jinja")
         output = template.render(self.template_vars)
         return output
@@ -113,8 +129,10 @@ class HTMLRenderer:
         self.template_vars["symbol"] = symbol
         return self.render_template("symbol.html", file_name)
 
-    def render_file(self, file_name):
-        return self.render_template("file.html", file_name)
+    def render_file(self, file_name, symbols, output_file_name):
+        self.template_vars["file_name"] = file_name
+        self.template_vars["symbols"] = symbols
+        return self.render_template("file.html", output_file_name)
 
     def copy_static_assets_to_path(self, output_dir):
         def handle_static(input, output):
@@ -131,6 +149,10 @@ class HTMLRenderer:
         symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
 
+    # file_name = os.path.join(value.get(collector.BASE_FILE, '__builtin'), "symbol_%s.html" % value["name"])
+    # return path_filter(context, file_name)
+
+
     def render_to_path(self, output_dir):
         # todo: collect files that exist before and delete them afterwards if they hadn't been regenerated
 
@@ -139,20 +161,28 @@ class HTMLRenderer:
                 os.makedirs(p)
 
         def write(name, content):
-            file_name = os.path.join(output_dir, name)
-            ensure_path(os.path.dirname(file_name))
+            if name:
+                file_name = os.path.join(output_dir, name)
+                ensure_path(os.path.dirname(file_name))
 
-            with open(file_name, "w") as f:
-                f.write(content)
+                with open(file_name, "w") as f:
+                    f.write(content)
 
         ensure_path(output_dir)
         self.copy_static_assets_to_path(output_dir)
 
         write("index.html", self.render_overview("index.html"))
 
-        # todo: render file overview
-
-        # todo: only render functions
+        containing_files = {}
         for s in self.collector.symbols.values():
-            file_name = symbol_url_filter(None, s)
-            write(file_name, self.render_symbol(s, file_name))
+            c_file = symbol_file(s)
+            symbols_on_file = containing_files[c_file] = containing_files.get(c_file, [])
+            symbols_on_file.append(s)
+
+            html_file = symbol_url_filter(None, s)
+            write(html_file, self.render_symbol(s, html_file))
+
+        for f, symbols in containing_files.items():
+            html_file = symbol_file_url_filter(None, symbols[0])
+            symbols = sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
+            write(html_file, self.render_file(f, symbols, html_file))

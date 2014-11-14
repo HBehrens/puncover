@@ -63,11 +63,11 @@
 /* Begin PBXLegacyTarget section */
 		D37FC42269CF48B19898D805 /* Pebble */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "";
+			buildArgumentsString = "build --pebble_sdk=/Users/behrens/pebble-dev/PebbleSDK-current";
 			buildConfigurationList = 98C49EAFBBCF4530BB8648AC /* Build configuration list for PBXLegacyTarget "Pebble" */;
 			buildPhases = (
 			);
-			buildToolPath = /Users/behrens/Documents/projects/pebble/puncover/pebble/build_xcode.sh;
+			buildToolPath = /usr/bin/pebblex;
 			buildWorkingDirectory = "";
 			dependencies = (
 			);

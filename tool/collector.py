@@ -1,5 +1,6 @@
 from __future__ import print_function
 import fnmatch
+import json
 import os
 import re
 import subprocess
@@ -42,6 +43,24 @@ class Collector:
     def __init__(self, pebble_sdk=None):
         self.symbols = {}
         self.pebble_sdk = pebble_sdk
+
+    def as_dict(self):
+        return {
+            "symbols" : self.symbols,
+            "pebble_sdk" : self.pebble_sdk,
+        }
+
+    def save_to_json(self, filename):
+        with open(filename, "w") as f:
+            json.dump(self.as_dict(), f, indent=2, sort_keys=True)
+
+    def from_dict(self, dict):
+        self.symbols = dict.get("symbols", {})
+        self.pebble_sdk = dict.get("pebble_sdk", None)
+
+    def load_from_json(self, filename):
+        with open(filename) as f:
+            self.from_dict(json.load(f))
 
     def qualified_symbol_name(self, symbol):
         return "%s/%s" % (symbol[BASE_FILE], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
@@ -162,17 +181,18 @@ class Collector:
         warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
 
-    def parse_pebble_build_dir(self, dir):
+
+    def parse(self, elf_file, su_dir):
         def in_pebble_sdk(name):
             return os.path.join(self.pebble_sdk, 'arm-cs-tools/bin', name) if self.pebble_sdk else name
 
-        def get_assembly_lines(dir):
-            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-dslw', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
+        def get_assembly_lines(elf_file):
+            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 
-        def get_size_lines(dir):
-            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-nm'),'-Sl', 'pebble-app.elf'], stdout=subprocess.PIPE, cwd=dir)
+        def get_size_lines(elf_file):
+            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 
@@ -190,17 +210,23 @@ class Collector:
                 for item in s:
                     yield item
 
-        def get_stack_usage_lines(dir):
-            names = gen_find("*.su", os.path.join(dir, "src"))
+        def get_stack_usage_lines(su_dir):
+            names = gen_find("*.su", su_dir)
             files = gen_open(names)
             lines = gen_cat(files)
             return lines
 
-        self.parse_assembly_text("".join(get_assembly_lines(dir)))
-        for l in get_size_lines(dir):
+        self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
+        for l in get_size_lines(elf_file):
             self.parse_size_line(l)
-        for l in get_stack_usage_lines(dir):
+
+        for l in get_stack_usage_lines(su_dir):
             self.parse_stack_usage_line(l)
+
+    def parse_pebble_project_dir(self, project_dir):
+        elf_file = os.path.join(project_dir, 'build', 'pebble-app.elf')
+        su_dir = os.path.join(project_dir, "build", "src")
+        self.parse(elf_file, su_dir)
 
     def all_symbols(self):
         return self.symbols.values()

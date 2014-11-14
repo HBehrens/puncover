@@ -75,7 +75,7 @@ pbl_table_addr():
         self.assertEqual(1, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key("00000098"))
         self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
-        self.assertEqual(len(c.symbols["00000098"]["asm"]), 3)
+        self.assertEqual(len(c.symbols["00000098"]["asm"]), 2)
         self.assertEqual(c.symbols["00000098"]["asm"][0], "pbl_table_addr():")
 
 
