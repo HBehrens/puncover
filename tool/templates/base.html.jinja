@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     {% block head %}
-    <link rel="stylesheet" href="{{ "css/bootstrap.min.css" | path }}" />
-    <link rel="stylesheet" href="{{ "css/style.css" | path }}" />
+    <link rel="stylesheet" href="{{ "/static/css/bootstrap.min.css" | path }}" />
+    <link rel="stylesheet" href="{{ "/static/css/style.css" | path }}" />
 
-    <script src="{{ "js/bootstrap.min.js" | path }}"></script>
+    <script src="{{ "/static/js/bootstrap.min.js" | path }}"></script>
 
     <title>{% block title %}{% endblock %} - puncover</title>
     {% endblock %}
