@@ -190,7 +190,7 @@ $t():
         self.assertEqual(4, c.count_assembly_code_bytes(" 88a:	ebad 0d03 	sub.w	sp, sp, r3"))
         self.assertEqual(4, c.count_assembly_code_bytes("878:	000001ba 	.word	0x000001ba"))
 
-    def test_count_bytes(self):
+    def test_enhance_function_size_from_assembly(self):
         c = Collector()
         c.symbols = { "0000009c" : {
             collector.ADDRESS: "0000009c",
@@ -206,5 +206,35 @@ $t():
         self.assertFalse(s.has_key(collector.SIZE))
         c.enhance_function_size_from_assembly()
         self.assertEqual(8, s[collector.SIZE])
+
+    def test_enhance_sibling_symbols(self):
+        c = Collector()
+        aeabi_drsub = {
+            collector.ADDRESS: "0000009c",
+            collector.SIZE: 8,
+            collector.TYPE: collector.TYPE_FUNCTION,
+        }
+        aeabi_dsub = {
+            collector.ADDRESS: "000000a4",
+            collector.SIZE: 4,
+            collector.TYPE: collector.TYPE_FUNCTION,
+        }
+        adddf3 = {
+            collector.ADDRESS: "000000a8",
+            collector.SIZE: 123,
+            collector.TYPE: collector.TYPE_FUNCTION,
+        }
+
+        c.symbols = {f[collector.ADDRESS]: f for f in [aeabi_drsub, aeabi_dsub, adddf3]}
+        c.enhance_sibling_symbols()
+
+        self.assertFalse(aeabi_drsub.has_key(collector.PREV_FUNCTION))
+        self.assertEqual(aeabi_dsub, aeabi_drsub.get(collector.NEXT_FUNCTION))
+
+        self.assertEqual(aeabi_drsub, aeabi_dsub.get(collector.PREV_FUNCTION))
+        self.assertEqual(adddf3, aeabi_dsub.get(collector.NEXT_FUNCTION))
+
+        self.assertEqual(aeabi_dsub, adddf3.get(collector.PREV_FUNCTION))
+        self.assertFalse(adddf3.has_key(collector.NEXT_FUNCTION))
 
 

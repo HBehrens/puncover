@@ -18,6 +18,8 @@ ADDRESS = "address"
 TYPE = "type"
 TYPE_FUNCTION = "function"
 TYPE_VARIABLE = "variable"
+PREV_FUNCTION = "prev_function"
+NEXT_FUNCTION = "next_function"
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -105,6 +107,7 @@ class Collector:
         self.symbols[address] = sym
 
     def parse_size_line(self, line):
+        # print(line)
         # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
         pattern = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
         match = pattern.match(line)
@@ -129,6 +132,7 @@ class Collector:
         return True
 
     def parse_assembly_text(self, assembly):
+        # print(assembly)
         name = None
         addr = None
         assembly_lines = []
@@ -194,6 +198,7 @@ class Collector:
 
         def get_assembly_lines(elf_file):
             proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
+            # proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-d', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 
@@ -298,6 +303,7 @@ class Collector:
         self.enhance_function_size_from_assembly()
         self.enhance_assembly()
         self.enhance_call_tree()
+        self.enhance_sibling_symbols()
 
     def enhanced_assembly_line(self, line):
         #   98: a8a8a8a8  bl 98
@@ -319,8 +325,18 @@ class Collector:
 
     def enhance_function_size_from_assembly(self):
         for f in self.all_symbols():
-            if not f.get(SIZE, 0) and f.has_key(ASM):
+            if f.has_key(ASM):
                 f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
 
+    def enhance_sibling_symbols(self):
+        for f in self.all_functions():
+            if f.has_key(SIZE):
+                addr = int(f.get(ADDRESS), 16) + f.get(SIZE)
+                next_symbol = self.symbol_by_addr(hex(addr))
+                if next_symbol and next_symbol.get(TYPE, None) == TYPE_FUNCTION:
+                    f[NEXT_FUNCTION] = next_symbol
 
-
+        for f in self.all_functions():
+            n = f.get(NEXT_FUNCTION, None)
+            if n:
+                n[PREV_FUNCTION] = f
