@@ -4,3 +4,5 @@ xcuserdata
 .gutter.json
 tool/html_out
 puncover.xccheckout
+find.xml
+vcs.xml

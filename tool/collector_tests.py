@@ -158,6 +158,10 @@ $t():
             c.enhance_call_tree_from_assembly_line(f1, "6c6:	d202      	bcs.n	88 <__aeabi_ddiv+0x6e>")
             m.assert_called_with(f1,f2)
 
+        with patch.object(c, "add_function_call") as m:
+            c.enhance_call_tree_from_assembly_line(f1, " 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...")
+            self.assertFalse(m.called)
+
 
     def test_stack_usage_line(self):
         line = "puncover.c:14:40:0	16	dynamic,bounded"

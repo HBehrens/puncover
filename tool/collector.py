@@ -262,12 +262,17 @@ class Collector:
     def enhance_call_tree_from_assembly_line(self, function, line):
         #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
         # 8e4:	f000 f824 	bl	930 <app_log>
+        #
+        # but not:
+        # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
 
-        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+b\S+\s+([\d\sa-f]+)")
+
+        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
+
         match = pattern.match(line)
 
         if match:
-            callee = self.symbol_by_addr(match.group(1))
+            callee = self.symbol_by_addr(match.group(3))
             if callee:
                 self.add_function_call(function, callee)
                 return True
