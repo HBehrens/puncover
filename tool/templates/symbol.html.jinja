@@ -48,15 +48,11 @@
             <tr>
                 <th>
                     {% if symbol.callees | length <= 0 %}No Callees
-                    {% else %}
-                    Callees (
-                        {{ symbol.callees | length  }}
-                        {% if symbol.callees|sum(attribute='size') %},
+                    {% else %}Callees ({{ symbol.callees | length  }}{% if symbol.callees|sum(attribute='size') %},
                             <span title="sum of used bytes by all callees">
                             &Sigma;={{ symbol.callees|sum(attribute='size') }}
                             </span>
-                        {% endif %}
-                    )
+                        {% endif %})
                     {% endif %}
                 </th>
                 <td>
