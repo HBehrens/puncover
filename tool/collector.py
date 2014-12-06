@@ -29,6 +29,7 @@ FILE = "file"
 FILES = "files"
 FOLDER = "folder"
 ROOT = "root"
+ANCESTORS = "ancestors"
 SUB_FOLDERS = "sub_folders"
 COLLAPSED_NAME = "collapsed_name"
 COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
@@ -135,6 +136,8 @@ class Collector:
             file = match.group(6)
             if file.startswith(base_dir):
                 file = os.path.relpath(file, base_dir)
+            elif file.startswith("/"):
+                file = file[1:]
             line = int(match.group(7))
         else:
             file = None
@@ -414,6 +417,7 @@ class Collector:
             if parent:
                 parent[SUB_FOLDERS].append(f)
             ancestors = list(self.file_items_ancestors(f))
+            f[ANCESTORS] = ancestors
             if len(ancestors) > 0:
                 f[ROOT] = ancestors[-1]
 

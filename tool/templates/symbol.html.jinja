@@ -1,7 +1,10 @@
 {% extends "base.html.jinja" %}
 {% block title %}Symbol{% endblock %}
 {% block page_header %}
-    <h1>{{ symbol.name }}</h1>
+    <h1>
+        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
+        {{ symbol.name }}
+    </h1>
     <table class="table table-condensed">
         <tbody>
             <tr>

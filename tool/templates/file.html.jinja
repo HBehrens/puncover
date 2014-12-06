@@ -1,7 +1,15 @@
 {% extends "base.html.jinja" %}
 {% block title %}Single File{% endblock %}
 {% block content %}
-    <h1>{{ file.name }}</h1>
+    <h1>
+        <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+        {% for ancestor in file.folder.ancestors | reverse %}
+            <a href="{{ ancestor | symbol_url }}">{{ ancestor.name }}</a>{{ SLASH }}
+        {% endfor %}
+
+        <a href="{{ file.folder | symbol_url }}">{{ file.folder.name }}</a>{{ SLASH }}
+        {{ file.name }}
+    </h1>
     <h2>Functions</h2>
     <table class="table table-striped table-bordered table-hover">
         <thead>

@@ -8,16 +8,6 @@ import collector
 
 KEY_OUTPUT_FILE_NAME = "output_file_name"
 
-@jinja2.contextfilter
-def path_filter(context, file_name):
-    if context and file_name:
-        current_file = context.parent[KEY_OUTPUT_FILE_NAME]
-        if current_file:
-            current_file = os.path.dirname(current_file)
-            return os.path.relpath(file_name, current_file)
-
-    return file_name
-
 def renderer_from_context(context):
     if isinstance(context, HTMLRenderer):
         return context
@@ -31,16 +21,15 @@ def symbol_file(value):
 
 @jinja2.contextfilter
 def symbol_url_filter(context, value):
-    # renderer = renderer_from_context(context)
-    # if renderer:
-    #     return path_filter(context, renderer.url_for_symbol_name(value))
+    renderer = renderer_from_context(context)
+    if renderer:
+        return renderer.url_for_symbol(value)
 
-    file_name = os.path.join(symbol_file(value), "symbol_%s.html" % value["name"])
-    return path_filter(context, file_name)
+    return ""
 
 @jinja2.contextfilter
 def symbol_file_url_filter(context, value):
-    return path_filter(context, os.path.join(symbol_file(value), "index.html"))
+    return symbol_url_filter(context, value[collector.FILE])
 
 @jinja2.contextfilter
 def assembly_filter(context, value):
@@ -66,6 +55,7 @@ class HTMLRenderer(View):
         self.collector = collector
         self.template_vars = {
             "renderer": self,
+            "SLASH": '<span class="slash">/</span>',
             "all_symbols": collector.all_symbols(),
             "all_functions": collector.all_functions(),
             "all_variables": collector.all_variables(),
@@ -78,6 +68,14 @@ class HTMLRenderer(View):
     def url_for_symbol_name(self, name, context=None):
         symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
+
+    def url_for_symbol(self, value):
+        if value[collector.TYPE] in [collector.TYPE_FUNCTION]:
+            return url_for("path", path=self.collector.qualified_symbol_name(value))
+
+        # file or folder
+        return url_for("path", path=value[collector.PATH])
+
 
 class OverviewRenderer(HTMLRenderer):
 
@@ -104,9 +102,9 @@ class PathRenderer(HTMLRenderer):
             self.template_vars["folder"] = file_element
             return self.render_template("folder.html.jinja", path)
 
-        # print "### " + dir
-        # for f in sorted([f[collector.PATH] for f in self.collector.file_elements.values()]):
-        #     print f
+        print "### " + path
+        for f in sorted([f[collector.PATH] for f in self.collector.file_elements.values()]):
+            print f
         # print "## root folders"
         # for f in self.collector.root_folders():
         #     print f[collector.PATH]
@@ -133,7 +131,6 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["assembly"] = assembly_filter
-    jinja_env.filters["path"] = path_filter
 
 
 def register_urls(app, collector):

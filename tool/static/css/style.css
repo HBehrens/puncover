@@ -1,3 +1,10 @@
 table th {
     white-space: nowrap;
 }
+
+span.slash {
+    opacity: 0.6;
+    display: inline-block;
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+}
