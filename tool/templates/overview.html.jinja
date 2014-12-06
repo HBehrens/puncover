@@ -5,18 +5,7 @@
     {% import 'lists.html.jinja' as lists with context %}
     {{ lists.directory(root_folders, []) }}
 
-    <h2>Functions</h2>
-    <ul>
-    {% for symbol in all_functions[:100] %}
-        <li><a href="{{ symbol|symbol_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
-    {% endfor %}
-    </ul>
+    <a class="btn btn-default" href="{{ url_for('all') }}">Show all symbols</a>
 
-    <h2>Variables</h2>
-    <ul>
-    {% for symbol in all_variables[:100] %}
-        <li><a href="{{ symbol|symbol_file_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
-    {% endfor %}
-    </ul>
 
 {% endblock %}

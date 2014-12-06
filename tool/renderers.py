@@ -26,11 +26,12 @@ def symbol_url_filter(context, value):
     if renderer:
         return renderer.url_for_symbol(value)
 
-    return ""
+    return None
 
 @jinja2.contextfilter
 def symbol_file_url_filter(context, value):
-    return symbol_url_filter(context, value[collector.FILE])
+    f = value.get(collector.FILE, None)
+    return symbol_url_filter(context, f) if f else None
 
 def symbol_traverse(s, func):
     if isinstance(s, list):
@@ -44,13 +45,17 @@ def symbol_traverse(s, func):
 
     return func(s)
 
-@jinja2.contextfilter
-def symbol_code_size(context ,value):
-    return symbol_traverse(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+def traverse_filter_wrapper(value, func):
+    result = symbol_traverse(value, func)
+    return result if result != 0 else ""
 
 @jinja2.contextfilter
-def symbol_var_size(context ,value):
-    return symbol_traverse(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
+def symbol_code_size_filter(context ,value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+
+@jinja2.contextfilter
+def symbol_var_size_filter(context ,value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
 
 @jinja2.contextfilter
 def assembly_filter(context, value):
@@ -103,6 +108,10 @@ class HTMLRenderer(View):
         return url_for("path", path=value[collector.PATH])
 
 
+    def dispatch_request(self):
+        return self.render_template(self.template, "index.html")
+
+
 class OverviewRenderer(HTMLRenderer):
 
     def dispatch_request(self):
@@ -141,7 +150,6 @@ class PathRenderer(HTMLRenderer):
         abort(404)
 
 
-
 class SymbolRenderer(HTMLRenderer):
 
     def dispatch_request(self, symbol_name=None):
@@ -150,18 +158,23 @@ class SymbolRenderer(HTMLRenderer):
             abort(404)
 
         return redirect(url_for("path", path=self.collector.qualified_symbol_name(symbol)))
-        # self.template_vars["symbol"] = symbol
-        # return self.render_template("symbol.html.jinja", "symbol")
+
+class AllSymbolsRenderer(HTMLRenderer):
+
+    def dispatch_request(self, symbol_name=None):
+        return self.render_template("all_symbols.html.jinja", "all")
 
 def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
-    jinja_env.filters["symbol_code_size"] = symbol_code_size
-    jinja_env.filters["symbol_var_size"] = symbol_var_size
+    jinja_env.filters["symbol_code_size"] = symbol_code_size_filter
+    jinja_env.filters["symbol_var_size"] = symbol_var_size_filter
     jinja_env.filters["assembly"] = assembly_filter
     jinja_env.filters["chain"] = chain_filter
 
+
 def register_urls(app, collector):
     app.add_url_rule("/", view_func=OverviewRenderer.as_view("overview", collector=collector))
+    app.add_url_rule("/all/", view_func=AllSymbolsRenderer.as_view("all", collector=collector))
     app.add_url_rule("/path/<path:path>/", view_func=PathRenderer.as_view("path", collector=collector))
     app.add_url_rule("/symbol/<string:symbol_name>", view_func=SymbolRenderer.as_view("symbol", collector=collector))
