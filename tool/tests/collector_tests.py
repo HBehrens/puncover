@@ -16,21 +16,19 @@ class TestCollector(unittest.TestCase):
         c = Collector()
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
-        print c.symbols
-        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/puncover/src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector()
-        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:15"
+        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
         c = Collector()
         line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
         self.assertTrue(c.parse_size_line(line))
-        print c.symbols
-        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'file': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector()
@@ -237,4 +235,87 @@ $t():
         self.assertEqual(aeabi_dsub, adddf3.get(collector.PREV_FUNCTION))
         self.assertFalse(adddf3.has_key(collector.NEXT_FUNCTION))
 
+    def test_derive_file_elements(self):
+        c = Collector()
+        s1 = {collector.PATH: "/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"}
+        s2 = {collector.PATH: "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"}
+        s3 = {collector.PATH: "src/puncover.c"}
+        c.symbols = {
+            "00000001": s1,
+            "00000002": s2,
+            "00000003": s3,
+        }
+
+        c.derive_folders()
+        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c", s1[collector.PATH])
+        self.assertIsNotNone(s1[collector.FILE])
+
+        self.assertEqual("/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S", s2[collector.PATH])
+        self.assertIsNotNone(s2[collector.FILE])
+
+        self.assertEqual("src/puncover.c", s3[collector.PATH])
+        self.assertIsNotNone(s3[collector.FILE])
+
+    def test_enhance_file_elements(self):
+        c = Collector()
+        aa_c = c.file_for_path("a/a/aa.c")
+        ab_c = c.file_for_path("a/b/ab.c")
+        b_c = c.file_for_path("b/b.c")
+        baa_c = c.file_for_path("b/a/a/baa.c")
+
+        a = c.folder_for_path("a")
+        aa = c.folder_for_path("a/a")
+        ab = c.folder_for_path("a/b")
+        b = c.folder_for_path("b")
+        ba = c.folder_for_path("b/a")
+        baa = c.folder_for_path("b/a/a")
+
+        self.assertEqual("a", a[collector.NAME])
+        self.assertEqual("a", aa[collector.NAME])
+        self.assertEqual("aa.c", aa_c[collector.NAME])
+        self.assertEqual("b", ab[collector.NAME])
+        self.assertEqual("ab.c", ab_c[collector.NAME])
+        self.assertEqual("b", b[collector.NAME])
+        self.assertEqual("b.c", b_c[collector.NAME])
+        self.assertEqual("a", ba[collector.NAME])
+        self.assertEqual("a", baa[collector.NAME])
+        self.assertEqual("baa.c", baa_c[collector.NAME])
+
+        c.enhance_file_elements()
+
+        crf = list(c.collapsed_root_folders())
+        self.assertItemsEqual([aa, ab, b], crf)
+
+        self.assertEqual(a, aa[collector.ROOT])
+        self.assertEqual(a, ab[collector.ROOT])
+        self.assertEqual(b, ba[collector.ROOT])
+        self.assertEqual(b, baa[collector.ROOT])
+
+        self.assertItemsEqual([aa, ab], a[collector.SUB_FOLDERS])
+        self.assertItemsEqual([], aa[collector.SUB_FOLDERS])
+        self.assertItemsEqual([], ab[collector.SUB_FOLDERS])
+        self.assertItemsEqual([ba], b[collector.SUB_FOLDERS])
+        self.assertItemsEqual([baa], ba[collector.SUB_FOLDERS])
+        self.assertItemsEqual([], baa[collector.SUB_FOLDERS])
+
+        self.assertItemsEqual([], a[collector.FILES])
+        self.assertItemsEqual([aa_c], aa[collector.FILES])
+        self.assertItemsEqual([ab_c], ab[collector.FILES])
+        self.assertItemsEqual([b_c], b[collector.FILES])
+        self.assertItemsEqual([], ba[collector.FILES])
+        self.assertItemsEqual([baa_c], baa[collector.FILES])
+
+        self.assertEqual("a", a[collector.COLLAPSED_NAME])
+        self.assertEqual("a/a", aa[collector.COLLAPSED_NAME])
+        self.assertEqual("a/b", ab[collector.COLLAPSED_NAME])
+        self.assertEqual("b", b[collector.COLLAPSED_NAME])
+        self.assertEqual("a", ba[collector.COLLAPSED_NAME])
+        self.assertEqual("a/a", baa[collector.COLLAPSED_NAME])
+
+        self.assertItemsEqual([aa, ab], a[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertItemsEqual([], aa[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertItemsEqual([], ab[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertItemsEqual([baa], b[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertItemsEqual([baa], ba[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertItemsEqual([], baa[collector.COLLAPSED_SUB_FOLDERS])
 

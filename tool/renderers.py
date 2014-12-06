@@ -1,6 +1,7 @@
 import os
 import re
-from flask import Flask, render_template
+from flask import Flask, render_template, abort, redirect
+from flask.helpers import url_for
 from flask.views import View
 import jinja2
 import collector
@@ -84,18 +85,49 @@ class OverviewRenderer(HTMLRenderer):
         return self.render_template("overview.html.jinja", "index.html")
 
 
-class FileRenderer(HTMLRenderer):
+class PathRenderer(HTMLRenderer):
 
-    def dispatch_request(self, dir=None):
-        return self.render_template("file.html.jinja", dir)
+    def dispatch_request(self, path=None):
+        if path.endswith("/"):
+            path = path[:-1]
+
+        symbol = self.collector.symbol(path)
+        if symbol:
+            self.template_vars["symbol"] = symbol
+            return self.render_template("symbol.html.jinja", "symbol")
+
+        file_element = self.collector.file_elements.get(path, None)
+        if file_element and file_element[collector.TYPE] == collector.TYPE_FILE:
+            self.template_vars["file"] = file_element
+            return self.render_template("file.html.jinja", path)
+        elif file_element and file_element[collector.TYPE] == collector.TYPE_FOLDER:
+            self.template_vars["folder"] = file_element
+            return self.render_template("folder.html.jinja", path)
+
+        # print "### " + dir
+        # for f in sorted([f[collector.PATH] for f in self.collector.file_elements.values()]):
+        #     print f
+        # print "## root folders"
+        # for f in self.collector.root_folders():
+        #     print f[collector.PATH]
+        # print "## collapsed root folders"
+        # for f in self.collector.collapsed_root_folders():
+        #     print f[collector.PATH]
+
+        abort(404)
+
 
 
 class SymbolRenderer(HTMLRenderer):
 
     def dispatch_request(self, symbol_name=None):
         symbol = self.collector.symbol(symbol_name, qualified=False)
-        self.template_vars["symbol"] = symbol
-        return self.render_template("symbol.html.jinja", "symbol")
+        if not symbol:
+            abort(404)
+
+        return redirect(url_for("path", path=self.collector.qualified_symbol_name(symbol)))
+        # self.template_vars["symbol"] = symbol
+        # return self.render_template("symbol.html.jinja", "symbol")
 
 def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_url"] = symbol_url_filter
@@ -106,5 +138,5 @@ def register_jinja_filters(jinja_env):
 
 def register_urls(app, collector):
     app.add_url_rule("/", view_func=OverviewRenderer.as_view("overview", collector=collector))
-    app.add_url_rule("/file/<string:dir>", view_func=FileRenderer.as_view("file", collector=collector))
+    app.add_url_rule("/path/<path:path>/", view_func=PathRenderer.as_view("path", collector=collector))
     app.add_url_rule("/symbol/<string:symbol_name>", view_func=SymbolRenderer.as_view("symbol", collector=collector))

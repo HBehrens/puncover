@@ -9,6 +9,8 @@ def build_collector(pebble_sdk, project_dir=None, elf_file=None, su_dir=None):
         c.parse_pebble_project_dir(project_dir)
     if elf_file:
         c.parse(elf_file, su_dir)
+
+    c.enhance()
     return c
 
 

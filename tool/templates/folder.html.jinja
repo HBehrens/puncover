@@ -1,0 +1,41 @@
+{% extends "base.html.jinja" %}
+{% block title %}Folder{% endblock %}
+{% block content %}
+    <h1>{{ folder.name }}</h1>
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub_folder in folder.sub_folders %}
+            <tr>
+                <td>
+                    <a href="{{ sub_folder | symbol_url }}">
+                        <div>
+                        <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+                        &nbsp;{{ sub_folder.name }}
+                        </div>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% for file in folder.files %}
+            <tr>
+                <td>
+                    <a href="{{ file | symbol_url }}">
+                        <div>
+                        <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                        &nbsp;{{ file.name }}
+                        </div>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+
+{% endblock %}

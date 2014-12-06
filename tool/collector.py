@@ -8,7 +8,7 @@ import sys
 
 NAME = "name"
 SIZE = "size"
-FILE = "file"
+PATH = "path"
 BASE_FILE = "base_file"
 LINE = "line"
 ASM = "asm"
@@ -18,8 +18,20 @@ ADDRESS = "address"
 TYPE = "type"
 TYPE_FUNCTION = "function"
 TYPE_VARIABLE = "variable"
+TYPE_FILE = "file"
+TYPE_FOLDER = "folder"
 PREV_FUNCTION = "prev_function"
 NEXT_FUNCTION = "next_function"
+FUNCTIONS = "functions"
+VARIABLES = "variables"
+SYMBOLS = "symbols"
+FILE = "file"
+FILES = "files"
+FOLDER = "folder"
+ROOT = "root"
+SUB_FOLDERS = "sub_folders"
+COLLAPSED_NAME = "collapsed_name"
+COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -45,6 +57,7 @@ class Collector:
 
     def __init__(self, pebble_sdk=None):
         self.symbols = {}
+        self.file_elements = {}
         self.pebble_sdk = pebble_sdk
 
     def as_dict(self):
@@ -66,7 +79,7 @@ class Collector:
             self.from_dict(json.load(f))
 
     def qualified_symbol_name(self, symbol):
-        return "%s/%s" % (symbol[BASE_FILE], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
+        return os.path.join(symbol[PATH], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
 
     def symbol(self, name, qualified=True):
         for s in self.symbols.values():
@@ -90,7 +103,7 @@ class Collector:
         if size:
             sym[SIZE] = int(size)
         if file:
-            sym[FILE] = file
+            sym[PATH] = file
             sym[BASE_FILE] = os.path.basename(file)
         if line:
             sym[LINE] = line
@@ -106,7 +119,7 @@ class Collector:
 
         self.symbols[address] = sym
 
-    def parse_size_line(self, line):
+    def parse_size_line(self, line, base_dir="/"):
         # print(line)
         # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
         pattern = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
@@ -120,6 +133,8 @@ class Collector:
         name = match.group(4)
         if match.group(5):
             file = match.group(6)
+            if file.startswith(base_dir):
+                file = os.path.relpath(file, base_dir)
             line = int(match.group(7))
         else:
             file = None
@@ -228,9 +243,12 @@ class Collector:
             lines = gen_cat(files)
             return lines
 
+        print("parsing ELF at %s" % elf_file)
+
         self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
         for l in get_size_lines(elf_file):
-            self.parse_size_line(l)
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(elf_file)))
+            self.parse_size_line(l, base_dir)
 
         for l in get_stack_usage_lines(su_dir):
             self.parse_stack_usage_line(l)
@@ -297,13 +315,13 @@ class Collector:
             for k in ["callers", "callees"]:
                 f[k] = self.sorted_by_size(f[k])
 
-
-
     def enhance(self):
         self.enhance_function_size_from_assembly()
         self.enhance_assembly()
         self.enhance_call_tree()
         self.enhance_sibling_symbols()
+        self.derive_folders()
+        self.enhance_file_elements()
 
     def enhanced_assembly_line(self, line):
         #   98: a8a8a8a8  bl 98
@@ -340,3 +358,100 @@ class Collector:
             n = f.get(NEXT_FUNCTION, None)
             if n:
                 n[PREV_FUNCTION] = f
+
+    def derive_folders(self):
+        for s in self.all_symbols():
+            p = s.get(PATH, None)
+            if p:
+                p = os.path.normpath(p)
+                s[PATH] = p
+                s[FILE] = self.file_for_path(p)
+                s[FILE][SYMBOLS].append(s)
+
+    def file_element_for_path(self, path, type, default_values):
+        if not path:
+            return None
+
+        result = self.file_elements.get(path, None)
+        if not result:
+            parent_dir = os.path.dirname(path)
+            parent_folder = self.folder_for_path(parent_dir) if parent_dir and parent_dir != "/" else None
+            result = {
+                TYPE: type,
+                PATH: path,
+                FOLDER: parent_folder,
+                NAME: os.path.basename(path),
+            }
+            for k, v in default_values.items():
+                result[k] = v
+            self.file_elements[path] = result
+
+        return result if result[TYPE] == type else None
+
+    def file_for_path(self, path):
+        return self.file_element_for_path(path, TYPE_FILE, {SYMBOLS:[]})
+
+    def folder_for_path(self, path):
+        return self.file_element_for_path(path, TYPE_FOLDER, {FILES:[], SUB_FOLDERS:[], COLLAPSED_SUB_FOLDERS:[]})
+
+    def file_items_ancestors(self, item):
+        while item.get(FOLDER):
+            item = item[FOLDER]
+            yield item
+
+    def enhance_file_elements(self):
+        for f in self.all_files():
+            parent = f.get(FOLDER, None)
+            if parent:
+                parent[FILES].append(f)
+
+            f[SYMBOLS] = sorted(f[SYMBOLS], key=lambda s: s[NAME])
+            f[FUNCTIONS] = list([s for s in f[SYMBOLS] if s.get(TYPE, None) == TYPE_FUNCTION])
+            f[VARIABLES] = list([s for s in f[SYMBOLS] if s.get(TYPE, None) == TYPE_VARIABLE])
+
+        for f in self.all_folders():
+            parent = f.get(FOLDER, None)
+            if parent:
+                parent[SUB_FOLDERS].append(f)
+            ancestors = list(self.file_items_ancestors(f))
+            if len(ancestors) > 0:
+                f[ROOT] = ancestors[-1]
+
+            collapsed_name = f[NAME]
+            for a in ancestors:
+                if len(f[FILES]) > 0:
+                    a[COLLAPSED_SUB_FOLDERS].append(f)
+                if len(a[FILES]) > 0:
+                    break
+                collapsed_name = os.path.join(a[NAME], collapsed_name)
+            f[COLLAPSED_NAME] = collapsed_name
+
+        for f in self.all_folders():
+            for k in [FILES, SUB_FOLDERS]:
+                f[k] = sorted(f[k], key=lambda s: s[NAME])
+            f[COLLAPSED_SUB_FOLDERS] = sorted(f[COLLAPSED_SUB_FOLDERS], key=lambda s: s[COLLAPSED_NAME])
+
+    def all_files(self):
+        return [f for f in self.file_elements.values() if f[TYPE] == TYPE_FILE]
+
+    def all_folders(self):
+        return [f for f in self.file_elements.values() if f[TYPE] == TYPE_FOLDER]
+
+    def root_folders(self):
+        return [f for f in self.all_folders() if not f[FOLDER]]
+
+    def collapsed_root_folders(self):
+        result = []
+
+        def non_empty_leafs(f):
+            if len(f[FILES]) > 0:
+                result.append(f)
+            else:
+                for s in f[SUB_FOLDERS]:
+                    non_empty_leafs(s)
+
+        for f in self.root_folders():
+            non_empty_leafs(f)
+
+        return result
+
