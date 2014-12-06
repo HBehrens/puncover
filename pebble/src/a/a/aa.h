@@ -1,0 +1,1 @@
+int __attribute__ ((noinline)) func_aa();

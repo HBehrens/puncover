@@ -30,12 +30,12 @@
         </tbody>
     </table>
 
-    {% if variables | length <= 0 %}
+    {% if file.variables | length <= 0 %}
     <h2>No Static Variables</h2>
     {% else %}
     <h2>Static Variables</h2>
     <ul>
-    {% for symbol in variables[:10] %}
+    {% for symbol in file.variables[:10] %}
         <li><a href="{{ symbol|symbol_file_url }}">{{ symbol.name|e }} {{ '(%d)' % symbol.size if symbol.size}}</a></li>
     {% endfor %}
     </ul>

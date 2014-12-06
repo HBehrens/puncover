@@ -25,8 +25,8 @@ def build(ctx):
     s = ctx.pbl_bundle(elf='pebble-app.elf',
                    js=ctx.path.ant_glob('src/js/**/*.js'))
 
-    ctx.add_group()
-    ctx(rule=puncover, ctx=ctx)
+    # ctx.add_group()
+    # ctx(rule=puncover, ctx=ctx)
 
 def puncover(task):
     task.generator.bld.cmd_and_log(['../tool/puncover.py', 'html', 'build/puncover', '--project_dir', '.', '--pebble_sdk', '/Users/behrens/pebble-dev/PebbleSDK-current'])

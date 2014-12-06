@@ -98,7 +98,8 @@ class Collector:
     def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None):
         sym = self.symbols.get(address, {})
         if sym.has_key(NAME) and sym[NAME] != name:
-            warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
+            # warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
+            pass
         else:
             sym[NAME] = name
         if size:
@@ -253,8 +254,9 @@ class Collector:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(elf_file)))
             self.parse_size_line(l, base_dir)
 
-        for l in get_stack_usage_lines(su_dir):
-            self.parse_stack_usage_line(l)
+        if su_dir:
+            for l in get_stack_usage_lines(su_dir):
+                self.parse_stack_usage_line(l)
 
     def parse_pebble_project_dir(self, project_dir):
         elf_file = os.path.join(project_dir, 'build', 'pebble-app.elf')
@@ -319,11 +321,17 @@ class Collector:
                 f[k] = self.sorted_by_size(f[k])
 
     def enhance(self):
+        print("enhancing function sizes")
         self.enhance_function_size_from_assembly()
+        print("enhancing assembly")
         self.enhance_assembly()
+        print("enhancing call tree")
         self.enhance_call_tree()
+        print("enhancing siblings")
         self.enhance_sibling_symbols()
+        print("deriving folders")
         self.derive_folders()
+        print("enhancing file elements")
         self.enhance_file_elements()
 
     def enhanced_assembly_line(self, line):
