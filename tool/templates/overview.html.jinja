@@ -1,5 +1,10 @@
 {% extends "base.html.jinja" %}
 {% block content %}
+
+    <h2>Folders</h2>
+    {% import 'lists.html.jinja' as lists with context %}
+    {{ lists.directory(root_folders, []) }}
+
     <h2>Functions</h2>
     <ul>
     {% for symbol in all_functions[:100] %}

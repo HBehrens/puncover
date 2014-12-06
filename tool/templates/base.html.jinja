@@ -13,9 +13,21 @@
 </head>
 <body>
     <div class="container" id="content">
+
         <div class="page-header">
-            {% block page_header %}{% endblock %}
+            <nav class="navbar navbar-default" role="navigation">
+              <div class="container-fluid">
+                <div class="navbar-header">
+                  <a class="navbar-brand" href="{{ url_for('overview') }}">
+                    Puncover
+                  </a>
+                </div>
+              </div>
+            </nav>
+          {% block page_header %}{% endblock %}
+
         </div>
+
         {% block content %}{% endblock %}
     <div id="footer">
         {% block footer %}

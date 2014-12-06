@@ -1,0 +1,74 @@
+{% macro directory(folders, files) -%}
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Static Variables</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for folder in folders %}
+            <tr>
+                <td>
+                    <a href="{{ folder | symbol_url }}">
+                        <div>
+                        <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+                        &nbsp;{{ folder.name }}
+                        </div>
+                    </a>
+                </td>
+                <td>
+                    {{ folder | symbol_code_size }}
+                </td>
+                <td>
+                    {{ folder | symbol_var_size }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if files | length > 0 and folders | length > 0 %}
+                <tr>
+                <th>&sum; over folders</th>
+                <th>{{ folders | symbol_code_size }}</th>
+                <th>{{ folders | symbol_var_size }}</th>
+                </tr>
+            {% endif %}
+
+            {% for file in files %}
+            <tr>
+                <td>
+                    <a href="{{ file | symbol_url }}">
+                        <div>
+                        <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                        &nbsp;{{ file.name }}
+                        </div>
+                    </a>
+                </td>
+                <td>
+                    {{ file | symbol_code_size }}
+                </td>
+                <td>
+                    {{ file | symbol_var_size }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if files | length > 0 and folders | length > 0 %}
+                <tr>
+                    <th>&sum; over files</th>
+                    <th>{{ files | symbol_code_size }}</th>
+                    <th>{{ files | symbol_var_size }}</th>
+                </tr>
+            {% endif %}
+        </tbody>
+        {% if files | length > 0 or folders | length > 0 %}
+            <tfoot>
+                <tr>
+                <th>&sum; over all</th>
+                <th>{{ files | chain(folders) | symbol_code_size }}</th>
+                <th>{{ files | chain(folders) | symbol_var_size }}</th>
+                </tr>
+            </tfoot>
+        {% endif %}
+
+    </table>
+{%- endmacro %}

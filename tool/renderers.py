@@ -3,6 +3,7 @@ import re
 from flask import Flask, render_template, abort, redirect
 from flask.helpers import url_for
 from flask.views import View
+import itertools
 import jinja2
 import collector
 
@@ -31,6 +32,26 @@ def symbol_url_filter(context, value):
 def symbol_file_url_filter(context, value):
     return symbol_url_filter(context, value[collector.FILE])
 
+def symbol_traverse(s, func):
+    if isinstance(s, list):
+        return sum([symbol_traverse(i, func) for i in s])
+
+    if collector.TYPE in s:
+        if s[collector.TYPE] == collector.TYPE_FILE:
+            return sum([symbol_traverse(s, func) for s in s[collector.SYMBOLS]])
+        if s[collector.TYPE] == collector.FOLDER:
+            return sum([symbol_traverse(s, func) for s in itertools.chain(s[collector.SUB_FOLDERS], s[collector.FILES])])
+
+    return func(s)
+
+@jinja2.contextfilter
+def symbol_code_size(context ,value):
+    return symbol_traverse(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+
+@jinja2.contextfilter
+def symbol_var_size(context ,value):
+    return symbol_traverse(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
+
 @jinja2.contextfilter
 def assembly_filter(context, value):
     def linked_symbol_name(name):
@@ -48,6 +69,10 @@ def assembly_filter(context, value):
     return s
     # return str("&lt;")
 
+@jinja2.contextfilter
+def chain_filter(context, value, second_value=None):
+    return list(itertools.chain(value, second_value if second_value else []))
+
 
 class HTMLRenderer(View):
 
@@ -56,6 +81,7 @@ class HTMLRenderer(View):
         self.template_vars = {
             "renderer": self,
             "SLASH": '<span class="slash">/</span>',
+            "root_folders": list(collector.root_folders()),
             "all_symbols": collector.all_symbols(),
             "all_functions": collector.all_functions(),
             "all_variables": collector.all_variables(),
@@ -130,8 +156,10 @@ class SymbolRenderer(HTMLRenderer):
 def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
+    jinja_env.filters["symbol_code_size"] = symbol_code_size
+    jinja_env.filters["symbol_var_size"] = symbol_var_size
     jinja_env.filters["assembly"] = assembly_filter
-
+    jinja_env.filters["chain"] = chain_filter
 
 def register_urls(app, collector):
     app.add_url_rule("/", view_func=OverviewRenderer.as_view("overview", collector=collector))

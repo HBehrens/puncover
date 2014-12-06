@@ -121,11 +121,12 @@ class Collector:
 
         self.symbols[address] = sym
 
+    # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
+    parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
+
     def parse_size_line(self, line, base_dir="/"):
         # print(line)
-        # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
-        pattern = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
-        match = pattern.match(line)
+        match = self.parse_size_line_re.match(line)
         if not match:
             return False
 
@@ -144,11 +145,18 @@ class Collector:
             file = None
             line = None
 
-        types = {"T": TYPE_FUNCTION, "D": TYPE_VARIABLE, "B": TYPE_VARIABLE}
+        types = {"T": TYPE_FUNCTION, "D": TYPE_VARIABLE, "B": TYPE_VARIABLE, "R": TYPE_VARIABLE}
 
         self.add_symbol(name, address=addr, size=size, file=file, line=line, type = types.get(type.upper(), None))
 
         return True
+
+    # 00000098 <pbl_table_addr>:
+    # 00000098 <pbl_table_addr.constprop.0>:
+    parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)(\..*)?>:")
+
+    # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
+    parse_assembly_text_c_reference_pattern = re.compile(r"^[^:]+:\d+\s*")
 
     def parse_assembly_text(self, assembly):
         # print(assembly)
@@ -163,32 +171,27 @@ class Collector:
                 return 1
             return 0
 
-        # 00000098 <pbl_table_addr>:
-        # 00000098 <pbl_table_addr.constprop.0>:
-        function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)(\..*)?>:")
-
-        # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
-        c_reference_pattern = re.compile(r"^[^:]+:\d+\s*")
         for line in assembly.split("\n"):
-            match = function_start_pattern.match(line)
+            match = self.parse_assembly_text_function_start_pattern.match(line)
             if match:
                 found_symbols += flush_current_symbol()
                 addr = match.group(1)
                 name = match.group(2)
                 assembly_lines = []
             else:
-                if not c_reference_pattern.match(line) and line.strip() != "":
+                if not self.parse_assembly_text_c_reference_pattern.match(line) and line.strip() != "":
                     assembly_lines.append(line)
 
         found_symbols += flush_current_symbol()
         return found_symbols
 
+    # puncover.c:8:43:dynamic_stack2	16	dynamic
+    # puncover.c:14:40:0	16	dynamic,bounded
+    # puncover.c:8:43:dynamic_stack2	16	dynamic
+    parse_stack_usage_line_pattern = re.compile(r"^(.*?\.c):(\d+):(\d+):([^\s]+)\s+(\d+)\s+([a-z,]+)")
+
     def parse_stack_usage_line(self, line):
-        # puncover.c:8:43:dynamic_stack2	16	dynamic
-        # puncover.c:14:40:0	16	dynamic,bounded
-        # puncover.c:8:43:dynamic_stack2	16	dynamic
-        pattern = re.compile(r"^(.*?\.c):(\d+):(\d+):([^\s]+)\s+(\d+)\s+([a-z,]+)")
-        match = pattern.match(line)
+        match = self.parse_stack_usage_line_pattern.match(line)
         if not match:
             return False
 
@@ -287,22 +290,23 @@ class Collector:
             if not caller in callee["callers"]:
                 callee["callers"].append(caller)
 
+    #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
+    # 8e4:	f000 f824 	bl	930 <app_log>
+    #
+    # but not:
+    # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
+    enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
+
     def enhance_call_tree_from_assembly_line(self, function, line):
-        #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
-        # 8e4:	f000 f824 	bl	930 <app_log>
-        #
-        # but not:
-        # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
+        if "<" not in line:
+            return False
 
-
-        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
-
-        match = pattern.match(line)
+        match = self.enhance_call_tree_pattern.match(line)
 
         if match:
             callee = self.symbol_by_addr(match.group(3))
             if callee:
-                self.add_function_call(function, callee)
+                # self.add_function_call(function, callee)
                 return True
 
         return False
@@ -334,20 +338,22 @@ class Collector:
         print("enhancing file elements")
         self.enhance_file_elements()
 
+    #   98: a8a8a8a8  bl 98
+    enhanced_assembly_line_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
+
     def enhanced_assembly_line(self, line):
-        #   98: a8a8a8a8  bl 98
-        pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
-        match = pattern.match(line)
+        match = self.enhanced_assembly_line_pattern.match(line)
         if match:
             symbol = self.symbol_by_addr(match.group(1))
             if symbol:
                 return line+ " <%s>" % (symbol["name"])
         return line
 
+    # 88a:	ebad 0d03 	sub.w	sp, sp, r3
+    count_assembly_code_bytes_re = re.compile(r"^\s*[\da-f]+:\s+([\d\sa-f]{9})")
+
     def count_assembly_code_bytes(self, line):
-        # 88a:	ebad 0d03 	sub.w	sp, sp, r3
-        pattern = re.compile(r"^\s*[\da-f]+:\s+([\d\sa-f]{9})")
-        match = pattern.match(line)
+        match = self.count_assembly_code_bytes_re.match(line)
         if match:
             return len(match.group(1).replace(" ", "")) / 2
         return 0
