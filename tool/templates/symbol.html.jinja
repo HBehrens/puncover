@@ -12,7 +12,7 @@
                 <th>File name</th>
                 <td>
                     {% if symbol.base_file %}
-                    <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file }}</a>:{{ symbol.line }}</code>
+                    <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file|e }}</a>:{{ symbol.line }}</code>
                     {% else %}
                     unknown file
                     {% endif %}

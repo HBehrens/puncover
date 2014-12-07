@@ -105,7 +105,8 @@ class HTMLRenderer(View):
             return url_for("path", path=self.collector.qualified_symbol_name(value))
 
         # file or folder
-        return url_for("path", path=value[collector.PATH])
+        path = value.get(collector.PATH, None)
+        return url_for("path", path=path) if path else ""
 
 
     def dispatch_request(self):

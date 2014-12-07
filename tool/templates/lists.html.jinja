@@ -14,7 +14,7 @@
                     <a href="{{ folder | symbol_url }}">
                         <div>
                         <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
-                        &nbsp;{{ folder.name }}
+                        &nbsp;{{ folder.name | e}}
                         </div>
                     </a>
                 </td>
@@ -40,7 +40,7 @@
                     <a href="{{ file | symbol_url }}">
                         <div>
                         <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                        &nbsp;{{ file.name }}
+                        &nbsp;{{ file.name | e}}
                         </div>
                     </a>
                 </td>

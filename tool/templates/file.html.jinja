@@ -4,11 +4,11 @@
     <h1>
         <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
         {% for ancestor in file.folder.ancestors | reverse %}
-            <a href="{{ ancestor | symbol_url }}">{{ ancestor.name }}</a>{{ SLASH }}
+            <a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a>{{ SLASH }}
         {% endfor %}
 
-        <a href="{{ file.folder | symbol_url }}">{{ file.folder.name }}</a>{{ SLASH }}
-        {{ file.name }}
+        <a href="{{ file.folder | symbol_url }}">{{ file.folder.name | e}}</a>{{ SLASH }}
+        {{ file.name | e}}
     </h1>
     {% if file.functions | length <= 0 %}
         <h2>No Functions</h2>
@@ -18,6 +18,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>cross module</th>
                     <th>Code Size</th>
                     <th>Stack Size</th>
                 </tr>
@@ -26,6 +27,7 @@
                 {% for symbol in file.functions %}
                 <tr>
                     <td><a href="{{ symbol | symbol_url }}">{{ symbol.name }}</a></td>
+                    <td>{% if symbol.called_from_other_file %}<span class="label label-success">yes</span>{% endif %}</td>
                     <td>{{ symbol.size }}</td>
                     <td>{{ symbol.stack_size }}</td>
                 </tr>
@@ -34,7 +36,7 @@
             {% if file.functions | length > 1 %}
             <tfoot>
                 <tr>
-                <th>&sum; over all</th>
+                <th colspan="2">&sum; over all</th>
                 <th>{{ file.functions | symbol_code_size }}</th>
                 <th></th>
                 </tr>

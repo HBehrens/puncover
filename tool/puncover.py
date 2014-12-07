@@ -19,12 +19,15 @@ app = Flask(__name__)
 if __name__ == '__main__':
 
     # TODO: extract into CLI args
-    project_dir = "/Users/behrens/Documents/projects/pebble/puncover/pebble"
     pebble_sdk = "/Users/behrens/pebble-dev/PebbleSDK-current"
+
+    project_dir = "/Users/behrens/Documents/projects/pebble/puncover/pebble"
+    # project_dir = "/Users/behrens/Documents/projects/pebble/PinyWings/pebble-2/PinyWings"
+    # project_dir = "/Users/behrens/Documents/projects/pebble/pebble-tinymath"
     collector = build_collector(project_dir=project_dir, pebble_sdk=pebble_sdk)
 
+
     # elf_file = "/Users/behrens/Documents/projects/pebble/tintin/build/src/fw/tintin_fw.elf"
-    # pebble_sdk = "/Users/behrens/pebble-dev/PebbleSDK-current"
     # collector = build_collector(elf_file=elf_file, pebble_sdk=pebble_sdk)
 
 

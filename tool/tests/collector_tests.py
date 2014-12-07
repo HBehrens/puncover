@@ -256,6 +256,23 @@ $t():
         self.assertEqual("src/puncover.c", s3[collector.PATH])
         self.assertIsNotNone(s3[collector.FILE])
 
+    def test_derive_file_elements_for_unknown_files(self):
+        c = Collector()
+        s = c.add_symbol("some_symbol", "00a")
+        self.assertEqual("some_symbol", s[collector.NAME])
+        self.assertNotIn(collector.PATH, s)
+        self.assertNotIn(collector.BASE_FILE, s)
+        c.derive_folders()
+        self.assertEqual("<unknown>/<unknown>", s[collector.PATH])
+        self.assertEqual("<unknown>", s[collector.BASE_FILE])
+        self.assertIn(collector.FILE, s)
+        file = s[collector.FILE]
+        self.assertEqual("<unknown>", file[collector.NAME])
+        folder = file[collector.FOLDER]
+        self.assertEqual("<unknown>", file[collector.NAME])
+
+
+
     def test_enhance_file_elements(self):
         c = Collector()
         aa_c = c.file_for_path("a/a/aa.c")

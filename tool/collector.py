@@ -120,6 +120,7 @@ class Collector:
         sym[ADDRESS] = address
 
         self.symbols[address] = sym
+        return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
     parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
@@ -289,6 +290,10 @@ class Collector:
                 caller["callees"].append(callee)
             if not caller in callee["callers"]:
                 callee["callers"].append(caller)
+                caller_file = caller.get("file", None)
+                callee_file = callee.get("file", None)
+                if callee_file and caller_file and callee_file != caller_file:
+                    callee["called_from_other_file"] = True
 
     #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
     # 8e4:	f000 f824 	bl	930 <app_log>
@@ -306,7 +311,7 @@ class Collector:
         if match:
             callee = self.symbol_by_addr(match.group(3))
             if callee:
-                # self.add_function_call(function, callee)
+                self.add_function_call(function, callee)
                 return True
 
         return False
@@ -327,16 +332,16 @@ class Collector:
     def enhance(self):
         print("enhancing function sizes")
         self.enhance_function_size_from_assembly()
+        print("deriving folders")
+        self.derive_folders()
+        print("enhancing file elements")
+        self.enhance_file_elements()
         print("enhancing assembly")
         self.enhance_assembly()
         print("enhancing call tree")
         self.enhance_call_tree()
         print("enhancing siblings")
         self.enhance_sibling_symbols()
-        print("deriving folders")
-        self.derive_folders()
-        print("enhancing file elements")
-        self.enhance_file_elements()
 
     #   98: a8a8a8a8  bl 98
     enhanced_assembly_line_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
@@ -378,12 +383,12 @@ class Collector:
 
     def derive_folders(self):
         for s in self.all_symbols():
-            p = s.get(PATH, None)
-            if p:
-                p = os.path.normpath(p)
-                s[PATH] = p
-                s[FILE] = self.file_for_path(p)
-                s[FILE][SYMBOLS].append(s)
+            p = s.get(PATH, "<unknown>/<unknown>")
+            p = os.path.normpath(p)
+            s[PATH] = p
+            s[BASE_FILE] = os.path.basename(p)
+            s[FILE] = self.file_for_path(p)
+            s[FILE][SYMBOLS].append(s)
 
     def file_element_for_path(self, path, type, default_values):
         if not path:
