@@ -125,7 +125,7 @@ class Collector:
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
     parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
 
-    def parse_size_line(self, line, base_dir="/"):
+    def parse_size_line(self, line):
         # print(line)
         match = self.parse_size_line_re.match(line)
         if not match:
@@ -137,10 +137,6 @@ class Collector:
         name = match.group(4)
         if match.group(5):
             file = match.group(6)
-            if file.startswith(base_dir):
-                file = os.path.relpath(file, base_dir)
-            elif file.startswith("/"):
-                file = file[1:]
             line = int(match.group(7))
         else:
             file = None
@@ -157,18 +153,20 @@ class Collector:
     parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\w+)(\..*)?>:")
 
     # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
-    parse_assembly_text_c_reference_pattern = re.compile(r"^[^:]+:\d+\s*")
+    parse_assembly_text_c_reference_pattern = re.compile(r"^(/[^:]+)(:(\d+))?")
 
     def parse_assembly_text(self, assembly):
         # print(assembly)
         name = None
         addr = None
+        symbol_file = None
+        symbol_line = None
         assembly_lines = []
         found_symbols = 0
 
         def flush_current_symbol():
             if name and addr:
-                self.add_symbol(name, addr, assembly_lines=assembly_lines)
+                self.add_symbol(name, addr, assembly_lines=assembly_lines, file=symbol_file, line=symbol_line)
                 return 1
             return 0
 
@@ -178,10 +176,17 @@ class Collector:
                 found_symbols += flush_current_symbol()
                 addr = match.group(1)
                 name = match.group(2)
+                symbol_file = None
+                symbol_line = None
                 assembly_lines = []
             else:
-                if not self.parse_assembly_text_c_reference_pattern.match(line) and line.strip() != "":
+                file_match = self.parse_assembly_text_c_reference_pattern.match(line)
+                if not file_match and line.strip() != "":
                     assembly_lines.append(line)
+                elif file_match and not symbol_file:
+                    symbol_file = file_match.group(1)
+                    if file_match.group(3):
+                        symbol_line = int(file_match.group(3))
 
         found_symbols += flush_current_symbol()
         return found_symbols
@@ -214,6 +219,16 @@ class Collector:
         warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
 
+
+    def normalize_files_paths(self, base_dir):
+        for s in self.all_symbols():
+            path = s.get(PATH, None)
+            if path:
+                if path.startswith(base_dir):
+                    path = os.path.relpath(path, base_dir)
+                elif path.startswith("/"):
+                    path = path[1:]
+                s[PATH] = path
 
     def parse(self, elf_file, su_dir):
         def in_pebble_sdk(name):
@@ -255,8 +270,11 @@ class Collector:
 
         self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
         for l in get_size_lines(elf_file):
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(elf_file)))
-            self.parse_size_line(l, base_dir)
+            self.parse_size_line(l)
+
+        # normalize file paths
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(elf_file)))
+        self.normalize_files_paths(base_dir)
 
         if su_dir:
             for l in get_stack_usage_lines(su_dir):

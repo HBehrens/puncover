@@ -16,19 +16,21 @@ class TestCollector(unittest.TestCase):
         c = Collector()
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/puncover/src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector()
         line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
         c = Collector()
         line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': 'Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+
+
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector()
@@ -204,6 +206,20 @@ $t():
         self.assertFalse(s.has_key(collector.SIZE))
         c.enhance_function_size_from_assembly()
         self.assertEqual(8, s[collector.SIZE])
+
+    def test_derive_filename_from_assembly(self):
+        c = Collector()
+        c.parse_assembly_text("""
+000008a8 <uses_doubles2.constprop.0>:
+uses_doubles2():
+/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:19
+ 8a8:	b508      	push	{r3, lr}
+         """)
+        s = c.symbol_by_addr("8a8")
+        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c", s[collector.PATH])
+        self.assertEqual("puncover.c", s[collector.BASE_FILE])
+        self.assertEqual(19, s[collector.LINE])
+
 
     def test_enhance_sibling_symbols(self):
         c = Collector()
