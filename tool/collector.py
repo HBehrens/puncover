@@ -89,14 +89,12 @@ class Collector:
         return None
 
     def symbol_by_addr(self, addr):
-        addr = int(addr, 16)
-        for s in self.symbols.values():
-            if int(s[ADDRESS],16) == addr:
-                return s
-        return None
+        int_addr = int(addr, 16)
+        return self.symbols.get(int_addr, None)
 
     def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None):
-        sym = self.symbols.get(address, {})
+        int_address = int(address, 16)
+        sym = self.symbols.get(int_address, {})
         if sym.has_key(NAME) and sym[NAME] != name:
             # warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
             pass
@@ -119,7 +117,7 @@ class Collector:
 
         sym[ADDRESS] = address
 
-        self.symbols[address] = sym
+        self.symbols[int_address] = sym
         return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
@@ -347,7 +345,7 @@ class Collector:
                 f[k] = f.get(k, [])
 
         for f in self.all_functions():
-            if f.has_key(ASM):
+            if ASM in f:
                 [self.enhance_call_tree_from_assembly_line(f, l) for l in f[ASM]]
 
         for f in self.all_functions():

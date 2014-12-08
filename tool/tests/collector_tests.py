@@ -16,19 +16,19 @@ class TestCollector(unittest.TestCase):
         c = Collector()
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000550': {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+        self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector()
         line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000968': {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
         c = Collector()
         line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {'00000a38': {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
 
 
@@ -56,10 +56,10 @@ __aeabi_dmul():
 """
         c = Collector()
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("0000009c"))
-        self.assertEqual(c.symbols["0000009c"]["name"], "__aeabi_dmul")
-        self.assertTrue(c.symbols.has_key("00000098"))
-        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
+        self.assertTrue(c.symbols.has_key(0x0000009c))
+        self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
+        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
 
     def test_parses_assembly2(self):
         assembly = """
@@ -73,10 +73,10 @@ __aeabi_dmul():
 """
         c = Collector()
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("0000009c"))
-        self.assertEqual(c.symbols["0000009c"]["name"], "__aeabi_dmul")
-        self.assertTrue(c.symbols.has_key("00000098"))
-        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
+        self.assertTrue(c.symbols.has_key(0x0000009c))
+        self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
+        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
 
     def test_parses_assembly_and_ignores_c(self):
         assembly = """
@@ -87,10 +87,10 @@ pbl_table_addr():
 """
         c = Collector()
         self.assertEqual(1, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("00000098"))
-        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
-        self.assertEqual(len(c.symbols["00000098"]["asm"]), 2)
-        self.assertEqual(c.symbols["00000098"]["asm"][0], "pbl_table_addr():")
+        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
+        self.assertEqual(len(c.symbols[0x00000098]["asm"]), 2)
+        self.assertEqual(c.symbols[0x00000098]["asm"][0], "pbl_table_addr():")
 
     def test_parses_assembly_and_stops_after_function(self):
         assembly = """
@@ -115,10 +115,10 @@ $d():
 
         c = Collector()
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("000034fc"))
-        self.assertEqual(c.symbols["000034fc"]["name"], "window_raw_click_subscribe")
+        self.assertTrue(c.symbols.has_key(0x000034fc))
+        self.assertEqual(c.symbols[0x000034fc]["name"], "window_raw_click_subscribe")
         # print "\n".join(c.symbols["000034fc"]["asm"])
-        self.assertEqual(len(c.symbols["000034fc"]["asm"]), 8)
+        self.assertEqual(len(c.symbols[0x000034fc]["asm"]), 8)
 
 
     def test_enhances_assembly(self):
@@ -129,12 +129,12 @@ pbl_table_addr():
 """
         c = Collector()
         self.assertEqual(1, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("00000098"))
-        self.assertEqual(c.symbols["00000098"]["name"], "pbl_table_addr")
-        self.assertEqual(c.symbols["00000098"]["asm"][1], " 568:\tf7ff ffca \tbl\t98")
+        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
+        self.assertEqual(c.symbols[0x00000098]["asm"][1], " 568:\tf7ff ffca \tbl\t98")
 
         c.enhance_assembly()
-        self.assertEqual(c.symbols["00000098"]["asm"][1], " 568:\tf7ff ffca \tbl\t98 <pbl_table_addr>")
+        self.assertEqual(c.symbols[0x00000098]["asm"][1], " 568:\tf7ff ffca \tbl\t98 <pbl_table_addr>")
 
     def test_enhances_caller(self):
         assembly = """
@@ -146,11 +146,11 @@ $t():
         """
         c = Collector()
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key("00000098"))
-        self.assertTrue(c.symbols.has_key("00000930"))
+        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertTrue(c.symbols.has_key(0x00000930))
 
-        pbl_table_addr = c.symbols["00000098"]
-        app_log = c.symbols["00000930"]
+        pbl_table_addr = c.symbols[0x00000098]
+        app_log = c.symbols[0x00000930]
 
         self.assertFalse(pbl_table_addr.has_key("callers"))
         self.assertFalse(pbl_table_addr.has_key("callees"))
@@ -170,7 +170,7 @@ $t():
         f1 = "f1"
         f2 = {collector.ADDRESS: "00000088"}
         f3 = {collector.ADDRESS: "00000930"}
-        c.symbols = {f2[collector.ADDRESS]: f2, f3[collector.ADDRESS]: f3}
+        c.symbols = {int(f2[collector.ADDRESS], 16): f2, int(f3[collector.ADDRESS], 16): f3}
 
         with patch.object(c, "add_function_call") as m:
             c.enhance_call_tree_from_assembly_line(f1, " 89e:	e9d3 0100 	ldrd	r0, r1, [r3]")
@@ -220,7 +220,7 @@ $t():
 
     def test_enhance_function_size_from_assembly(self):
         c = Collector()
-        c.symbols = { "0000009c" : {
+        c.symbols = { int("0000009c", 16) : {
             collector.ADDRESS: "0000009c",
             collector.ASM: """
 $t():
@@ -267,7 +267,7 @@ uses_doubles2():
             collector.TYPE: collector.TYPE_FUNCTION,
         }
 
-        c.symbols = {f[collector.ADDRESS]: f for f in [aeabi_drsub, aeabi_dsub, adddf3]}
+        c.symbols = {int(f[collector.ADDRESS], 16): f for f in [aeabi_drsub, aeabi_dsub, adddf3]}
         c.enhance_sibling_symbols()
 
         self.assertFalse(aeabi_drsub.has_key(collector.PREV_FUNCTION))
@@ -285,9 +285,9 @@ uses_doubles2():
         s2 = {collector.PATH: "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"}
         s3 = {collector.PATH: "src/puncover.c"}
         c.symbols = {
-            "00000001": s1,
-            "00000002": s2,
-            "00000003": s3,
+            1: s1,
+            2: s2,
+            3: s3,
         }
 
         c.derive_folders()
