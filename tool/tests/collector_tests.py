@@ -92,6 +92,34 @@ pbl_table_addr():
         self.assertEqual(len(c.symbols["00000098"]["asm"]), 2)
         self.assertEqual(c.symbols["00000098"]["asm"][0], "pbl_table_addr():")
 
+    def test_parses_assembly_and_stops_after_function(self):
+        assembly = """
+000034fc <window_raw_click_subscribe>:
+$t():
+    34fc:	b40f      	push	{r0, r1, r2, r3}
+    34fe:	4901      	ldr	r1, [pc, #4]	; (3504 <window_raw_click_subscribe+0x8>)
+    3500:	f7fc bdc2 	b.w	88 <jump_to_pbl_function>
+$d():
+    3504:	000004c4 	.word	0x000004c4
+    3508:	00040000 	.word	0x00040000
+    350c:	000b008d 	.word	0x000b008d
+
+00003510 <.LC1>:
+.LC1():
+    3510:	69727073 	.word	0x69727073
+    3514:	42736574 	.word	0x42736574
+    3518:	31647269 	.word	0x31647269
+    351c:	0036      	.short	0x0036
+
+"""
+
+        c = Collector()
+        self.assertEqual(2, c.parse_assembly_text(assembly))
+        self.assertTrue(c.symbols.has_key("000034fc"))
+        self.assertEqual(c.symbols["000034fc"]["name"], "window_raw_click_subscribe")
+        # print "\n".join(c.symbols["000034fc"]["asm"])
+        self.assertEqual(len(c.symbols["000034fc"]["asm"]), 8)
+
 
     def test_enhances_assembly(self):
         assembly = """
