@@ -56,15 +56,15 @@ def left_strip_from_list(lines):
 
 class Collector:
 
-    def __init__(self, pebble_sdk=None):
+    def __init__(self, arm_tools_dir=None):
         self.symbols = {}
         self.file_elements = {}
-        self.pebble_sdk = pebble_sdk
+        self.arm_tools_dir = arm_tools_dir
 
     def as_dict(self):
         return {
             "symbols" : self.symbols,
-            "pebble_sdk" : self.pebble_sdk,
+            "arm_tools_dir" : self.arm_tools_dir,
         }
 
     def save_to_json(self, filename):
@@ -73,7 +73,7 @@ class Collector:
 
     def from_dict(self, dict):
         self.symbols = dict.get("symbols", {})
-        self.pebble_sdk = dict.get("pebble_sdk", None)
+        self.arm_tools_dir = dict.get("arm_tools_dir", None)
 
     def load_from_json(self, filename):
         with open(filename) as f:
@@ -231,18 +231,25 @@ class Collector:
                 s[PATH] = path
 
     def parse(self, elf_file, su_dir):
-        def in_pebble_sdk(name):
-            return os.path.join(self.pebble_sdk, 'arm-cs-tools/bin', name) if self.pebble_sdk else name
+        def arm_tool(name):
+            if not self.arm_tools_dir:
+                raise Exception("ARM tools directory not set")
+
+            path = os.path.join(self.arm_tools_dir, 'bin', name)
+            if not os.path.isfile(path):
+                raise Exception("Could not find %s" % path)
+
+            return path
 
         def get_assembly_lines(elf_file):
-            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
+            proc = subprocess.Popen([arm_tool('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             # proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-d', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 
         def get_size_lines(elf_file):
             # http://linux.die.net/man/1/nm
-            proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
+            proc = subprocess.Popen([arm_tool('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 

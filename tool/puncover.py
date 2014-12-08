@@ -1,10 +1,17 @@
+#!/usr/bin/env python
+
+import argparse
+from distutils.spawn import find_executable
+import os
 from flask import Flask
+from os.path import dirname
 from collector import Collector
 import renderers
 
-def build_collector(pebble_sdk, project_dir=None, elf_file=None, su_dir=None):
-    c = Collector(pebble_sdk=pebble_sdk)
+def build_collector(arm_tools_dir, project_dir=None, elf_file=None, su_dir=None):
+    c = Collector(arm_tools_dir=arm_tools_dir)
     if project_dir:
+        # project_dir = os.path.abspath(project_dir)
         # TODO: check if this is a pebble project dir
         c.parse_pebble_project_dir(project_dir)
     if elf_file:
@@ -16,20 +23,26 @@ def build_collector(pebble_sdk, project_dir=None, elf_file=None, su_dir=None):
 
 app = Flask(__name__)
 
+
+def find_arm_tools_location():
+    obj_dump = find_executable("arm-none-eabi-objdump")
+    return dirname(dirname(obj_dump)) if obj_dump else None
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Pebble build analyzer")
 
-    # TODO: extract into CLI args
-    pebble_sdk = "/Users/behrens/pebble-dev/PebbleSDK-current"
+    parser.add_argument('--arm_tools_dir', dest='arm_tools_dir', default=find_arm_tools_location(),
+                        help='location of your arm tools. Typically ~/pebble-dev/PebbleSDK-current/arm-cs-tools')
+    parser.add_argument('--elf_file', dest="elf_file",
+                        help='location of an ELF file')
+    parser.add_argument('project_dir', metavar='project_dir', nargs='?',
+                        help='location of your pebble project')
+    args = parser.parse_args()
 
-    project_dir = "/Users/behrens/Documents/projects/pebble/puncover/pebble"
-    # project_dir = "/Users/behrens/Documents/projects/pebble/PinyWings/pebble-2/PinyWings"
-    # project_dir = "/Users/behrens/Documents/projects/pebble/pebble-tinymath"
-    collector = build_collector(project_dir=project_dir, pebble_sdk=pebble_sdk)
+    if not args.project_dir and not args.elf_file:
+        raise Exception("Specify either a project directory or an ELF file.")
 
-
-    # elf_file = "/Users/behrens/Documents/projects/pebble/tintin/build/src/fw/tintin_fw.elf"
-    # collector = build_collector(elf_file=elf_file, pebble_sdk=pebble_sdk)
-
+    collector = build_collector(project_dir=args.project_dir, elf_file=args.elf_file, arm_tools_dir=args.arm_tools_dir)
 
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, collector)
