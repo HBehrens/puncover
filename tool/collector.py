@@ -219,6 +219,8 @@ class Collector:
 
 
     def normalize_files_paths(self, base_dir):
+        base_dir = os.path.abspath(base_dir) if base_dir else "/"
+
         for s in self.all_symbols():
             path = s.get(PATH, None)
             if path:
@@ -276,10 +278,6 @@ class Collector:
         self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
         for l in get_size_lines(elf_file):
             self.parse_size_line(l)
-
-        # normalize file paths
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(elf_file)))
-        self.normalize_files_paths(base_dir)
 
         if su_dir:
             for l in get_stack_usage_lines(su_dir):
@@ -352,7 +350,8 @@ class Collector:
             for k in ["callers", "callees"]:
                 f[k] = self.sorted_by_size(f[k])
 
-    def enhance(self):
+    def enhance(self, src_root):
+        self.normalize_files_paths(src_root)
         print("enhancing function sizes")
         self.enhance_function_size_from_assembly()
         print("deriving folders")
