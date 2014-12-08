@@ -27,7 +27,10 @@
                 {% for symbol in file.functions %}
                 <tr>
                     <td><a href="{{ symbol | symbol_url }}">{{ symbol.name }}</a></td>
-                    <td>{% if symbol.called_from_other_file %}<span class="label label-success">yes</span>{% endif %}</td>
+                    <td>
+                        {% if symbol.called_from_other_file %}<span class="label label-success">yes</span>{% endif %}
+                        {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
+                    </td>
                     <td>{{ symbol.size }}</td>
                     <td>{{ symbol.stack_size }}</td>
                 </tr>

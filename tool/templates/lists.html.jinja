@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th>Name</th>
+                <th></th>
                 <th>Code</th>
                 <th>Static Variables</th>
             </tr>
@@ -18,6 +19,7 @@
                         </div>
                     </a>
                 </td>
+                <td>{% if folder.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
                 <td>
                     {{ folder | symbol_code_size }}
                 </td>
@@ -29,6 +31,7 @@
             {% if files | length > 0 and folders | length > 0 %}
                 <tr>
                 <th>&sum; over folders</th>
+                <th></th>
                 <th>{{ folders | symbol_code_size }}</th>
                 <th>{{ folders | symbol_var_size }}</th>
                 </tr>
@@ -44,6 +47,7 @@
                         </div>
                     </a>
                 </td>
+                <td>{% if file.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
                 <td>
                     {{ file | symbol_code_size }}
                 </td>
@@ -55,6 +59,7 @@
             {% if files | length > 0 and folders | length > 0 %}
                 <tr>
                     <th>&sum; over files</th>
+                    <th></th>
                     <th>{{ files | symbol_code_size }}</th>
                     <th>{{ files | symbol_var_size }}</th>
                 </tr>
@@ -64,6 +69,7 @@
             <tfoot>
                 <tr>
                 <th>&sum; over all</th>
+                <th></th>
                 <th>{{ files | chain(folders) | symbol_code_size }}</th>
                 <th>{{ files | chain(folders) | symbol_var_size }}</th>
                 </tr>

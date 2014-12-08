@@ -373,6 +373,7 @@ class Collector:
         self.enhance_call_tree()
         print("enhancing siblings")
         self.enhance_sibling_symbols()
+        self.enhance_symbol_flags()
 
     #   98: a8a8a8a8  bl 98
     enhanced_assembly_line_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
@@ -508,6 +509,31 @@ class Collector:
             non_empty_leafs(f)
 
         return result
+
+    def enhance_symbol_flags(self):
+        is_float_function_pattern = re.compile(r"^__aeabi_(f.*|.*2f)|__addsf3$")
+        def is_float_function_name(n):
+            return is_float_function_pattern.match(n)
+
+        float_functions = [f for f in self.all_functions() if is_float_function_name(f[NAME])]
+        for f in self.all_functions():
+            callees = f["callees"]
+            f["calls_float_function"] = any([ff in callees for ff in float_functions])
+
+        for file in self.all_files():
+            file["calls_float_function"] = any([f["calls_float_function"] for f in file[FUNCTIONS]])
+
+
+        def folder_calls_float_function(folder):
+            result = any([f["calls_float_function"] for f in folder[FILES]])
+            for sub_folder in folder[SUB_FOLDERS]:
+                if folder_calls_float_function(sub_folder):
+                    result = True
+            folder["calls_float_function"] = result
+            return result
+
+        for folder in self.root_folders():
+            folder_calls_float_function(folder)
 
 
 class Builder:
