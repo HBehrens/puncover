@@ -1,10 +1,13 @@
 from __future__ import print_function
+import abc
 import fnmatch
 import json
 import os
+from os.path import dirname
 import re
 import subprocess
 import sys
+from __builtin__ import any
 
 NAME = "name"
 SIZE = "size"
@@ -57,9 +60,13 @@ def left_strip_from_list(lines):
 class Collector:
 
     def __init__(self, arm_tools_dir=None):
+        self.arm_tools_dir = arm_tools_dir
         self.symbols = {}
         self.file_elements = {}
-        self.arm_tools_dir = arm_tools_dir
+
+    def reset(self):
+        self.symbols = {}
+        self.file_elements = {}
 
     def as_dict(self):
         return {
@@ -278,6 +285,8 @@ class Collector:
         self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
         for l in get_size_lines(elf_file):
             self.parse_size_line(l)
+
+        self.elf_mtime = os.path.getmtime(elf_file)
 
         if su_dir:
             for l in get_stack_usage_lines(su_dir):
@@ -500,3 +509,60 @@ class Collector:
 
         return result
 
+
+class Builder:
+
+    def __init__(self, collector, src_root):
+        self.files = {}
+        self.collector = collector
+        self.src_root = src_root
+
+    def store_file_time(self, path, store_empty=False):
+        self.files[path] = 0 if store_empty else os.path.getmtime(path)
+
+    def build(self):
+        for f in self.files.keys():
+            self.store_file_time(f)
+        self.collector.reset()
+        self.do_parse()
+        self.collector.enhance(self.src_root)
+
+    def needs_build(self):
+        return any([os.path.getmtime(f) > t for f,t in self.files.items()])
+
+    def build_if_needed(self):
+        if self.needs_build():
+            self.build()
+
+    @abc.abstractmethod
+    def do_parse(self):
+        pass
+
+
+class PebbleProjectBuilder(Builder):
+    def __init__(self, collector, src_root, project_dir):
+        # TODO: check if this is a pebble project dir
+        Builder.__init__(self, collector, src_root if src_root else project_dir)
+        self.project_dir = project_dir
+        self.store_file_time(self.elf_path(), store_empty=True)
+
+    def elf_path(self):
+        return os.path.join(self.project_dir, 'build', 'pebble-app.elf')
+
+    def su_dir(self):
+        return os.path.join(self.project_dir, "build", "src")
+
+    def do_parse(self):
+        self.collector.parse(self.elf_path(), self.su_dir())
+
+
+class ElfBuilder(Builder):
+
+    def __init__(self, collector, src_root, elf_file, su_dir):
+        Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
+        self.store_file_time(elf_file, store_empty=True)
+        self.elf_file = elf_file
+        self.su_dir = su_dir
+
+    def do_parse(self):
+        self.collector.parse(self.elf_file, self.su_dir)

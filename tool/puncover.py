@@ -4,26 +4,19 @@ import argparse
 from distutils.spawn import find_executable
 from flask import Flask
 from os.path import dirname
-from collector import Collector
+from collector import Collector, PebbleProjectBuilder, ElfBuilder
+from middleware import BuilderMiddleware
 import renderers
 
 
-def build_collector(arm_tools_dir, project_dir=None, elf_file=None, su_dir=None, src_root=None):
+def create_builder(arm_tools_dir, project_dir=None, elf_file=None, su_dir=None, src_root=None):
     c = Collector(arm_tools_dir=arm_tools_dir)
-    src_root = src_root
     if project_dir:
-        # TODO: check if this is a pebble project dir
-        c.parse_pebble_project_dir(project_dir)
-        if not src_root:
-            src_root = project_dir
-    if elf_file:
-        c.parse(elf_file, su_dir)
-        if not src_root:
-            src_root = dirname(dirname(elf_file))
-
-    c.enhance(src_root)
-    return c
-
+        return PebbleProjectBuilder(c, src_root, project_dir)
+    elif elf_file:
+        return ElfBuilder(c, src_root, elf_file, su_dir)
+    else:
+        raise Exception("Unable to configure builder for collector")
 
 app = Flask(__name__)
 
@@ -48,10 +41,13 @@ if __name__ == '__main__':
     if not args.project_dir and not args.elf_file:
         raise Exception("Specify either a project directory or an ELF file.")
 
-    collector = build_collector(project_dir=args.project_dir, elf_file=args.elf_file, arm_tools_dir=args.arm_tools_dir,
+    builder = create_builder(project_dir=args.project_dir, elf_file=args.elf_file, arm_tools_dir=args.arm_tools_dir,
                                 src_root=args.src_root)
 
-    renderers.register_jinja_filters(app.jinja_env)
-    renderers.register_urls(app, collector)
+    builder.build_if_needed()
 
+    renderers.register_jinja_filters(app.jinja_env)
+    renderers.register_urls(app, builder.collector)
+
+    app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
     app.run(debug=True)
