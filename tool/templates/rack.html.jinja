@@ -3,16 +3,16 @@
 {% block content %}
 
 {% import 'lists.html.jinja' as lists with context %}
+{% if snippet %}
+    <h1>Snippet</h1>
+    <pre>{{ snippet | e | symbols }}</pre>
+{% endif %}
+
     <h1>Functions</h1>
 {% if functions %}
     {{ lists.function_stats(functions) }}
 {% else %}
     <p>No functions found.</p>
-{% endif %}
-
-{% if snippet %}
-    <h1>Snippet</h1>
-    <pre>{{ snippet | e | symbols }}</pre>
 {% endif %}
 
 <h1>Paste Your Snippet</h1>

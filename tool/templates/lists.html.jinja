@@ -89,9 +89,9 @@
                 <th rowspan="2">Name</th>
             </tr>
             <tr>
-                <th>&sum;</th>
+                <th>&sum; = {{ functions |symbol_stack_size }}</th>
                 <th></th>
-                <th>&sum;</th>
+                <th>&sum;= {{ functions | unique | symbol_code_size }}</th>
                 <th></th>
             </tr>
         </thead>
@@ -99,13 +99,24 @@
         {% for function in functions %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{% if not loop.last %}{{ functions[loop.index - 1:] | symbol_stack_size }}{% endif %}</td>
+                <td>{% if not loop.last %}
+                    {% if functions[loop.index - 1:] | symbol_stack_size != functions[loop.index:] | symbol_stack_size %}
+                    {{ functions[loop.index - 1:] | symbol_stack_size | if_not_none }}{{ None | if_not_none }}
+                    {% endif %}
+                    {% endif %}
+                </td>
                 <td>
             {% if function.stack_size %}
                 {{ function.stack_size }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
             {% endif %}
                 </td>
-                <td>{% if not loop.last %}{{ functions[loop.index - 1:] | symbol_code_size }}{% endif %}</td>
+                <td>
+                    {% if not loop.last %}
+                    {% if functions[loop.index - 1:] | unique | symbol_code_size != functions[loop.index:] | unique | symbol_code_size %}
+                    {{ functions[loop.index - 1:] | unique | symbol_code_size }}
+                    {% endif %}
+                    {% endif %}
+                </td>
                 <td>{{ function | symbol_code_size }}</td>
                 <td><a href="{{ function | symbol_url }}">{{ function.name | e}}</a></td>
             </tr>

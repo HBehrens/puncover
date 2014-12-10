@@ -1,3 +1,4 @@
+from collections import Iterable
 import os
 import re
 from flask import Flask, render_template, abort, redirect, request
@@ -38,7 +39,11 @@ def symbol_file_url_filter(context, value):
 
 def symbol_traverse(s, func):
     if isinstance(s, list):
-        return sum([symbol_traverse(i, func) for i in s])
+        result = None
+        for si in [symbol_traverse(i, func) for i in s]:
+            if si is not None:
+                result = result + si if result is not None else si
+        return result
 
     if collector.TYPE in s:
         if s[collector.TYPE] == collector.TYPE_FILE:
@@ -53,16 +58,31 @@ def traverse_filter_wrapper(value, func):
     return result if result != 0 else ""
 
 @jinja2.contextfilter
-def symbol_code_size_filter(context ,value):
-    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+def symbol_code_size_filter(context, value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
 
 @jinja2.contextfilter
-def symbol_var_size_filter(context ,value):
-    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
+def symbol_var_size_filter(context, value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
 
 @jinja2.contextfilter
-def symbol_stack_size_filter(context ,value):
-    return traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+def symbol_stack_size_filter(context, value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
+
+@jinja2.contextfilter
+def if_not_none_filter(context, value, default_value=""):
+    return value if value is not None else default_value
+
+@jinja2.contextfilter
+def unique_filter(context, value):
+    if isinstance(value, Iterable):
+        result = []
+        for v in value:
+            if v not in result:
+                result.append(v)
+        return result
+
+    return value
 
 
 @jinja2.contextfilter
@@ -211,9 +231,12 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter
     jinja_env.filters["symbol_var_size"] = symbol_var_size_filter
     jinja_env.filters["symbol_stack_size"] = symbol_stack_size_filter
+    jinja_env.filters["if_not_none"] = if_not_none_filter
+    jinja_env.filters["unique"] = unique_filter
     jinja_env.filters["assembly"] = assembly_filter
     jinja_env.filters["symbols"] = symbols_filter
     jinja_env.filters["chain"] = chain_filter
+
 
 
 def register_urls(app, collector):
