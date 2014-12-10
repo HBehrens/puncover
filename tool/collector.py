@@ -221,7 +221,7 @@ class Collector:
                     symbol[STACK_QUALIFIERS] = stack_qualifier
                     return True
 
-        warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
+        # warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
 
 
@@ -289,6 +289,7 @@ class Collector:
         self.elf_mtime = os.path.getmtime(elf_file)
 
         if su_dir:
+            print("parsing stack usages starting at %s" % su_dir)
             for l in get_stack_usage_lines(su_dir):
                 self.parse_stack_usage_line(l)
 

@@ -61,6 +61,11 @@ def symbol_var_size_filter(context ,value):
     return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
 
 @jinja2.contextfilter
+def symbol_stack_size_filter(context ,value):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, 0) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else 0)
+
+
+@jinja2.contextfilter
 def assembly_filter(context, value):
     def linked_symbol_name(name):
         if context:
@@ -191,7 +196,11 @@ class RackRenderer(HTMLRenderer):
 
     def dispatch_request(self, symbol_name=None):
         if request.method == "POST":
-            self.template_vars["snippet"] = request.form["snippet"]
+            helper = BacktraceHelper(self.collector)
+
+            snippet = request.form["snippet"]
+            self.template_vars["snippet"] = snippet
+            self.template_vars["functions"] = helper.derive_function_symbols(snippet)
 
         return self.render_template("rack.html.jinja", "rack")
 
@@ -201,6 +210,7 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter
     jinja_env.filters["symbol_var_size"] = symbol_var_size_filter
+    jinja_env.filters["symbol_stack_size"] = symbol_stack_size_filter
     jinja_env.filters["assembly"] = assembly_filter
     jinja_env.filters["symbols"] = symbols_filter
     jinja_env.filters["chain"] = chain_filter

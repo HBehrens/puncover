@@ -78,3 +78,39 @@
 
     </table>
 {%- endmacro %}
+
+{% macro function_stats(functions) -%}
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th rowspan="2">#</th>
+                <th colspan="2">Stack Size</th>
+                <th colspan="2">Code Size</th>
+                <th rowspan="2">Name</th>
+            </tr>
+            <tr>
+                <th>&sum;</th>
+                <th></th>
+                <th>&sum;</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for function in functions %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{% if not loop.last %}{{ functions[loop.index - 1:] | symbol_stack_size }}{% endif %}</td>
+                <td>
+            {% if function.stack_size %}
+                {{ function.stack_size }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
+            {% endif %}
+                </td>
+                <td>{% if not loop.last %}{{ functions[loop.index - 1:] | symbol_code_size }}{% endif %}</td>
+                <td>{{ function | symbol_code_size }}</td>
+                <td><a href="{{ function | symbol_url }}">{{ function.name | e}}</a></td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+{%- endmacro %}

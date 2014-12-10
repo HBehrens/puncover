@@ -1,11 +1,21 @@
 {% extends "base.html.jinja" %}
+{% block title %}rack{% endblock %}
 {% block content %}
 
+{% import 'lists.html.jinja' as lists with context %}
+    <h1>Functions</h1>
+{% if functions %}
+    {{ lists.function_stats(functions) }}
+{% else %}
+    <p>No functions found.</p>
+{% endif %}
+
 {% if snippet %}
+    <h1>Snippet</h1>
     <pre>{{ snippet | e | symbols }}</pre>
 {% endif %}
 
-
+<h1>Paste Your Snippet</h1>
 <form action="." method="POST">
     <textarea class="form-control" name="snippet" placeholder="paste some text with identifiers from your code" rows="10">{{ snippet }}</textarea>
     <input class="btn btn-default" type="submit" name="submit" value="submit">

@@ -34,6 +34,8 @@ if __name__ == '__main__':
                         help='location of an ELF file')
     parser.add_argument('--src_root', dest='src_root',
                         help='location of your sources')
+    parser.add_argument('--build_dir', dest='build_dir',
+                        help='location of your build output')
     parser.add_argument('project_dir', metavar='project_dir', nargs='?',
                         help='location of your pebble project')
     args = parser.parse_args()
@@ -42,7 +44,7 @@ if __name__ == '__main__':
         raise Exception("Specify either a project directory or an ELF file.")
 
     builder = create_builder(project_dir=args.project_dir, elf_file=args.elf_file, arm_tools_dir=args.arm_tools_dir,
-                                src_root=args.src_root)
+                                src_root=args.src_root, su_dir=args.build_dir)
 
     builder.build_if_needed()
 
