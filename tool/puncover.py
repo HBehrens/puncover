@@ -37,6 +37,8 @@ if __name__ == '__main__':
                         help='location of your sources')
     parser.add_argument('--build_dir', dest='build_dir',
                         help='location of your build output')
+    parser.add_argument('--port', dest='port', default=5000, type=int,
+                        help='port the HTTP server runs on')
     parser.add_argument('project_dir', metavar='project_dir', nargs='?',
                         help='location of your pebble project')
     args = parser.parse_args()
@@ -53,4 +55,4 @@ if __name__ == '__main__':
     renderers.register_urls(app, builder.collector)
 
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
-    app.run(debug=True)
+    app.run(debug=True, port=args.port)
