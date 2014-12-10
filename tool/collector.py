@@ -1,9 +1,7 @@
 from __future__ import print_function
-import abc
 import fnmatch
 import json
 import os
-from os.path import dirname
 import re
 import subprocess
 import sys
@@ -36,6 +34,11 @@ ANCESTORS = "ancestors"
 SUB_FOLDERS = "sub_folders"
 COLLAPSED_NAME = "collapsed_name"
 COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
+CALLEES = "callees"
+CALLERS = "callers"
+
+DEEPEST_CALLEE_TREE = "deepest_callee_tree"
+DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -103,7 +106,7 @@ class Collector:
         int_addr = int(addr, 16)
         return self.symbols.get(int_addr, None)
 
-    def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None):
+    def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None, stack_size=None):
         int_address = int(address, 16)
         sym = self.symbols.get(int_address, {})
         if sym.has_key(NAME) and sym[NAME] != name:
@@ -125,6 +128,8 @@ class Collector:
             sym[TYPE] = TYPE_FUNCTION
         if type:
             sym[TYPE] = type
+        if stack_size:
+            sym[STACK_SIZE] = stack_size
 
         sym[ADDRESS] = address
 
@@ -321,10 +326,10 @@ class Collector:
 
     def add_function_call(self, caller, callee):
         if caller != callee:
-            if not callee in caller["callees"]:
-                caller["callees"].append(callee)
-            if not caller in callee["callers"]:
-                callee["callers"].append(caller)
+            if not callee in caller[CALLEES]:
+                caller[CALLEES].append(callee)
+            if not caller in callee[CALLERS]:
+                callee[CALLERS].append(caller)
                 caller_file = caller.get("file", None)
                 callee_file = callee.get("file", None)
                 if callee_file and caller_file and callee_file != caller_file:
@@ -353,16 +358,12 @@ class Collector:
 
     def enhance_call_tree(self):
         for f in self.all_functions():
-            for k in ["callers", "callees"]:
+            for k in [CALLERS, CALLEES]:
                 f[k] = f.get(k, [])
 
         for f in self.all_functions():
             if ASM in f:
                 [self.enhance_call_tree_from_assembly_line(f, l) for l in f[ASM]]
-
-        for f in self.all_functions():
-            for k in ["callers", "callees"]:
-                f[k] = self.sorted_by_size(f[k])
 
     def enhance(self, src_root):
         self.normalize_files_paths(src_root)
@@ -522,7 +523,7 @@ class Collector:
 
         float_functions = [f for f in self.all_functions() if is_float_function_name(f[NAME])]
         for f in self.all_functions():
-            callees = f["callees"]
+            callees = f[CALLEES]
             f["calls_float_function"] = any([ff in callees for ff in float_functions])
 
         for file in self.all_files():
@@ -553,63 +554,3 @@ class Collector:
                 qualified_name = self.qualified_symbol_name(s)
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
-
-
-
-
-class Builder:
-
-    def __init__(self, collector, src_root):
-        self.files = {}
-        self.collector = collector
-        self.src_root = src_root
-
-    def store_file_time(self, path, store_empty=False):
-        self.files[path] = 0 if store_empty else os.path.getmtime(path)
-
-    def build(self):
-        for f in self.files.keys():
-            self.store_file_time(f)
-        self.collector.reset()
-        self.do_parse()
-        self.collector.enhance(self.src_root)
-
-    def needs_build(self):
-        return any([os.path.getmtime(f) > t for f,t in self.files.items()])
-
-    def build_if_needed(self):
-        if self.needs_build():
-            self.build()
-
-    @abc.abstractmethod
-    def do_parse(self):
-        pass
-
-
-class PebbleProjectBuilder(Builder):
-    def __init__(self, collector, src_root, project_dir):
-        # TODO: check if this is a pebble project dir
-        Builder.__init__(self, collector, src_root if src_root else project_dir)
-        self.project_dir = project_dir
-        self.store_file_time(self.elf_path(), store_empty=True)
-
-    def elf_path(self):
-        return os.path.join(self.project_dir, 'build', 'pebble-app.elf')
-
-    def su_dir(self):
-        return os.path.join(self.project_dir, "build", "src")
-
-    def do_parse(self):
-        self.collector.parse(self.elf_path(), self.su_dir())
-
-
-class ElfBuilder(Builder):
-
-    def __init__(self, collector, src_root, elf_file, su_dir):
-        Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
-        self.store_file_time(elf_file, store_empty=True)
-        self.elf_file = elf_file
-        self.su_dir = su_dir
-
-    def do_parse(self):
-        self.collector.parse(self.elf_file, self.su_dir)

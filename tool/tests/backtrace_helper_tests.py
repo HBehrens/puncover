@@ -45,3 +45,68 @@ class TestBacktraceHelper(unittest.TestCase):
 
         actual = r.transform_known_symbols("0 1 a b c d e f 0 2", f)
         self.assertEqual("0 1 aa b cc dd e f 0 2", actual)
+
+
+class TestBacktraceHelperTreeSizes(unittest.TestCase):
+
+    def setUp(self):
+        self.cc = collector.Collector()
+        self.a = self.cc.add_symbol("a", "a", type=collector.TYPE_FUNCTION, stack_size=1)
+        self.b = self.cc.add_symbol("b", "b", type=collector.TYPE_FUNCTION, stack_size=10)
+        self.c = self.cc.add_symbol("c", "c", type=collector.TYPE_FUNCTION, stack_size=100)
+        self.d = self.cc.add_symbol("d", "d", type=collector.TYPE_FUNCTION, stack_size=1000)
+        self.e = self.cc.add_symbol("e", "e", type=collector.TYPE_FUNCTION, stack_size=10000)
+        self.f = self.cc.add_symbol("f", "f", type=collector.TYPE_FUNCTION)
+        self.cc.enhance_call_tree()
+        self.cc.add_function_call(self.a, self.b)
+        self.cc.add_function_call(self.a, self.c)
+        self.cc.add_function_call(self.b, self.a)
+        self.cc.add_function_call(self.c, self.b)
+        self.cc.add_function_call(self.c, self.d)
+        self.cc.add_function_call(self.d, self.e)
+        self.cc.add_function_call(self.d, self.f)
+        self.h = BacktraceHelper(self.cc)
+
+    def test_leaf_with_stack(self):
+        self.assertEqual((10000, [self.e]), self.h.deepest_callee_tree(self.e))
+        self.assertIn(collector.DEEPEST_CALLEE_TREE, self.e)
+
+    def test_leaf_without_stack(self):
+        self.assertEqual((0, [self.f]), self.h.deepest_callee_tree(self.f))
+        self.assertIn(collector.DEEPEST_CALLEE_TREE, self.f)
+
+    def test_cached_value(self):
+        self.f[collector.DEEPEST_CALLEE_TREE] = "cached"
+        self.assertEqual("cached", self.h.deepest_callee_tree(self.f))
+
+    def test_non_leaf(self):
+        self.assertEqual((11000, [self.d, self.e]), self.h.deepest_callee_tree(self.d))
+        self.assertIn(collector.DEEPEST_CALLEE_TREE, self.f)
+        self.assertIn(collector.DEEPEST_CALLEE_TREE, self.e)
+        self.assertIn(collector.DEEPEST_CALLEE_TREE, self.d)
+
+    def test_cycle_2(self):
+        self.a[collector.CALLEES].remove(self.c)
+
+        expected = (11, [self.a, self.b])
+        actual = self.h.deepest_callee_tree(self.a)
+        self.assertEqual(expected, actual)
+
+        expected = (10, [self.b])
+        actual = self.h.deepest_callee_tree(self.b)
+        self.assertEqual(expected, actual)
+
+    def test_cycle_3(self):
+        self.c[collector.CALLEES].remove(self.d)
+        self.assertEqual(111, self.h.deepest_callee_tree(self.a)[0])
+        self.assertEqual(10, self.h.deepest_callee_tree(self.b)[0])
+        self.assertEqual(110, self.h.deepest_callee_tree(self.c)[0])
+
+    def test_caller(self):
+        self.d[collector.CALLERS] = []
+        self.assertEqual(1000, self.h.deepest_caller_tree(self.f)[0])
+        self.assertEqual(11000, self.h.deepest_caller_tree(self.e)[0])
+
+    def test_caller_cycle(self):
+        self.assertEqual(1111, self.h.deepest_caller_tree(self.f)[0])
+        self.assertEqual(11111, self.h.deepest_caller_tree(self.e)[0])

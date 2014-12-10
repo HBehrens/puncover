@@ -37,12 +37,17 @@ def symbol_file_url_filter(context, value):
     f = value.get(collector.FILE, None)
     return symbol_url_filter(context, f) if f else None
 
+def none_sum(a, b):
+    if a is not None:
+        return a + b if b is not None else a
+    return b
+
 def symbol_traverse(s, func):
     if isinstance(s, list):
         result = None
         for si in [symbol_traverse(i, func) for i in s]:
             if si is not None:
-                result = result + si if result is not None else si
+                result = none_sum(result, si)
         return result
 
     if collector.TYPE in s:
@@ -66,8 +71,9 @@ def symbol_var_size_filter(context, value):
     return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
 
 @jinja2.contextfilter
-def symbol_stack_size_filter(context, value):
-    return traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
+def symbol_stack_size_filter(context, value, stack_base=None):
+    result = traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
+    return none_sum(result, stack_base)
 
 @jinja2.contextfilter
 def if_not_none_filter(context, value, default_value=""):

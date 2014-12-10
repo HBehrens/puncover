@@ -79,7 +79,7 @@
     </table>
 {%- endmacro %}
 
-{% macro function_stats(functions) -%}
+{% macro function_stats(functions, stack_base=0) -%}
     <table class="table table-striped table-bordered table-hover">
         <thead>
             <tr>
@@ -89,7 +89,7 @@
                 <th rowspan="2">Name</th>
             </tr>
             <tr>
-                <th>&sum; = {{ functions |symbol_stack_size }}</th>
+                <th>&sum; = {{ functions |symbol_stack_size(stack_base) }}</th>
                 <th></th>
                 <th>&sum;= {{ functions | unique | symbol_code_size }}</th>
                 <th></th>
@@ -99,9 +99,9 @@
         {% for function in functions %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{% if not loop.last %}
-                    {% if functions[loop.index - 1:] | symbol_stack_size != functions[loop.index:] | symbol_stack_size %}
-                    {{ functions[loop.index - 1:] | symbol_stack_size | if_not_none }}{{ None | if_not_none }}
+                <td>{% if stack_base or not loop.last %}
+                    {% if function.stack_size  %}
+                    {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none }}
                     {% endif %}
                     {% endif %}
                 </td>
@@ -121,7 +121,18 @@
                 <td><a href="{{ function | symbol_url }}">{{ function.name | e}}</a></td>
             </tr>
         {% endfor %}
-
         </tbody>
+        {% if stack_base %}
+        <tfoot>
+            <tr>
+                <th></th>
+                <th>{{ stack_base }}</th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </tfoot>
+        {% endif %}
     </table>
 {%- endmacro %}

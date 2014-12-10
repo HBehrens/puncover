@@ -4,7 +4,8 @@ import argparse
 from distutils.spawn import find_executable
 from flask import Flask
 from os.path import dirname
-from collector import Collector, PebbleProjectBuilder, ElfBuilder
+from collector import Collector
+from builders import PebbleProjectBuilder, ElfBuilder
 from middleware import BuilderMiddleware
 import renderers
 
