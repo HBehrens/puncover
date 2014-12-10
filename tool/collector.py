@@ -63,10 +63,14 @@ class Collector:
         self.arm_tools_dir = arm_tools_dir
         self.symbols = {}
         self.file_elements = {}
+        self.symbols_by_qualified_name = None
+        self.symbols_by_name = None
 
     def reset(self):
         self.symbols = {}
         self.file_elements = {}
+        self.symbols_by_qualified_name = None
+        self.symbols_by_name = None
 
     def as_dict(self):
         return {
@@ -90,10 +94,10 @@ class Collector:
         return os.path.join(symbol[PATH], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
 
     def symbol(self, name, qualified=True):
-        for s in self.symbols.values():
-            if self.qualified_symbol_name(s) == name or (not qualified and s[NAME] == name):
-                return s
-        return None
+        self.build_symbol_name_index()
+
+        index = self.symbols_by_qualified_name if qualified else self.symbols_by_name
+        return index.get(name, None)
 
     def symbol_by_addr(self, addr):
         int_addr = int(addr, 16)
@@ -535,6 +539,22 @@ class Collector:
 
         for folder in self.root_folders():
             folder_calls_float_function(folder)
+
+    def build_symbol_name_index(self):
+        if not self.symbols_by_name or not self.symbols_by_qualified_name:
+            self.symbols_by_name = {}
+            self.symbols_by_qualified_name = {}
+
+            for s in self.symbols.values():
+                name = s[NAME]
+                if name:
+                    self.symbols_by_name[name] = s
+
+                qualified_name = self.qualified_symbol_name(s)
+                if qualified_name:
+                    self.symbols_by_qualified_name[qualified_name] = s
+
+
 
 
 class Builder:
