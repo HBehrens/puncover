@@ -1,10 +1,13 @@
 import os
 import re
-from flask import Flask, render_template, abort, redirect
+from flask import Flask, render_template, abort, redirect, request
+import flask
 from flask.helpers import url_for
 from flask.views import View
 import itertools
 import jinja2
+import markupsafe
+from backtrace_helper import BacktraceHelper
 import collector
 
 KEY_OUTPUT_FILE_NAME = "output_file_name"
@@ -73,6 +76,24 @@ def assembly_filter(context, value):
     s = pattern.sub(lambda match: "&lt;"+linked_symbol_name(match.group(1)), value)
     return s
     # return str("&lt;")
+
+@jinja2.contextfilter
+def symbols_filter(context, value):
+    renderer = renderer_from_context(context)
+
+    if renderer:
+        helper = BacktraceHelper(renderer.collector)
+
+        def make_links(s):
+            name = s[collector.NAME]
+            url = renderer.url_for_symbol_name(name, context)
+            return '<a href="%s">%s</a>' % (url, name)
+
+        if isinstance(value, markupsafe.Markup):
+            value = value.__html__().unescape()
+        return helper.transform_known_symbols(value, make_links)
+
+    return value
 
 @jinja2.contextfilter
 def chain_filter(context, value, second_value=None):
@@ -165,12 +186,23 @@ class AllSymbolsRenderer(HTMLRenderer):
     def dispatch_request(self, symbol_name=None):
         return self.render_template("all_symbols.html.jinja", "all")
 
+
+class RackRenderer(HTMLRenderer):
+
+    def dispatch_request(self, symbol_name=None):
+        if request.method == "POST":
+            self.template_vars["snippet"] = request.form["snippet"]
+
+        return self.render_template("rack.html.jinja", "rack")
+
+
 def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter
     jinja_env.filters["symbol_var_size"] = symbol_var_size_filter
     jinja_env.filters["assembly"] = assembly_filter
+    jinja_env.filters["symbols"] = symbols_filter
     jinja_env.filters["chain"] = chain_filter
 
 
@@ -179,3 +211,4 @@ def register_urls(app, collector):
     app.add_url_rule("/all/", view_func=AllSymbolsRenderer.as_view("all", collector=collector))
     app.add_url_rule("/path/<path:path>/", view_func=PathRenderer.as_view("path", collector=collector))
     app.add_url_rule("/symbol/<string:symbol_name>", view_func=SymbolRenderer.as_view("symbol", collector=collector))
+    app.add_url_rule("/rack/", view_func=RackRenderer.as_view("rack", collector=collector), methods=["GET", "POST"])

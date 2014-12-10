@@ -1,0 +1,14 @@
+{% extends "base.html.jinja" %}
+{% block content %}
+
+{% if snippet %}
+    <pre>{{ snippet | e | symbols }}</pre>
+{% endif %}
+
+
+<form action="." method="POST">
+    <textarea class="form-control" name="snippet" placeholder="paste some text with identifiers from your code" rows="10">{{ snippet }}</textarea>
+    <input class="btn btn-default" type="submit" name="submit" value="submit">
+</form>
+
+{% endblock %}
