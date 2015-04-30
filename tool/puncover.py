@@ -55,4 +55,4 @@ if __name__ == '__main__':
     renderers.register_urls(app, builder.collector)
 
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
-    app.run(debug=True, port=args.port)
+    app.run(port=args.port)
