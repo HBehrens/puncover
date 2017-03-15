@@ -1,0 +1,3 @@
+ignore:
+  - "/runner.py"
+  - "/setup.py"
