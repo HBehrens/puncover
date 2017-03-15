@@ -1,3 +1,6 @@
+.. image:: https://img.shields.io/travis/HBehrens/puncover.svg
+    :target: https://travis-ci.org/HBehrens/puncover
+
 puncover
 ========
 
