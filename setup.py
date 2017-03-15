@@ -10,6 +10,8 @@ with open('puncover/version.py') as f:
 requires = [
     'Flask==0.10.1\n'
     'mock==1.3.0\n',
+    'codecov==2.0.5\n',
+    'nose-cov==1.6\n',
 ]
 
 
