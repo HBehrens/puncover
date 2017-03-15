@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from setuptools import setup, find_packages
+import os
+
+from setuptools import setup, find_packages, Command
 
 __version__ = None  # Overwritten by executing version.py.
 with open('puncover/version.py') as f:
@@ -9,6 +11,22 @@ requires = [
     'Flask==0.10.1\n'
     'mock==1.3.0\n',
 ]
+
+
+class CleanCommand(Command):
+    """Custom clean command to tidy up the project root."""
+    # http://stackoverflow.com/a/3780822/196350
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
+
 
 setup(name='puncover',
       version=__version__,
@@ -22,4 +40,7 @@ setup(name='puncover',
       entry_points={'console_scripts': ['puncover = puncover.puncover:main']},
       install_requires=requires,
       test_suite='nose.collector',
+      cmdclass={
+          'clean': CleanCommand,
+      }
       )
