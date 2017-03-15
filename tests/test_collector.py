@@ -1,7 +1,7 @@
 import unittest
-from collector import Collector, left_strip_from_list
+from puncover.collector import Collector, left_strip_from_list
 from mock import patch
-import collector
+from puncover import collector
 
 
 class TestCollector(unittest.TestCase):

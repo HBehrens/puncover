@@ -27,6 +27,3 @@ def build(ctx):
 
     # ctx.add_group()
     # ctx(rule=puncover, ctx=ctx)
-
-def puncover(task):
-    task.generator.bld.cmd_and_log(['../tool/puncover.py', 'html', 'build/puncover', '--project_dir', '.', '--pebble_sdk', '/Users/behrens/pebble-dev/PebbleSDK-current'])

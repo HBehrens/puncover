@@ -26,9 +26,9 @@ def find_arm_tools_location():
     obj_dump = find_executable("arm-none-eabi-objdump")
     return dirname(dirname(obj_dump)) if obj_dump else None
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Pebble build analyzer")
 
+def main():
+    parser = argparse.ArgumentParser(description="Pebble build analyzer")
     parser.add_argument('--arm_tools_dir', dest='arm_tools_dir', default=find_arm_tools_location(),
                         help='location of your arm tools. Typically ~/pebble-dev/PebbleSDK-current/arm-cs-tools')
     parser.add_argument('--elf_file', dest="elf_file",
@@ -42,17 +42,16 @@ if __name__ == '__main__':
     parser.add_argument('project_dir', metavar='project_dir', nargs='?',
                         help='location of your pebble project')
     args = parser.parse_args()
-
     if not args.project_dir and not args.elf_file:
         raise Exception("Specify either a project directory or an ELF file.")
-
     builder = create_builder(project_dir=args.project_dir, elf_file=args.elf_file, arm_tools_dir=args.arm_tools_dir,
-                                src_root=args.src_root, su_dir=args.build_dir)
-
+                             src_root=args.src_root, su_dir=args.build_dir)
     builder.build_if_needed()
-
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
-
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
     app.run(port=args.port)
+
+
+if __name__ == '__main__':
+    main()

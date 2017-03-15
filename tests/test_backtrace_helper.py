@@ -1,7 +1,8 @@
 import unittest
 from mock import MagicMock
-from backtrace_helper import BacktraceHelper
-import collector
+from puncover.backtrace_helper import BacktraceHelper
+from puncover import collector
+
 
 class TestBacktraceHelper(unittest.TestCase):
 

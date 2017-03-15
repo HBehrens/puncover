@@ -1,8 +1,5 @@
-**/.idea/workspace.xml
-xcuserdata
+**/.idea/
 *.pyc
-.gutter.json
-tool/html_out
-puncover.xccheckout
-find.xml
-vcs.xml
+/puncover.egg-info/
+/build/
+/dist/
