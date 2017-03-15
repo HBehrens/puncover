@@ -1,5 +1,7 @@
 .. image:: https://img.shields.io/travis/HBehrens/puncover.svg
     :target: https://travis-ci.org/HBehrens/puncover
+.. image:: https://img.shields.io/codecov/c/github/HBehrens/puncover.svg
+    :target: https://codecov.io/gh/HBehrens/puncover
 
 puncover
 ========
