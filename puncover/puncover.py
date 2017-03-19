@@ -37,6 +37,8 @@ def main():
                         help='location of your sources')
     parser.add_argument('--build_dir', dest='build_dir',
                         help='location of your build output')
+    parser.add_argument('--debug', action='store_true',
+                        help='enable Flask debugger')
     parser.add_argument('--port', dest='port', default=5000, type=int,
                         help='port the HTTP server runs on')
     parser.add_argument('project_dir', metavar='project_dir', nargs='?',
@@ -50,6 +52,9 @@ def main():
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
+
+    if args.debug:
+        app.debug = True
     app.run(port=args.port)
 
 

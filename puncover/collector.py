@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+from cppsupport import unmangle
 from __builtin__ import any
 
 NAME = "name"
@@ -246,6 +247,16 @@ class Collector:
                     path = path[1:]
                 s[PATH] = path
 
+    def unmangle_cpp_names(self):
+        cpp_symbols = list()
+        for s in self.all_symbols():
+            cpp_symbols.append(s['name'])
+
+        unmangled_names = unmangle(cpp_symbols)
+
+        for s in self.all_symbols():
+            s['display_name'] = unmangled_names[s['name']]
+
     def parse(self, elf_file, su_dir):
         def arm_tool(name):
             if not self.arm_tools_dir:
@@ -380,6 +391,8 @@ class Collector:
         print("enhancing siblings")
         self.enhance_sibling_symbols()
         self.enhance_symbol_flags()
+        print("unmangling c++ symbols")
+        self.unmangle_cpp_names()
 
     #   98: a8a8a8a8  bl 98
     enhanced_assembly_line_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")

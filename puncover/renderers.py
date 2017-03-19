@@ -25,6 +25,14 @@ def symbol_file(value):
     return value.get(collector.BASE_FILE, '__builtin')
 
 @jinja2.contextfilter
+def symbol_display_name_filter(context, value):
+    renderer = renderer_from_context(context)
+    if renderer:
+        return renderer.display_name_for_symbol(value)
+
+    return None
+
+@jinja2.contextfilter
 def symbol_url_filter(context, value):
     renderer = renderer_from_context(context)
     if renderer:
@@ -93,18 +101,30 @@ def unique_filter(context, value):
 
 @jinja2.contextfilter
 def assembly_filter(context, value):
+    renderer = context.parent.get("renderer", None)
     def linked_symbol_name(name):
         if context:
-            renderer = context.parent.get("renderer", None)
+            display_name = renderer.display_name_for_symbol_name(name)
             url = renderer.url_for_symbol_name(name, context)
             if url:
-                return '<a href="%s">%s</a>' % (url, name)
+                return '<a href="%s">%s</a>' % (url, display_name)
         return name
 
+    value = str(value)
+
+    # Get a clean display name - and a URL - for symbol names in comments
     #   b8:	f000 f8de 	bleq	278 &lt:__aeabi_dmul+0x1dc&gt:
     pattern = re.compile(r"&lt;(\w+)")
-    value = str(value)
     s = pattern.sub(lambda match: "&lt;"+linked_symbol_name(match.group(1)), value)
+
+    # Get a clean display name for symbol names in labels
+    # _ZN6Stream9readBytesEPcj():
+    # FIXME: Unfortunately symbols that have been inlined will not be in our global
+    # symbol name list and we will not be able to unmangle them (this is only a problem
+    # for c++ symbols).
+    pattern = re.compile(r"^(_.*)\(\):$")
+    s = pattern.sub(lambda match: renderer.display_name_for_symbol_name(match.group(1)), s)
+
     return s
     # return str("&lt;")
 
@@ -151,6 +171,13 @@ class HTMLRenderer(View):
     def url_for_symbol_name(self, name, context=None):
         symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
+
+    def display_name_for_symbol(self, symbol):
+        return symbol['display_name'] if 'display_name' in symbol else symbol['name']
+
+    def display_name_for_symbol_name(self, name):
+        symbol = self.collector.symbol(name, False)
+        return symbol['display_name'] if symbol else name
 
     def url_for_symbol(self, value):
         if value[collector.TYPE] in [collector.TYPE_FUNCTION]:
@@ -232,6 +259,7 @@ class RackRenderer(HTMLRenderer):
 
 
 def register_jinja_filters(jinja_env):
+    jinja_env.filters["symbol_display_name"] = symbol_display_name_filter
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter

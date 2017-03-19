@@ -3,7 +3,7 @@
 {% block page_header %}
     <h1>
         <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
-        {{ symbol.name }}
+        {{ symbol | symbol_display_name }}
     </h1>
 
     <table class="table table-condensed">
@@ -42,7 +42,7 @@
                 <th>{% if symbol.callers | length <= 0 %}No Callers{% else %}Callers ({{ symbol.callers | length }}){% endif %}</th>
                 <td>
                 {% for function in symbol.callers %}
-                    <a href="{{ function|symbol_url }}">{{ function.name|e }} {{ '(%d)' % function.size if function.size}}</a>
+                    <a href="{{ function|symbol_url }}">{{ function | symbol_display_name |e }} {{ '(%d)' % function.size if function.size}}</a>
                     {% if not loop.last %}
                         ,
                     {% endif %}
@@ -61,7 +61,7 @@
                 </th>
                 <td>
                 {% for function in symbol.callees %}
-                    <a href="{{ function|symbol_url }}">{{ function.name|e }} {{ '(%d)' % function.size if function.size}}</a>
+                    <a href="{{ function|symbol_url }}">{{ function | symbol_display_name |e }} {{ '(%d)' % function.size if function.size}}</a>
                     {% if not loop.last %}
                         ,
                     {% endif %}
@@ -74,13 +74,13 @@
 {% endblock %}
 {% block content %}
     {% if symbol.prev_function %}
-    <pre><a href="{{ symbol.prev_function|symbol_url }}">{{ symbol.prev_function.name|e }} {{ '(%d)' % symbol.prev_function.size if symbol.prev_function.size}}</a></pre>
+    <pre><a href="{{ symbol.prev_function|symbol_url }}">{{ symbol.prev_function | symbol_display_name |e }} {{ '(%d)' % symbol.prev_function.size if symbol.prev_function.size}}</a></pre>
     {% endif %}
     <pre>
 {% for line in symbol.asm %}{{ line | e | assembly }}
 {% endfor %}</pre>
     {% if symbol.next_function %}
-    <pre><a href="{{ symbol.next_function|symbol_url }}">{{ symbol.next_function.name|e }} {{ '(%d)' % symbol.next_function.size if symbol.next_function.size}}</a></pre>
+    <pre><a href="{{ symbol.next_function|symbol_url }}">{{ symbol.next_function | symbol_display_name |e }} {{ '(%d)' % symbol.next_function.size if symbol.next_function.size}}</a></pre>
     {% endif %}
 
 {% import 'lists.html.jinja' as lists with context %}
