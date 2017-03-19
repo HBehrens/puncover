@@ -123,7 +123,17 @@ def assembly_filter(context, value):
     # symbol name list and we will not be able to unmangle them (this is only a problem
     # for c++ symbols).
     pattern = re.compile(r"^(_.*)\(\):$")
-    s = pattern.sub(lambda match: renderer.display_name_for_symbol_name(match.group(1)), s)
+
+    def display_name_for_label(match):
+        display_name = renderer.display_name_for_symbol_name(match.group(1))
+
+        if display_name.endswith(")"):
+            # C++ symbols will include parenthesis and arguments
+            return display_name + ":"
+        else:
+            # Other symbols will just have a name
+            return display_name + "():"
+    s = pattern.sub(display_name_for_label, s)
 
     return s
     # return str("&lt;")
