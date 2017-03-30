@@ -94,6 +94,16 @@ class Collector:
         with open(filename) as f:
             self.from_dict(json.load(f))
 
+    def arm_tool(self, name):
+        if not self.arm_tools_dir:
+            raise Exception("ARM tools directory not set")
+
+        path = os.path.join(self.arm_tools_dir, 'bin', name)
+        if not os.path.isfile(path):
+            raise Exception("Could not find %s" % path)
+
+        return path
+
     def qualified_symbol_name(self, symbol):
         return os.path.join(symbol[PATH], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
 
@@ -247,36 +257,31 @@ class Collector:
                     path = path[1:]
                 s[PATH] = path
 
+    # See https://blog.flameeyes.eu/2010/06/c-name-demangling/ for context
+    #
+    # This solution courtesy of:
+    # https://stackoverflow.com/questions/6526500/c-name-mangling-library-for-python/6526814
     def unmangle_cpp_names(self):
-        cpp_symbols = list()
-        for s in self.all_symbols():
-            cpp_symbols.append(s['name'])
+        symbol_names = list(symbol['name'] for symbol in self.all_symbols())
 
-        unmangled_names = unmangle(cpp_symbols)
+        proc = subprocess.Popen([ self.arm_tool('arm-none-eabi-c++filt') ] + symbol_names, stdout=subprocess.PIPE)
+        demangled = list(s.rstrip() for s in proc.stdout.readlines())
+
+        unmangled_names = dict(zip(symbol_names, demangled))
 
         for s in self.all_symbols():
             s['display_name'] = unmangled_names[s['name']]
 
     def parse(self, elf_file, su_dir):
-        def arm_tool(name):
-            if not self.arm_tools_dir:
-                raise Exception("ARM tools directory not set")
-
-            path = os.path.join(self.arm_tools_dir, 'bin', name)
-            if not os.path.isfile(path):
-                raise Exception("Could not find %s" % path)
-
-            return path
-
         def get_assembly_lines(elf_file):
-            proc = subprocess.Popen([arm_tool('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
+            proc = subprocess.Popen([self.arm_tool('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             # proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-d', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 
         def get_size_lines(elf_file):
             # http://linux.die.net/man/1/nm
-            proc = subprocess.Popen([arm_tool('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
+            proc = subprocess.Popen([self.arm_tool('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
 

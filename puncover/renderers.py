@@ -25,14 +25,6 @@ def symbol_file(value):
     return value.get(collector.BASE_FILE, '__builtin')
 
 @jinja2.contextfilter
-def symbol_display_name_filter(context, value):
-    renderer = renderer_from_context(context)
-    if renderer:
-        return renderer.display_name_for_symbol(value)
-
-    return None
-
-@jinja2.contextfilter
 def symbol_url_filter(context, value):
     renderer = renderer_from_context(context)
     if renderer:
@@ -182,9 +174,6 @@ class HTMLRenderer(View):
         symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
 
-    def display_name_for_symbol(self, symbol):
-        return symbol['display_name'] if 'display_name' in symbol else symbol['name']
-
     def display_name_for_symbol_name(self, name):
         symbol = self.collector.symbol(name, False)
         return symbol['display_name'] if symbol else name
@@ -269,7 +258,6 @@ class RackRenderer(HTMLRenderer):
 
 
 def register_jinja_filters(jinja_env):
-    jinja_env.filters["symbol_display_name"] = symbol_display_name_filter
     jinja_env.filters["symbol_url"] = symbol_url_filter
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter

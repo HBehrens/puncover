@@ -15,7 +15,7 @@
         <tbody>
         {% for symbol in all_symbols %}
             <tr>
-            <td><a href="{{ symbol | symbol_url }}">{{ symbol |symbol_display_name | e}}</a></td>
+            <td><a href="{{ symbol | symbol_url }}">{{ symbol.display_name | e}}</a></td>
             <td><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file | e}}</a></td>
             <td>{{ symbol | symbol_code_size }}</td>
             <td>{{ symbol | symbol_var_size }}</td>
