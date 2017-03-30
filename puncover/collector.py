@@ -5,7 +5,6 @@ import os
 import re
 import subprocess
 import sys
-from cppsupport import unmangle
 from __builtin__ import any
 
 NAME = "name"
