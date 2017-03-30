@@ -93,18 +93,40 @@ def unique_filter(context, value):
 
 @jinja2.contextfilter
 def assembly_filter(context, value):
+    renderer = context.parent.get("renderer", None)
     def linked_symbol_name(name):
         if context:
-            renderer = context.parent.get("renderer", None)
+            display_name = renderer.display_name_for_symbol_name(name)
             url = renderer.url_for_symbol_name(name, context)
             if url:
-                return '<a href="%s">%s</a>' % (url, name)
+                return '<a href="%s">%s</a>' % (url, display_name)
         return name
 
+    value = str(value)
+
+    # Get a clean display name - and a URL - for symbol names in comments
     #   b8:	f000 f8de 	bleq	278 &lt:__aeabi_dmul+0x1dc&gt:
     pattern = re.compile(r"&lt;(\w+)")
-    value = str(value)
     s = pattern.sub(lambda match: "&lt;"+linked_symbol_name(match.group(1)), value)
+
+    # Get a clean display name for symbol names in labels
+    # _ZN6Stream9readBytesEPcj():
+    # FIXME: Unfortunately symbols that have been inlined will not be in our global
+    # symbol name list and we will not be able to unmangle them (this is only a problem
+    # for c++ symbols).
+    pattern = re.compile(r"^(_.*)\(\):$")
+
+    def display_name_for_label(match):
+        display_name = renderer.display_name_for_symbol_name(match.group(1))
+
+        if display_name.endswith(")"):
+            # C++ symbols will include parenthesis and arguments
+            return display_name + ":"
+        else:
+            # Other symbols will just have a name
+            return display_name + "():"
+    s = pattern.sub(display_name_for_label, s)
+
     return s
     # return str("&lt;")
 
@@ -151,6 +173,10 @@ class HTMLRenderer(View):
     def url_for_symbol_name(self, name, context=None):
         symbol = self.collector.symbol(name, False)
         return symbol_url_filter(context, symbol) if symbol else None
+
+    def display_name_for_symbol_name(self, name):
+        symbol = self.collector.symbol(name, False)
+        return symbol['display_name'] if symbol else name
 
     def url_for_symbol(self, value):
         if value[collector.TYPE] in [collector.TYPE_FUNCTION]:

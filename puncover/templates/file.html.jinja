@@ -26,7 +26,7 @@
             <tbody>
                 {% for symbol in file.functions %}
                 <tr>
-                    <td><a href="{{ symbol | symbol_url }}">{{ symbol.name }}</a></td>
+                    <td><a href="{{ symbol | symbol_url }}">{{ symbol.display_name |e }}</a></td>
                     <td>
                         {% if symbol.called_from_other_file %}<span class="label label-success">yes</span>{% endif %}
                         {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
@@ -63,7 +63,7 @@
         <tbody>
             {% for var in file.variables[:10] %}
              <tr>
-                <td>{{ var.name|e }}</td>
+                <td>{{ var.display_name |e }}</td>
                 <td>{{ var | symbol_var_size}}</td>
             </tr>
             {% endfor %}
