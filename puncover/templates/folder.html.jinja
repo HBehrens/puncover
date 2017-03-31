@@ -1,13 +1,12 @@
 {% extends "base.html.jinja" %}
 {% block title %}Folder{% endblock %}
 {% block content %}
-    <h1>
-        <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+    <ol class="breadcrumb folders">
         {% for ancestor in folder.ancestors | reverse %}
-            <a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a>{{ SLASH }}
+        <li><a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a></li>
         {% endfor %}
-        {{ folder.name | e}}
-    </h1>
+        <li class="active">{{ folder.name | e}}</li>
+    </ol>
 
     {% import 'lists.html.jinja' as lists with context %}
     {{ lists.directory(folder.sub_folders, folder.files) }}

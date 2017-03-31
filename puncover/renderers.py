@@ -153,6 +153,36 @@ def chain_filter(context, value, second_value=None):
     return list(itertools.chain(value, second_value if second_value else []))
 
 
+def is_int_ge(x, cmp):
+    return isinstance(x, int) and x >= cmp
+
+
+@jinja2.contextfilter
+def bytes_filter(context, x):
+    if not is_int_ge(x, 0):
+        return x
+
+    result = ''
+    while x >= 1000:
+        x, r = divmod(x, 1000)
+        result = '<span class="secondary">,</span>%03d%s' % (r, result)
+    return "%d%s" % (x, result)
+
+
+@jinja2.contextfilter
+def style_background_bar_filter(context, x, total, color=None):
+    if not is_int_ge(x, 1) or not is_int_ge(total, 1):
+        return ''
+
+    if color is None:
+        color = 'rgba(0,0,255,0.07)'
+
+    x = min(x, total)
+    percent = 100 * x / total
+    print(percent)
+    return 'background:linear-gradient(90deg, {1} {0}%, transparent {0}%);'.format(percent, color)
+
+
 class HTMLRenderer(View):
 
     def __init__(self, collector):
@@ -268,6 +298,8 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["assembly"] = assembly_filter
     jinja_env.filters["symbols"] = symbols_filter
     jinja_env.filters["chain"] = chain_filter
+    jinja_env.filters["bytes"] = bytes_filter
+    jinja_env.filters["style_background_bar"] = style_background_bar_filter
 
 
 
