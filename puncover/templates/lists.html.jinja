@@ -118,7 +118,7 @@
                     {% endif %}
                 </td>
                 <td>{{ function | symbol_code_size }}</td>
-                <td><a href="{{ function | symbol_url }}">{{ function.name | e}}</a></td>
+                <td><a href="{{ function | symbol_url }}">{{ function.display_name | e}}</a></td>
             </tr>
         {% endfor %}
         </tbody>

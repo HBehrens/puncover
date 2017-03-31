@@ -9,6 +9,7 @@
                 <th>Name</th>
                 <th>File</th>
                 <th>Code Size</th>
+                <th>Stack Size</th>
                 <th>Var Size</th>
             </tr>
         </thead>
@@ -18,6 +19,7 @@
             <td><a href="{{ symbol | symbol_url }}">{{ symbol.display_name | e}}</a></td>
             <td><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file | e}}</a></td>
             <td>{{ symbol | symbol_code_size }}</td>
+            <td>{%  if symbol.stack_size is defined %}{{ symbol.stack_size }}{% endif %}</td>
             <td>{{ symbol | symbol_var_size }}</td>
             </tr>
         {% endfor %}

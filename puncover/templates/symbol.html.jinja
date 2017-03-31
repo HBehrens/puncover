@@ -32,7 +32,7 @@
             </tr>
             <tr>
                 <th>Stack size</th>
-            {% if symbol.stack_size %}
+            {% if symbol.stack_size is defined %}
                 <td>{{ symbol.stack_size }} bytes ({{ symbol.stack_qualifiers }})</td>
             {% else %}
                 <td>Unknown</td>

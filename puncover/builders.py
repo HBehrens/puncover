@@ -21,8 +21,10 @@ class Builder:
         for f in self.files.keys():
             self.store_file_time(f)
         self.collector.reset()
-        self.do_parse()
-        self.enhance()
+        self.collector.parse_elf(self.get_elf_path())
+        self.collector.enhance(self.src_root)
+        self.collector.parse_su_dir(self.get_su_dir())
+        self.build_call_trees()
 
     def needs_build(self):
         return any([os.path.getmtime(f) > t for f,t in self.files.items()])
@@ -32,11 +34,14 @@ class Builder:
             self.build()
 
     @abc.abstractmethod
-    def do_parse(self):
+    def get_elf_path(self):
         pass
 
-    def enhance(self):
-        self.collector.enhance(self.src_root)
+    @abc.abstractmethod
+    def get_su_dir(self):
+        pass
+
+    def build_call_trees(self):
         for f in self.collector.all_functions():
             if len(f[CALLERS]) == 0:
                 self.backtrace_helper.deepest_callee_tree(f)
@@ -50,16 +55,13 @@ class PebbleProjectBuilder(Builder):
         # TODO: check if this is a pebble project dir
         Builder.__init__(self, collector, src_root if src_root else project_dir)
         self.project_dir = project_dir
-        self.store_file_time(self.elf_path(), store_empty=True)
+        self.store_file_time(self.get_elf_path(), store_empty=True)
 
-    def elf_path(self):
+    def get_elf_path(self):
         return os.path.join(self.project_dir, 'build', 'pebble-app.elf')
 
-    def su_dir(self):
+    def get_su_dir(self):
         return os.path.join(self.project_dir, "build", "src")
-
-    def do_parse(self):
-        self.collector.parse(self.elf_path(), self.su_dir())
 
 
 class ElfBuilder(Builder):
@@ -70,5 +72,8 @@ class ElfBuilder(Builder):
         self.elf_file = elf_file
         self.su_dir = su_dir
 
-    def do_parse(self):
-        self.collector.parse(self.elf_file, self.su_dir)
+    def get_elf_path(self):
+        return self.elf_file
+
+    def get_su_dir(self):
+        return self.su_dir

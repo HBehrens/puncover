@@ -8,6 +8,7 @@ import sys
 from __builtin__ import any
 
 NAME = "name"
+DISPLAY_NAME = "display_name"
 SIZE = "size"
 PATH = "path"
 BASE_FILE = "base_file"
@@ -218,7 +219,7 @@ class Collector:
     # puncover.c:8:43:dynamic_stack2	16	dynamic
     # puncover.c:14:40:0	16	dynamic,bounded
     # puncover.c:8:43:dynamic_stack2	16	dynamic
-    parse_stack_usage_line_pattern = re.compile(r"^(.*?\.c):(\d+):(\d+):([^\s]+)\s+(\d+)\s+([a-z,]+)")
+    parse_stack_usage_line_pattern = re.compile(r"^(.*?\.[ch](pp)?):(\d+):(\d+):([^\t]+)\t+(\d+)\s+([a-z,]+)")
 
     def parse_stack_usage_line(self, line):
         match = self.parse_stack_usage_line_pattern.match(line)
@@ -226,19 +227,83 @@ class Collector:
             return False
 
         base_file_name = match.group(1)
-        line = int(match.group(2))
-        symbol_name = match.group(4)
-        stack_size = int(match.group(5))
-        stack_qualifier = match.group(6)
+        line = int(match.group(3))
+        symbol_name = match.group(5)
+        stack_size = int(match.group(6))
+        stack_qualifier = match.group(7)
 
         return self.add_stack_usage(base_file_name, line, symbol_name, stack_size, stack_qualifier)
 
+    # TODO: handle operators, e.g. String::operator=(char const*)
+    # TODO: handle templates, e.g. void LinkedList<T>::clear() [with T = Loggable]
+    re_cpp_display_name = re.compile(r"^(\w[^\(\s]*\s)*(\w+::~?)?(\w+)(\([^\)]*\))?(\sconst)?$")
+
+    def display_name_simplified(self, name):
+        # .su files have elements such as "virtual size_t Print::write(const uint8_t*, size_t)"
+        # c++filt gives us "Print::write(unsigned char const*, unsigned int)"
+
+        m = self.re_cpp_display_name.match(name)
+        if m:
+            groups = list(m.groups(''))
+
+            def replace_identifiers(m):
+                # these values were derived from an ARM 32Bit target
+                # it could be that they need further adjustments
+                # yes, we are treating int as long works only for 32bit platforms
+                # right now, our sample projects use both types unpredictably in the same binary (oh, dear)
+                mapping = {
+                    'const': '', # we ignore those as a feasible simplification
+                    'size_t': 'unsigned long',
+                    'uint8_t': 'unsigned char',
+                    'int8_t': 'signed char',
+                    'uint16_t': 'unsigned short',
+                    'int16_t': 'short',
+                    'uint32_t': 'unsigned long',
+                    'int32_t': 'long',
+                    'uint64_t': 'unsigned long long',
+                    'int64_t': 'long long',
+                    'byte': 'unsigned char',
+                    'int': 'long',
+                }
+
+                return mapping.get(m.group(), m.group())
+
+            # in case, we have parameters, simplify those
+            groups[3] = re.sub(r'\w+', replace_identifiers, groups[3])
+
+            # TODO: C allows you to write the same C types in many different notations
+            # http://ieng9.ucsd.edu/~cs30x/Std.C/types.html#Basic%20Integer%20Types
+            # applies to tNMEA2000::SetProductInformation or Print::printNumber
+
+            # remove leading "virtual size_t" etc.
+            # non-matching groups should be empty strings
+            name = ''.join(groups[1:])
+
+        # remove white space artifacts from previous replacements
+        for k, v in [('   ', ' '), ('  ', ' '), ('( ', '('), (' )', ')'), ('< ', '<'), (' >', '>'), (' *', '*'), (' &', '&')]:
+            name = name.replace(k, v)
+
+        return name
+
+    def display_names_match(self, a, b):
+        if a is None or b is None:
+            return False
+
+        if a == b:
+            return True
+
+        simplified_a = self.display_name_simplified(a)
+        simplified_b = self.display_name_simplified(b)
+        return simplified_a == simplified_b
+
     def add_stack_usage(self, base_file_name, line, symbol_name, stack_size, stack_qualifier):
-        for addr, symbol in self.symbols.items():
-            if symbol.get(BASE_FILE, None) == base_file_name and symbol.get(LINE, None) == line:
-                    symbol[STACK_SIZE] = stack_size
-                    symbol[STACK_QUALIFIERS] = stack_qualifier
-                    return True
+        basename_symbols = [s for s in self.symbols.values() if s.get(BASE_FILE, None) == base_file_name]
+        for symbol in basename_symbols:
+
+            if symbol.get(LINE, None) == line or self.display_names_match(symbol_name, symbol.get(DISPLAY_NAME, None)):
+                symbol[STACK_SIZE] = stack_size
+                symbol[STACK_QUALIFIERS] = stack_qualifier
+                return True
 
         # warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
@@ -261,7 +326,7 @@ class Collector:
     # This solution courtesy of:
     # https://stackoverflow.com/questions/6526500/c-name-mangling-library-for-python/6526814
     def unmangle_cpp_names(self):
-        symbol_names = list(symbol['name'] for symbol in self.all_symbols())
+        symbol_names = list(symbol[NAME] for symbol in self.all_symbols())
 
         proc = subprocess.Popen([ self.arm_tool('arm-none-eabi-c++filt') ] + symbol_names, stdout=subprocess.PIPE)
         demangled = list(s.rstrip() for s in proc.stdout.readlines())
@@ -269,9 +334,9 @@ class Collector:
         unmangled_names = dict(zip(symbol_names, demangled))
 
         for s in self.all_symbols():
-            s['display_name'] = unmangled_names[s['name']]
+            s[DISPLAY_NAME] = unmangled_names[s[NAME]]
 
-    def parse(self, elf_file, su_dir):
+    def parse_elf(self, elf_file):
         def get_assembly_lines(elf_file):
             proc = subprocess.Popen([self.arm_tool('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             # proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-d', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
@@ -283,6 +348,15 @@ class Collector:
             proc = subprocess.Popen([self.arm_tool('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
             return proc.stdout.readlines()
 
+        print("parsing ELF at %s" % elf_file)
+
+        self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
+        for l in get_size_lines(elf_file):
+            self.parse_size_line(l)
+
+        self.elf_mtime = os.path.getmtime(elf_file)
+
+    def parse_su_dir(self, su_dir):
 
         def gen_find(filepat,top):
             for path, dirlist, filelist in os.walk(top):
@@ -303,14 +377,6 @@ class Collector:
             files = gen_open(names)
             lines = gen_cat(files)
             return lines
-
-        print("parsing ELF at %s" % elf_file)
-
-        self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
-        for l in get_size_lines(elf_file):
-            self.parse_size_line(l)
-
-        self.elf_mtime = os.path.getmtime(elf_file)
 
         if su_dir:
             print("parsing stack usages starting at %s" % su_dir)

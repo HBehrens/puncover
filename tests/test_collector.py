@@ -211,6 +211,75 @@ $t():
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
 
+    def test_stack_usage_line_header(self):
+        line = "ILI9341_t3.h:312:15:void ILI9341_t3::updateDisplayClip()	16	static"
+        c = Collector()
+        c.symbols = {"123": {
+            "base_file": "ILI9341_t3.h",
+            "line": 312,
+        }}
+        self.assertTrue(c.parse_stack_usage_line(line))
+
+    def test_stack_usage_line_cpp_correct_line(self):
+        line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
+        c = Collector()
+        c.symbols = {"123": {
+            "base_file": "Print.cpp",
+            "line": 34,
+        }}
+        self.assertTrue(c.parse_stack_usage_line(line))
+        self.assertEqual(24, c.symbols["123"]["stack_size"])
+        self.assertEqual("static", c.symbols["123"]["stack_qualifiers"])
+
+    def test_stack_usage_line_cpp_incorrect_line(self):
+        line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
+        c = Collector()
+        c.symbols = {"123": {
+            "base_file": "Print.cpp",
+            "display_name": "virtual size_t Print::write(const uint8_t*, size_t)",
+            "line": 35,
+        }}
+        self.assertTrue(c.parse_stack_usage_line(line))
+        self.assertEqual(24, c.symbols["123"]["stack_size"])
+        self.assertEqual("static", c.symbols["123"]["stack_qualifiers"])
+
+    def test_stack_usage_line_cpp_constructor(self):
+        line = "WString.cpp:82:1:String::String(unsigned int, unsigned char)	32	static"
+        c = Collector()
+        c.symbols = {"123": {
+            "base_file": "WString.cpp",
+            "line": 82,
+        }}
+        self.assertTrue(c.parse_stack_usage_line(line))
+
+    def test_display_names_match(self):
+        c = Collector()
+
+        def f(a, b):
+            return c.display_names_match(a, b)
+
+        self.assertFalse(f(None, "func_a"))
+        self.assertFalse(f("func_a", None))
+        self.assertFalse(f("func_a", "func_b"))
+        self.assertTrue(f("func_a", "func_a"))
+
+        self.assertTrue(f("size_t Print::println()", "Print::println()"))
+        self.assertFalse(f("size_t Print::println(int)", "Print::println(char)"))
+        self.assertTrue(f("virtual size_t Print::write(const uint8_t*, size_t)", "Print::write(unsigned char const*, unsigned int)"))
+        self.assertTrue(f("static void SPIClass::begin()", "SPIClass::begin()"))
+        self.assertTrue(f("static uint8_t i2c_t3::setRate_(i2cStruct*, uint32_t, i2c_rate)", "i2c_t3::setRate_(i2cStruct*, unsigned long, i2c_rate)"))
+        self.assertTrue(f("void ILI9341_t3::drawFontBits(bool, uint32_t, uint32_t, int32_t, int32_t, uint32_t)", "ILI9341_t3::drawFontBits(bool, unsigned long, unsigned long, long, long, unsigned long)"))
+        self.assertTrue(f("imu::Vector<3u> Adafruit_BNO055::getVector(Adafruit_BNO055::adafruit_vector_type_t)", "Adafruit_BNO055::getVector(Adafruit_BNO055::adafruit_vector_type_t)"))
+        self.assertTrue(f("uint8_t Adafruit_BMP280::read8(byte)", "Adafruit_BMP280::read8(unsigned char)"))
+        self.assertTrue(f("NMEAReaderTask::NMEAReaderTask(HardwareSerial&)", "NMEAReaderTask::NMEAReaderTask(HardwareSerial&)"))
+        self.assertTrue(f("virtual Page::~Page()", "Page::~Page()"))
+
+        self.assertFalse(f("void tN2kMsg::SendInActisenseFormat(N2kStream*) const", "tN2kMsg::Print(Stream*, bool) const"))
+        self.assertTrue(f("virtual bool BasePage::processEvent(const Event&)", "BasePage::processEvent(Event const&)"))
+        self.assertTrue(f("String::String(unsigned int, unsigned char)", "String::String(unsigned int, unsigned char)"))
+        self.assertTrue(f("bool SDCardTask::isLogging() const", "SDCardTask::isLogging() const"))
+
+
     def test_count_bytes(self):
         c = Collector()
         self.assertEqual(0, c.count_assembly_code_bytes("dynamic_stack2():"))
