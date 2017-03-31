@@ -30,7 +30,7 @@
                 </td>
             </tr>
             {% endfor %}
-            {% if files | length > 0 and folders | length > 0 %}
+            {% if folders | length > 1 %}
                 <tr>
                 <th>&sum; {{ folders|length }} folders</th>
                 <th></th>
@@ -57,7 +57,7 @@
                 </td>
             </tr>
             {% endfor %}
-            {% if files | length > 0 and folders | length > 0 %}
+            {% if files | length > 1 %}
                 <tr>
                     <th>&sum; {{ files|length }}  files</th>
                     <th></th>
@@ -66,11 +66,10 @@
                 </tr>
             {% endif %}
         </tbody>
-        {% if files | length > 0 or folders | length > 0 %}
+        {% if files | length > 0 and folders | length > 0 %}
             <tfoot>
                 <tr>
-                <th>&sum; over all</th>
-                <th></th>
+                <th colspan="2">&sum; over all</th>
                 <th class="col_size">{{ files | chain(folders) | symbol_code_size | bytes}}</th>
                 <th class="col_size">{{ files | chain(folders) | symbol_var_size | bytes}}</th>
                 </tr>
