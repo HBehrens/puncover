@@ -41,7 +41,7 @@
                     <td class="col_size"></td>
                 </tr>
                 {% endfor %}
-            {% if file.functions | length > 1 %}
+            {% if file.functions | length > 1 and file.variables | length > 0 %}
                 <tr>
                     <th colspan="3">&sum; {{ file.functions | length }} functions</th>
                     <th class="col_size">{{ file.functions | symbol_code_size | bytes }}</th>
@@ -58,27 +58,26 @@
                 </td>
             </tr>
             {% endfor %}
-            </tbody>
-        {% if file.variables | length > 1 %}
+        {% if file.variables | length > 1 and file.functions | length > 0 %}
             <tr>
                 <th colspan="4">&sum; {{ file.variables | length }} variables</th>
                 <th class="col_size">{{ file.variables | symbol_var_size | bytes }}</th>
             </tr>
         {% endif %}
+            </tbody>
 
-        {% if file.functions | length > 0 and file.variables | length > 0 %}
-            <tfoot>
-                <tr>
-                <th colspan="3">&sum; over all</th>
-                <th class="col_size">{{ file | symbol_code_size | bytes}}</th>
-                <th class="col_size">{{ file | symbol_var_size | bytes}}</th>
-                </tr>
-            </tfoot>
-        {% endif %}
+        <tfoot>
+            <tr>
+            <th colspan="3">&sum; over all
+                ({{ file.functions | length }} function{{ 's' if file.functions | length != 1}},
+                 {{ file.variables | length }} variable{{ 's' if file.variables | length != 1}})
+
+            </th>
+            <th class="col_size">{{ file | symbol_code_size | bytes}}</th>
+            <th class="col_size">{{ file | symbol_var_size | bytes}}</th>
+            </tr>
+        </tfoot>
 
         </table>
-
-
-
 
 {% endblock %}
