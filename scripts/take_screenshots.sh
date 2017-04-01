@@ -8,7 +8,8 @@ rm build/images/*.png
 #./runner.py --arm_tools_dir=/Users/behrens/pebble-dev/arm-cs-tools examples/pebble &
 #sleep 0.5s
 
-PAGERES=(pageres 750x500 --selector='#inner_content')
+#PAGERES=(pageres 750x500 --selector='#inner_content')
+PAGERES=(pageres 750x500)
 
 URL_FILE=http://127.0.0.1:5000/path/Users/behrens/.platformio/packages/framework-arduinoteensy/cores/teensy3/usb_dev.c/
 URL_FOLDER=http://127.0.0.1:5000/path/Users/behrens/Documents/projects/kbox-firmware/lib/KBox/src/
