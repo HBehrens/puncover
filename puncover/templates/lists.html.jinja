@@ -1,6 +1,28 @@
 {% set color_bar_code = 'rgba(0,0,255,0.07)' %}
 {% set color_bar_var = 'rgba(255, 0, 0, 0.07)' %}
 
+{% macro breadcrumbs(folder, file, line) %}
+    <ol class="breadcrumb folders">
+        {% for ancestor in folder.ancestors | reverse %}
+        <li><a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a></li>
+        {% endfor %}
+        <li {% if line is undefined %}class="active"{% endif %}>{% if file -%}
+            <a href="{{ folder | symbol_url }}">{{ folder.name | e}}</a>
+            {% else -%}{{ folder.name | e}}
+            {% endif -%}
+        </li>
+
+        {% if file %}
+        <li class="active">{% if line -%}
+            <a href="{{ file | symbol_url }}">{{ file.name | e}}</a>:{{ line }}
+            {% else -%}
+            {{ file.name | e}}
+            {% endif -%}
+        </li>
+        {% endif %}
+    </ol>
+{% endmacro %}
+
 {% macro directory(folders, files) -%}
     <table class="table table-bordered table-hover table-condensed">
         <thead>
@@ -80,6 +102,11 @@
     </table>
 {%- endmacro %}
 
+{% macro symbol_remarks(symbol) %}
+    {% if symbol.called_from_other_file %}<span class="label label-success">x-module</span>{% endif %}
+    {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
+{% endmacro %}
+
 {% macro symbols(functions, variables) -%}
     <table class="table table-bordered table-hover table-condensed">
         <thead>
@@ -101,10 +128,7 @@
                 {% for symbol in functions %}
                 <tr>
                     <td><a href="{{ symbol | symbol_url }}" class="icon-function">{{ symbol.display_name |e }}</a></td>
-                    <td>
-                        {% if symbol.called_from_other_file %}<span class="label label-success">x-module</span>{% endif %}
-                        {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
-                    </td>
+                    <td>{{ symbol_remarks(symbol) }}</td>
                     <td class="col_size">{{ symbol.stack_size | bytes }}</td>
                     <td class="col_size" style="{{ symbol.size | style_background_bar(group_code_size, color_bar_code) }}">
                     {{ symbol.size | bytes }}
@@ -154,44 +178,44 @@
 
 
 {% macro function_stats(functions, stack_base=0) -%}
-    <table class="table table-striped table-bordered table-hover">
+    <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
                 <th rowspan="2">#</th>
-                <th colspan="2">Stack Size</th>
-                <th colspan="2">Code Size</th>
-                <th rowspan="2">Name</th>
+                <th colspan="2" style="text-align: center">Stack</th>
+                <th colspan="2" style="text-align: center">Code</th>
+                <th rowspan="2" width="100%">Name</th>
             </tr>
             <tr>
-                <th>&sum; = {{ functions |symbol_stack_size(stack_base) }}</th>
-                <th></th>
-                <th>&sum;= {{ functions | unique | symbol_code_size }}</th>
-                <th></th>
+                <th class="col_size">&sum; = {{ functions | symbol_stack_size(stack_base) | bytes }}</th>
+                <th class="col_size"></th>
+                <th class="col_size">&sum;= {{ functions | unique | symbol_code_size | bytes }}</th>
+                <th class="col_size"></th>
             </tr>
         </thead>
         <tbody>
         {% for function in functions %}
             <tr>
-                <td>{{ loop.index }}</td>
-                <td>{% if stack_base or not loop.last %}
+                <th>{{ loop.index }}</th>
+                <td class="col_size">{% if stack_base or not loop.last %}
                     {% if function.stack_size  %}
-                    {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none }}
+                    {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td>
+                <td class="col_size">
             {% if function.stack_size %}
-                {{ function.stack_size }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
+                {{ function.stack_size | bytes }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
             {% endif %}
                 </td>
-                <td>
+                <td class="col_size">
                     {% if not loop.last %}
                     {% if functions[loop.index - 1:] | unique | symbol_code_size != functions[loop.index:] | unique | symbol_code_size %}
-                    {{ functions[loop.index - 1:] | unique | symbol_code_size }}
+                    {{ functions[loop.index - 1:] | unique | symbol_code_size | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td>{{ function | symbol_code_size }}</td>
+                <td class="col_size">{{ function | symbol_code_size | bytes }}</td>
                 <td><a href="{{ function | symbol_url }}">{{ function.display_name | e}}</a></td>
             </tr>
         {% endfor %}
@@ -200,7 +224,7 @@
         <tfoot>
             <tr>
                 <th></th>
-                <th>{{ stack_base }}</th>
+                <th class="col_size">{{ stack_base | bytes }}</th>
                 <th></th>
                 <th></th>
                 <th></th>

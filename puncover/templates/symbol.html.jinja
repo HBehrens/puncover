@@ -1,46 +1,38 @@
 {% extends "base.html.jinja" %}
+{% import 'lists.html.jinja' as lists with context %}
+
 {% block title %}Symbol{% endblock %}
-{% block page_header %}
-    <h1>
-        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
-        {{ symbol.display_name |e }}
-    </h1>
+{% block content %}
+    {{ lists.breadcrumbs(symbol.file.folder, symbol.file, symbol.line) }}
 
     <table class="table table-condensed">
         <tbody>
             <tr>
-                <th>File name</th>
-                <td>
-                    {% if symbol.base_file %}
-                    <code><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file|e }}</a>:{{ symbol.line }}</code>
-                    {% else %}
-                    unknown file
-                    {% endif %}
+                <th>Function</th>
+                <td colspan="5">
+                    <span class="icon-function">{{ symbol.display_name }}</span>
+                </td>
+            </tr>
 
-                (0x{{ symbol.address }})
-                </td>
+            <tr>
+                <th rowspan="2"></th>
+                <th>Address</th>
+                <th>Remarks</th>
+                <th>Stack</th>
+                <th>Code</th>
+                <th>Static</th>
             </tr>
             <tr>
-                <th>Function size</th>
-                <td>
-                    {% if symbol.size %}
-                        {{ symbol.size }} bytes
-                    {% else %}
-                        Unknown
-                    {% endif %}
-                </td>
+                <td>0x{{ symbol.address }}</td>
+                <td>{{ lists.symbol_remarks(symbol) }}</td>
+                <td>{% if symbol.stack_size is defined %}{{ symbol.stack_size | bytes }} ({{ symbol.stack_qualifiers }}){% endif %}</td>
+                <td>{{ symbol.size | bytes }}</td>
+                <td></td>
             </tr>
-            <tr>
-                <th>Stack size</th>
-            {% if symbol.stack_size is defined %}
-                <td>{{ symbol.stack_size }} bytes ({{ symbol.stack_qualifiers }})</td>
-            {% else %}
-                <td>Unknown</td>
-            {% endif %}
-            </tr>
+
             <tr>
                 <th>{% if symbol.callers | length <= 0 %}No Callers{% else %}Callers ({{ symbol.callers | length }}){% endif %}</th>
-                <td>
+                <td colspan="5">
                 {% for function in symbol.callers %}
                     <a href="{{ function|symbol_url }}">{{ function.display_name |e }} {{ '(%d)' % function.size if function.size}}</a>
                     {% if not loop.last %}
@@ -59,7 +51,7 @@
                         {% endif %})
                     {% endif %}
                 </th>
-                <td>
+                <td colspan="5">
                 {% for function in symbol.callees %}
                     <a href="{{ function|symbol_url }}">{{ function.display_name |e }} {{ '(%d)' % function.size if function.size}}</a>
                     {% if not loop.last %}
@@ -71,8 +63,6 @@
         </tbody>
     </table>
 
-{% endblock %}
-{% block content %}
     {% if symbol.prev_function %}
     <pre><a href="{{ symbol.prev_function|symbol_url }}">{{ symbol.prev_function.display_name |e }} {{ '(%d)' % symbol.prev_function.size if symbol.prev_function.size}}</a></pre>
     {% endif %}
@@ -82,8 +72,6 @@
     {% if symbol.next_function %}
     <pre><a href="{{ symbol.next_function|symbol_url }}">{{ symbol.next_function.display_name |e }} {{ '(%d)' % symbol.next_function.size if symbol.next_function.size}}</a></pre>
     {% endif %}
-
-{% import 'lists.html.jinja' as lists with context %}
 
     {% if (symbol.deepest_caller_tree[1] | length > 1) or (symbol.deepest_callee_tree[1] | length > 1) %}
         <h1>Stack Worst-Case Scenarios</h1>

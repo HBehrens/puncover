@@ -1,13 +1,7 @@
 {% extends "base.html.jinja" %}
+{% import 'lists.html.jinja' as lists with context %}
 {% block title %}Folder{% endblock %}
 {% block content %}
-    <ol class="breadcrumb folders">
-        {% for ancestor in folder.ancestors | reverse %}
-        <li><a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a></li>
-        {% endfor %}
-        <li class="active">{{ folder.name | e}}</li>
-    </ol>
-
-    {% import 'lists.html.jinja' as lists with context %}
+    {{ lists.breadcrumbs(folder) }}
     {{ lists.directory(folder.sub_folders, folder.files) }}
 {% endblock %}
