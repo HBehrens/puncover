@@ -179,7 +179,6 @@ def style_background_bar_filter(context, x, total, color=None):
 
     x = min(x, total)
     percent = 100 * x / total
-    print(percent)
     return 'background:linear-gradient(90deg, {1} {0}%, transparent {0}%);'.format(percent, color)
 
 

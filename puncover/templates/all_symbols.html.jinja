@@ -3,29 +3,7 @@
 {% block page_header %}<h1>All Symbols</h1>{% endblock %}
 {% block content %}
 
-    <table class="table table-condensed">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>File</th>
-                <th>Code Size</th>
-                <th>Stack Size</th>
-                <th>Var Size</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for symbol in all_symbols %}
-            <tr>
-            <td><a href="{{ symbol | symbol_url }}">{{ symbol.display_name | e}}</a></td>
-            <td><a href="{{ symbol | symbol_file_url }}">{{ symbol.base_file | e}}</a></td>
-            <td>{{ symbol | symbol_code_size }}</td>
-            <td>{%  if symbol.stack_size is defined %}{{ symbol.stack_size }}{% endif %}</td>
-            <td>{{ symbol | symbol_var_size }}</td>
-            </tr>
-        {% endfor %}
-
-        </tbody>
-
-    </table>
+    {% import 'lists.html.jinja' as lists with context %}
+    {{ lists.symbols(all_functions, all_variables) }}
 
 {% endblock %}
