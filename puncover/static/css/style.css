@@ -8,3 +8,54 @@ span.slash {
     margin-left: 0.1em;
     margin-right: 0.1em;
 }
+
+.breadcrumb.folders {
+    background: None;
+    padding: 0;
+    margin-bottom: 8px;
+}
+
+.breadcrumb.folders>li+li:before {
+    padding: 0;
+}
+
+.icon-folder {
+    background: url("/static/icons/Folder_16x.svg") no-repeat left center;
+    padding-left: 20px;
+}
+
+.icon-folder-open {
+    background: url("/static/icons/FolderOpen_16x.svg") no-repeat left center;
+    padding-left: 20px;
+}
+
+.icon-file {
+    background: url("/static/icons/Document_16x.svg") no-repeat left center;
+    padding-left: 20px;
+}
+
+.icon-function {
+    background: url("/static/icons/Method_16x.svg") no-repeat left center;
+    padding-left: 20px;
+}
+
+.icon-variable {
+    background: url("/static/icons/Field_16x.svg") no-repeat left center;
+    padding-left: 20px;
+}
+
+.col_size {
+    text-align: right;
+}
+
+th {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+th.col_size {
+    min-width: 5em;
+}
+
+.secondary {
+    opacity: 0.6;
+}

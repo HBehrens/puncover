@@ -1,123 +1,221 @@
+{% set color_bar_code = 'rgba(0,0,255,0.07)' %}
+{% set color_bar_var = 'rgba(255, 0, 0, 0.07)' %}
+
+{% macro breadcrumbs(folder, file, line) %}
+    <ol class="breadcrumb folders">
+        {% for ancestor in folder.ancestors | reverse %}
+        <li><a href="{{ ancestor | symbol_url }}">{{ ancestor.name | e}}</a></li>
+        {% endfor %}
+        <li {% if line is undefined %}class="active"{% endif %}>{% if file -%}
+            <a href="{{ folder | symbol_url }}">{{ folder.name | e}}</a>
+            {% else -%}{{ folder.name | e}}
+            {% endif -%}
+        </li>
+
+        {% if file %}
+        <li class="active">{% if line -%}
+            <a href="{{ file | symbol_url }}">{{ file.name | e}}</a>:{{ line }}
+            {% else -%}
+            {{ file.name | e}}
+            {% endif -%}
+        </li>
+        {% endif %}
+    </ol>
+{% endmacro %}
+
 {% macro directory(folders, files) -%}
-    <table class="table table-striped table-bordered table-hover">
+    <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
-                <th>Name</th>
-                <th></th>
-                <th>Code</th>
-                <th>Static Variables</th>
+                <th width="100%">Name</th>
+                <th>Remarks</th>
+                <th class="col_size">Code</th>
+                <th class="col_size">Static</th>
             </tr>
         </thead>
         <tbody>
+            {% set group_code_size = folders | symbol_code_size %}
+            {% set group_var_size = folders | symbol_var_size %}
             {% for folder in folders %}
             <tr>
                 <td>
-                    <a href="{{ folder | symbol_url }}">
-                        <div>
-                        <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+                    <a href="{{ folder | symbol_url }}" class="icon-folder">
                         &nbsp;{{ folder.name | e}}
-                        </div>
                     </a>
                 </td>
                 <td>{% if folder.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
-                <td>
-                    {{ folder | symbol_code_size }}
+                <td class="col_size" style="{{ folder | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
+                    {{ folder | symbol_code_size | bytes }}
                 </td>
-                <td>
-                    {{ folder | symbol_var_size }}
+                <td class="col_size" style="{{ folder | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
+                    {{ folder | symbol_var_size | bytes }}
                 </td>
             </tr>
             {% endfor %}
-            {% if files | length > 0 and folders | length > 0 %}
+            {% if folders | length > 1 and files | length > 0 %}
                 <tr>
-                <th>&sum; over folders</th>
+                <th>&sum; {{ folders|length }} folders</th>
                 <th></th>
-                <th>{{ folders | symbol_code_size }}</th>
-                <th>{{ folders | symbol_var_size }}</th>
+                <th class="col_size">{{ group_code_size | bytes }}</th>
+                <th class="col_size">{{ group_var_size | bytes }}</th>
                 </tr>
             {% endif %}
 
+            {% set group_code_size = files | symbol_code_size %}
+            {% set group_var_size = files | symbol_var_size %}
             {% for file in files %}
             <tr>
                 <td>
-                    <a href="{{ file | symbol_url }}">
-                        <div>
-                        <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                    <a href="{{ file | symbol_url }}" class="icon-file">
                         &nbsp;{{ file.name | e}}
-                        </div>
                     </a>
                 </td>
                 <td>{% if file.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
-                <td>
-                    {{ file | symbol_code_size }}
+                <td class="col_size" style="{{ file | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
+                    {{ file | symbol_code_size | bytes}}
                 </td>
-                <td>
-                    {{ file | symbol_var_size }}
+                <td class="col_size" style="{{ file | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
+                    {{ file | symbol_var_size | bytes}}
                 </td>
             </tr>
             {% endfor %}
-            {% if files | length > 0 and folders | length > 0 %}
+            {% if files | length > 1 and folders | length > 0 %}
                 <tr>
-                    <th>&sum; over files</th>
+                    <th>&sum; {{ files|length }}  files</th>
                     <th></th>
-                    <th>{{ files | symbol_code_size }}</th>
-                    <th>{{ files | symbol_var_size }}</th>
+                    <th class="col_size">{{ group_code_size | bytes}}</th>
+                    <th class="col_size">{{ group_var_size | bytes}}</th>
                 </tr>
             {% endif %}
         </tbody>
-        {% if files | length > 0 or folders | length > 0 %}
-            <tfoot>
-                <tr>
-                <th>&sum; over all</th>
-                <th></th>
-                <th>{{ files | chain(folders) | symbol_code_size }}</th>
-                <th>{{ files | chain(folders) | symbol_var_size }}</th>
-                </tr>
-            </tfoot>
-        {% endif %}
+        <tfoot>
+            <tr>
+            <th colspan="2">&sum; over all
+                ({{ folders | length }} folder{{ 's' if folders | length != 1}},
+                 {{ files | length }} file{{ 's' if files | length != 1}})
+            </th>
+            <th class="col_size">{{ files | chain(folders) | symbol_code_size | bytes}}</th>
+            <th class="col_size">{{ files | chain(folders) | symbol_var_size | bytes}}</th>
+            </tr>
+        </tfoot>
 
     </table>
 {%- endmacro %}
 
+{% macro symbol_remarks(symbol) %}
+    {% if symbol.called_from_other_file %}<span class="label label-success">x-module</span>{% endif %}
+    {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
+{% endmacro %}
+
+{% macro symbols(functions, variables) -%}
+    <table class="table table-bordered table-hover table-condensed">
+        <thead>
+            <tr>
+                <th width="100%">Name</th>
+                <th>Remarks</th>
+                <th class="col_size">Stack</th>
+                <th class="col_size">Code</th>
+                <th class="col_size">Static</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+{# functions #}
+                {% set group_code_size = functions | symbol_code_size %}
+                {% set group_var_size = (variables + functions) | symbol_var_size %}
+
+                {% for symbol in functions %}
+                <tr>
+                    <td><a href="{{ symbol | symbol_url }}" class="icon-function">{{ symbol.display_name |e }}</a></td>
+                    <td>{{ symbol_remarks(symbol) }}</td>
+                    <td class="col_size">{{ symbol.stack_size | bytes }}</td>
+                    <td class="col_size" style="{{ symbol.size | style_background_bar(group_code_size, color_bar_code) }}">
+                    {{ symbol.size | bytes }}
+                    </td>
+                    <td class="col_size"></td>
+                </tr>
+                {% endfor %}
+            {% if functions | length > 1 and variables | length > 0 %}
+                <tr>
+                    <th colspan="3">&sum; {{ functions | length }} functions</th>
+                    <th class="col_size">{{ functions | symbol_code_size | bytes }}</th>
+                    <th></th>
+                </tr>
+            {% endif %}
+
+{# static vars #}
+            {% for var in variables %}
+             <tr>
+                <td colspan="4"><span class="icon-variable">{{ var.display_name |e }}</span></td>
+                <td class="col_size" style="{{ var | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
+                    {{ var | symbol_var_size | bytes }}
+                </td>
+            </tr>
+            {% endfor %}
+        {% if variables | length > 1 and functions | length > 0 %}
+            <tr>
+                <th colspan="4">&sum; {{ variables | length }} variables</th>
+                <th class="col_size">{{ variables | symbol_var_size | bytes }}</th>
+            </tr>
+        {% endif %}
+            </tbody>
+
+        <tfoot>
+            <tr>
+            <th colspan="3">&sum; over all
+                ({{ functions | length }} function{{ 's' if functions | length != 1}},
+                 {{ variables | length }} variable{{ 's' if variables | length != 1}})
+
+            </th>
+            <th class="col_size">{{ group_code_size | bytes}}</th>
+            <th class="col_size">{{ group_var_size | bytes}}</th>
+            </tr>
+        </tfoot>
+
+    </table>
+{%- endmacro %}
+
+
 {% macro function_stats(functions, stack_base=0) -%}
-    <table class="table table-striped table-bordered table-hover">
+    <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
                 <th rowspan="2">#</th>
-                <th colspan="2">Stack Size</th>
-                <th colspan="2">Code Size</th>
-                <th rowspan="2">Name</th>
+                <th colspan="2" style="text-align: center">Stack</th>
+                <th colspan="2" style="text-align: center">Code</th>
+                <th rowspan="2" width="100%">Name</th>
             </tr>
             <tr>
-                <th>&sum; = {{ functions |symbol_stack_size(stack_base) }}</th>
-                <th></th>
-                <th>&sum;= {{ functions | unique | symbol_code_size }}</th>
-                <th></th>
+                <th class="col_size">&sum; = {{ functions | symbol_stack_size(stack_base) | bytes }}</th>
+                <th class="col_size"></th>
+                <th class="col_size">&sum;= {{ functions | unique | symbol_code_size | bytes }}</th>
+                <th class="col_size"></th>
             </tr>
         </thead>
         <tbody>
         {% for function in functions %}
             <tr>
-                <td>{{ loop.index }}</td>
-                <td>{% if stack_base or not loop.last %}
+                <th>{{ loop.index }}</th>
+                <td class="col_size">{% if stack_base or not loop.last %}
                     {% if function.stack_size  %}
-                    {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none }}
+                    {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td>
+                <td class="col_size">
             {% if function.stack_size %}
-                {{ function.stack_size }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
+                {{ function.stack_size | bytes }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
             {% endif %}
                 </td>
-                <td>
+                <td class="col_size">
                     {% if not loop.last %}
                     {% if functions[loop.index - 1:] | unique | symbol_code_size != functions[loop.index:] | unique | symbol_code_size %}
-                    {{ functions[loop.index - 1:] | unique | symbol_code_size }}
+                    {{ functions[loop.index - 1:] | unique | symbol_code_size | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td>{{ function | symbol_code_size }}</td>
+                <td class="col_size">{{ function | symbol_code_size | bytes }}</td>
                 <td><a href="{{ function | symbol_url }}">{{ function.display_name | e}}</a></td>
             </tr>
         {% endfor %}
@@ -126,7 +224,7 @@
         <tfoot>
             <tr>
                 <th></th>
-                <th>{{ stack_base }}</th>
+                <th class="col_size">{{ stack_base | bytes }}</th>
                 <th></th>
                 <th></th>
                 <th></th>
