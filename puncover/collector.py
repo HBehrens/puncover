@@ -1,9 +1,7 @@
 from __future__ import print_function
 import fnmatch
-import json
 import os
 import re
-import subprocess
 import sys
 from __builtin__ import any
 
@@ -63,8 +61,8 @@ def left_strip_from_list(lines):
 
 class Collector:
 
-    def __init__(self, arm_tools_dir=None):
-        self.arm_tools_dir = arm_tools_dir
+    def __init__(self, gcc_tools):
+        self.gcc_tools = gcc_tools
         self.symbols = {}
         self.file_elements = {}
         self.symbols_by_qualified_name = None
@@ -75,34 +73,6 @@ class Collector:
         self.file_elements = {}
         self.symbols_by_qualified_name = None
         self.symbols_by_name = None
-
-    def as_dict(self):
-        return {
-            "symbols" : self.symbols,
-            "arm_tools_dir" : self.arm_tools_dir,
-        }
-
-    def save_to_json(self, filename):
-        with open(filename, "w") as f:
-            json.dump(self.as_dict(), f, indent=2, sort_keys=True)
-
-    def from_dict(self, dict):
-        self.symbols = dict.get("symbols", {})
-        self.arm_tools_dir = dict.get("arm_tools_dir", None)
-
-    def load_from_json(self, filename):
-        with open(filename) as f:
-            self.from_dict(json.load(f))
-
-    def arm_tool(self, name):
-        if not self.arm_tools_dir:
-            raise Exception("ARM tools directory not set")
-
-        path = os.path.join(self.arm_tools_dir, 'bin', name)
-        if not os.path.isfile(path):
-            raise Exception("Could not find %s" % path)
-
-        return path
 
     def qualified_symbol_name(self, symbol):
         return os.path.join(symbol[PATH], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
@@ -321,37 +291,20 @@ class Collector:
                     path = path[1:]
                 s[PATH] = path
 
-    # See https://blog.flameeyes.eu/2010/06/c-name-demangling/ for context
-    #
-    # This solution courtesy of:
-    # https://stackoverflow.com/questions/6526500/c-name-mangling-library-for-python/6526814
     def unmangle_cpp_names(self):
         symbol_names = list(symbol[NAME] for symbol in self.all_symbols())
 
-        proc = subprocess.Popen([ self.arm_tool('arm-none-eabi-c++filt') ] + symbol_names, stdout=subprocess.PIPE)
-        demangled = list(s.rstrip() for s in proc.stdout.readlines())
-
-        unmangled_names = dict(zip(symbol_names, demangled))
+        unmangled_names = self.gcc_tools.get_unmangled_names(symbol_names)
 
         for s in self.all_symbols():
             s[DISPLAY_NAME] = unmangled_names[s[NAME]]
 
     def parse_elf(self, elf_file):
-        def get_assembly_lines(elf_file):
-            proc = subprocess.Popen([self.arm_tool('arm-none-eabi-objdump'),'-dslw', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
-            # proc = subprocess.Popen([in_pebble_sdk('arm-none-eabi-objdump'),'-d', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
-            return proc.stdout.readlines()
-
-
-        def get_size_lines(elf_file):
-            # http://linux.die.net/man/1/nm
-            proc = subprocess.Popen([self.arm_tool('arm-none-eabi-nm'),'-Sl', os.path.basename(elf_file)], stdout=subprocess.PIPE, cwd=os.path.dirname(elf_file))
-            return proc.stdout.readlines()
 
         print("parsing ELF at %s" % elf_file)
 
-        self.parse_assembly_text("".join(get_assembly_lines(elf_file)))
-        for l in get_size_lines(elf_file):
+        self.parse_assembly_text("".join(self.gcc_tools.get_assembly_lines(elf_file)))
+        for l in self.gcc_tools.get_size_lines(elf_file):
             self.parse_size_line(l)
 
         self.elf_mtime = os.path.getmtime(elf_file)
@@ -382,11 +335,6 @@ class Collector:
             print("parsing stack usages starting at %s" % su_dir)
             for l in get_stack_usage_lines(su_dir):
                 self.parse_stack_usage_line(l)
-
-    def parse_pebble_project_dir(self, project_dir):
-        elf_file = os.path.join(project_dir, 'build', 'pebble-app.elf')
-        su_dir = os.path.join(project_dir, "build", "src")
-        self.parse(elf_file, su_dir)
 
     def sorted_by_size(self, symbols):
         return sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)

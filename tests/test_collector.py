@@ -13,33 +13,31 @@ class TestCollector(unittest.TestCase):
         self.assertEqual(left_strip_from_list(["  a", "   b"]), ["a", " b"])
 
     def test_parses_function_line(self):
-        c = Collector()
+        c = Collector(None)
         line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
         self.assertTrue(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
-        c = Collector()
+        c = Collector(None)
         line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
         self.assertTrue(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
-        c = Collector()
+        c = Collector(None)
         line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
         self.assertTrue(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
-
-
     def test_ignores_incomplete_size_line_1(self):
-        c = Collector()
+        c = Collector(None)
         line = "0000059c D __dso_handle"
         self.assertFalse(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {})
 
     def test_ignores_incomplete_size_line_2(self):
-        c = Collector()
+        c = Collector(None)
         line = "U __preinit_array_end"
         self.assertFalse(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {})
@@ -54,7 +52,7 @@ pbl_table_addr():
 __aeabi_dmul():
   9c:	b570      	push	{r4, r5, r6, lr}
 """
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x0000009c))
         self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
@@ -71,7 +69,7 @@ pbl_table_addr():
 __aeabi_dmul():
   9c:	b570      	push	{r4, r5, r6, lr}
 """
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x0000009c))
         self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
@@ -85,7 +83,7 @@ __aeabi_dmul():
 pbl_table_addr():
   98:	a8a8a8a8 	.word	0xa8a8a8a8
 """
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(1, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x00000098))
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
@@ -113,7 +111,7 @@ $d():
 
 """
 
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x000034fc))
         self.assertEqual(c.symbols[0x000034fc]["name"], "window_raw_click_subscribe")
@@ -127,7 +125,7 @@ $d():
 pbl_table_addr():
  568:	f7ff ffca 	bl	98
 """
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(1, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x00000098))
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
@@ -144,7 +142,7 @@ pbl_table_addr():
 00000930 <app_log>:
 $t():
         """
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
         self.assertTrue(c.symbols.has_key(0x00000098))
         self.assertTrue(c.symbols.has_key(0x00000930))
@@ -166,7 +164,7 @@ $t():
 
 
     def test_enhance_call_tree_from_assembly_line(self):
-        c = Collector()
+        c = Collector(None)
         f1 = "f1"
         f2 = {collector.ADDRESS: "00000088"}
         f3 = {collector.ADDRESS: "00000930"}
@@ -193,7 +191,7 @@ $t():
 
     def test_stack_usage_line(self):
         line = "puncover.c:14:40:0	16	dynamic,bounded"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "puncover.c",
             "line": 14,
@@ -204,7 +202,7 @@ $t():
 
     def test_stack_usage_line2(self):
         line = "puncover.c:8:43:dynamic_stack2	16	dynamic"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "puncover.c",
             "line": 8,
@@ -213,7 +211,7 @@ $t():
 
     def test_stack_usage_line_header(self):
         line = "ILI9341_t3.h:312:15:void ILI9341_t3::updateDisplayClip()	16	static"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "ILI9341_t3.h",
             "line": 312,
@@ -222,7 +220,7 @@ $t():
 
     def test_stack_usage_line_cpp_correct_line(self):
         line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "Print.cpp",
             "line": 34,
@@ -233,7 +231,7 @@ $t():
 
     def test_stack_usage_line_cpp_incorrect_line(self):
         line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "Print.cpp",
             "display_name": "virtual size_t Print::write(const uint8_t*, size_t)",
@@ -245,7 +243,7 @@ $t():
 
     def test_stack_usage_line_cpp_constructor(self):
         line = "WString.cpp:82:1:String::String(unsigned int, unsigned char)	32	static"
-        c = Collector()
+        c = Collector(None)
         c.symbols = {"123": {
             "base_file": "WString.cpp",
             "line": 82,
@@ -253,7 +251,7 @@ $t():
         self.assertTrue(c.parse_stack_usage_line(line))
 
     def test_display_names_match(self):
-        c = Collector()
+        c = Collector(None)
 
         def f(a, b):
             return c.display_names_match(a, b)
@@ -281,14 +279,14 @@ $t():
 
 
     def test_count_bytes(self):
-        c = Collector()
+        c = Collector(None)
         self.assertEqual(0, c.count_assembly_code_bytes("dynamic_stack2():"))
         self.assertEqual(2, c.count_assembly_code_bytes(" 88e:	4668      	mov	r0, sp"))
         self.assertEqual(4, c.count_assembly_code_bytes(" 88a:	ebad 0d03 	sub.w	sp, sp, r3"))
         self.assertEqual(4, c.count_assembly_code_bytes("878:	000001ba 	.word	0x000001ba"))
 
     def test_enhance_function_size_from_assembly(self):
-        c = Collector()
+        c = Collector(None)
         c.symbols = { int("0000009c", 16) : {
             collector.ADDRESS: "0000009c",
             collector.ASM: """
@@ -305,7 +303,7 @@ $t():
         self.assertEqual(8, s[collector.SIZE])
 
     def test_derive_filename_from_assembly(self):
-        c = Collector()
+        c = Collector(None)
         c.parse_assembly_text("""
 000008a8 <uses_doubles2.constprop.0>:
 uses_doubles2():
@@ -319,7 +317,7 @@ uses_doubles2():
 
 
     def test_enhance_sibling_symbols(self):
-        c = Collector()
+        c = Collector(None)
         aeabi_drsub = {
             collector.ADDRESS: "0000009c",
             collector.SIZE: 8,
@@ -349,7 +347,7 @@ uses_doubles2():
         self.assertFalse(adddf3.has_key(collector.NEXT_FUNCTION))
 
     def test_derive_file_elements(self):
-        c = Collector()
+        c = Collector(None)
         s1 = {collector.PATH: "/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"}
         s2 = {collector.PATH: "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"}
         s3 = {collector.PATH: "src/puncover.c"}
@@ -370,7 +368,7 @@ uses_doubles2():
         self.assertIsNotNone(s3[collector.FILE])
 
     def test_derive_file_elements_for_unknown_files(self):
-        c = Collector()
+        c = Collector(None)
         s = c.add_symbol("some_symbol", "00a")
         self.assertEqual("some_symbol", s[collector.NAME])
         self.assertNotIn(collector.PATH, s)
@@ -387,7 +385,7 @@ uses_doubles2():
 
 
     def test_enhance_file_elements(self):
-        c = Collector()
+        c = Collector(None)
         aa_c = c.file_for_path("a/a/aa.c")
         ab_c = c.file_for_path("a/b/ab.c")
         b_c = c.file_for_path("b/b.c")
