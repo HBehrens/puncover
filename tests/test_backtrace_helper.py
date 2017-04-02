@@ -51,7 +51,7 @@ class TestBacktraceHelper(unittest.TestCase):
 class TestBacktraceHelperTreeSizes(unittest.TestCase):
 
     def setUp(self):
-        self.cc = collector.Collector()
+        self.cc = collector.Collector(None)
         self.a = self.cc.add_symbol("a", "a", type=collector.TYPE_FUNCTION, stack_size=1)
         self.b = self.cc.add_symbol("b", "b", type=collector.TYPE_FUNCTION, stack_size=10)
         self.c = self.cc.add_symbol("c", "c", type=collector.TYPE_FUNCTION, stack_size=100)
