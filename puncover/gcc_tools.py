@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import itertools
+
 
 class GCCTools:
     def __init__(self, gcc_base_filename):
@@ -32,8 +34,15 @@ class GCCTools:
     #
     # This solution courtesy of:
     # https://stackoverflow.com/questions/6526500/c-name-mangling-library-for-python/6526814
-    def get_unmangled_names(self, symbol_names):
-        lines = self.gcc_tool_lines('c++filt', symbol_names)
+    def get_unmangled_names(self, symbol_names, chunk_size=1000):
+        # for very long lists we can exceed the maximum length of the command line
+        # so we split the names in chunks
+        def chunks(l):
+            for i in range(0, len(l), chunk_size):
+                yield l[i:i + chunk_size]
+
+        lines_list =  [self.gcc_tool_lines('c++filt', c) for c in chunks(symbol_names)]
+        lines = list(itertools.chain.from_iterable(lines_list))
         demangled = list(s.rstrip() for s in lines)
 
         return dict(zip(symbol_names, demangled))
