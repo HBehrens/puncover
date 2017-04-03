@@ -2,7 +2,6 @@ from collections import Iterable
 import os
 import re
 from flask import Flask, render_template, abort, redirect, request
-import flask
 from flask.helpers import url_for
 from flask.views import View
 import itertools
@@ -191,7 +190,7 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
 
     # when sorting for numbers, we're interested in large numbers first
     next_sort = 'asc' if is_alpha else 'desc'
-    sort_id, sort_order = context.parent['sort'].split('_')
+    sort_id, sort_order = context.parent.get('sort', 'a_b').split('_')
     classes = ['sortable']
     if sort_id.lower() == id:
         sort_class = 'sort_' + sort_order
@@ -205,9 +204,8 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
     # replace/set ?sort= in URL
     args = request.args.copy()
     args['sort'] = next_sort
-    url = Href(request.base_url)
+    url = Href(request.base_url, sort=True)
 
-    print('<a href="%s" class="%s">%s</a>' % (url(args), ' '.join(classes), title))
     return '<a href="%s" class="%s">%s</a>' % (url(args), ' '.join(classes), title)
 
 
@@ -221,7 +219,7 @@ def sorted_filter(context, symbols):
         return int(v)
 
     key = {
-        'name': lambda e: e.get(collector.DISPLAY_NAME, e[collector.NAME]),
+        'name': lambda e: e.get(collector.DISPLAY_NAME, e.get(collector.NAME, None)).lower(),
         'code': lambda e: to_num(symbol_code_size_filter(context, e)),
         'vars': lambda e: to_num(symbol_var_size_filter(context, e)),
     }[sort_id]

@@ -111,11 +111,11 @@
     <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
-                <th width="100%">Name</th>
+                <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 <th class="col_size">Stack</th>
-                <th class="col_size">Code</th>
-                <th class="col_size">Static</th>
+                <th class="col_size">{{ 'Code' | col_sortable }}</th>
+                <th class="col_size">{{ 'Static' | col_sortable(False, 'vars') }}</th>
             </tr>
         </thead>
 
@@ -125,7 +125,7 @@
                 {% set group_code_size = functions | symbol_code_size %}
                 {% set group_var_size = (variables + functions) | symbol_var_size %}
 
-                {% for symbol in functions %}
+                {% for symbol in (functions | sorted) %}
                 <tr>
                     <td><a href="{{ symbol | symbol_url }}" class="icon-function">{{ symbol.display_name |e }}</a></td>
                     <td>{{ symbol_remarks(symbol) }}</td>
