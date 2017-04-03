@@ -27,10 +27,10 @@
     <table class="table table-bordered table-hover table-condensed">
         <thead>
             <tr>
-                <th width="100%"><a href="#" class="sortable">Name</a></th>
+                <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
-                <th class="col_size"><a href="#" class="sortable sort_asc">Code</a></th>
-                <th class="col_size"><a href="#" class="sortable sort_desc">Static</a></th>
+                <th class="col_size">{{ 'Code' | col_sortable }}</th>
+                <th class="col_size">{{ 'Static' | col_sortable }}</th>
             </tr>
         </thead>
         <tbody>

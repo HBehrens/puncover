@@ -8,6 +8,8 @@ from flask.views import View
 import itertools
 import jinja2
 import markupsafe
+from werkzeug.urls import Href
+
 from backtrace_helper import BacktraceHelper
 import collector
 
@@ -181,6 +183,33 @@ def style_background_bar_filter(context, x, total, color=None):
     percent = 100 * x / total
     return 'background:linear-gradient(90deg, {1} {0}%, transparent {0}%);'.format(percent, color)
 
+@jinja2.contextfilter
+def col_sortable_filter(context, title, is_alpha=False, id=None):
+
+    id = title if id is None else id
+    id = id.lower()
+
+    # when sorting for numbers, we're interested in large numbers first
+    next_sort = 'asc' if is_alpha else 'desc'
+    sort_id, sort_order = context.parent['sort'].split('_')
+    classes = ['sortable']
+    if sort_id.lower() == id:
+        sort_class = 'sort_' + sort_order
+        next_sort = 'desc' if sort_order == 'asc' else 'asc'
+        if is_alpha:
+            sort_class += '_alpha'
+        classes.append(sort_class)
+
+    next_sort = id + '_' + next_sort
+
+    # replace/set ?sort= in URL
+    args = request.args.copy()
+    args['sort'] = next_sort
+    url = Href(request.base_url)
+
+    print('<a href="%s" class="%s">%s</a>' % (url(args), ' '.join(classes), title))
+    return '<a href="%s" class="%s">%s</a>' % (url(args), ' '.join(classes), title)
+
 
 class HTMLRenderer(View):
 
@@ -190,12 +219,15 @@ class HTMLRenderer(View):
             "renderer": self,
             "SLASH": '<span class="slash">/</span>',
             "root_folders": list(collector.root_folders()),
+            "sort": 'name_asc',
             "all_symbols": collector.all_symbols(),
             "all_functions": collector.all_functions(),
             "all_variables": collector.all_variables(),
         }
 
     def render_template(self, template_name, file_name):
+        self.template_vars['sort'] = request.args.get('sort', 'name_asc')
+        self.template_vars['request'] = request
         self.template_vars[KEY_OUTPUT_FILE_NAME] = file_name
         return render_template(template_name, **self.template_vars)
 
@@ -207,13 +239,20 @@ class HTMLRenderer(View):
         symbol = self.collector.symbol(name, False)
         return symbol['display_name'] if symbol else name
 
+    def url_for(self, endpoint, **values):
+        result = url_for(endpoint, **values)
+        href = Href(result)
+        # pass along any query parameters
+        # this is kind of hacky as it replaces any existing parameters
+        return href(request.args)
+
     def url_for_symbol(self, value):
         if value[collector.TYPE] in [collector.TYPE_FUNCTION]:
-            return url_for("path", path=self.collector.qualified_symbol_name(value))
+            return self.url_for("path", path=self.collector.qualified_symbol_name(value))
 
         # file or folder
         path = value.get(collector.PATH, None)
-        return url_for("path", path=path) if path else ""
+        return self.url_for("path", path=path) if path else ""
 
 
     def dispatch_request(self):
@@ -265,7 +304,7 @@ class SymbolRenderer(HTMLRenderer):
         if not symbol:
             abort(404)
 
-        return redirect(url_for("path", path=self.collector.qualified_symbol_name(symbol)))
+        return redirect(self.url_for("path", path=self.collector.qualified_symbol_name(symbol)))
 
 class AllSymbolsRenderer(HTMLRenderer):
 
@@ -299,6 +338,7 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["chain"] = chain_filter
     jinja_env.filters["bytes"] = bytes_filter
     jinja_env.filters["style_background_bar"] = style_background_bar_filter
+    jinja_env.filters["col_sortable"] = col_sortable_filter
 
 
 
