@@ -30,13 +30,13 @@
                 <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 <th class="col_size">{{ 'Code' | col_sortable }}</th>
-                <th class="col_size">{{ 'Static' | col_sortable }}</th>
+                <th class="col_size">{{ 'Static' | col_sortable(False, 'vars') }}</th>
             </tr>
         </thead>
         <tbody>
             {% set group_code_size = folders | symbol_code_size %}
             {% set group_var_size = folders | symbol_var_size %}
-            {% for folder in folders %}
+            {% for folder in (folders | sorted) %}
             <tr>
                 <td>
                     <a href="{{ folder | symbol_url }}" class="icon-folder">
@@ -63,7 +63,7 @@
 
             {% set group_code_size = files | symbol_code_size %}
             {% set group_var_size = files | symbol_var_size %}
-            {% for file in files %}
+            {% for file in (files | sorted) %}
             <tr>
                 <td>
                     <a href="{{ file | symbol_url }}" class="icon-file">

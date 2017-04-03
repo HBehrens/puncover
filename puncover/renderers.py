@@ -211,6 +211,24 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
     return '<a href="%s" class="%s">%s</a>' % (url(args), ' '.join(classes), title)
 
 
+@jinja2.contextfilter
+def sorted_filter(context, symbols):
+    sort_id, sort_order = context.parent['sort'].split('_')
+
+    def to_num(v):
+        if v is None or v == '':
+            return 0
+        return int(v)
+
+    key = {
+        'name': lambda e: e.get(collector.DISPLAY_NAME, e[collector.NAME]),
+        'code': lambda e: to_num(symbol_code_size_filter(context, e)),
+        'vars': lambda e: to_num(symbol_var_size_filter(context, e)),
+    }[sort_id]
+
+    return list(sorted(symbols, key=key, reverse=(sort_order == 'desc')))
+
+
 class HTMLRenderer(View):
 
     def __init__(self, collector):
@@ -339,6 +357,7 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["bytes"] = bytes_filter
     jinja_env.filters["style_background_bar"] = style_background_bar_filter
     jinja_env.filters["col_sortable"] = col_sortable_filter
+    jinja_env.filters["sorted"] = sorted_filter
 
 
 
