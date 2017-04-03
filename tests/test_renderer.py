@@ -13,11 +13,8 @@ class TestRenderer(unittest.TestCase):
         self.request.base_url = 'http://puncover.com'
         self.request.blueprint = None
 
-        def url_adapter_func(url, args, **kwargs):
-            result = url
-            if len(args.keys()) > 0:
-                result += '?' + '&'.join('%s=%s' % (k,v) for k,v in args.items())
-            return result
+        def url_adapter_func(url, *args, **kwargs):
+            return url
 
         reqctx = Mock(name='reqctx')
         reqctx.request = self.request
