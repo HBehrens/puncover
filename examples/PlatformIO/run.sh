@@ -23,7 +23,8 @@ puncover --gcc_tools_base ~/.platformio/packages/toolchain-gccarmnoneeabi/bin/ar
          --elf .pioenvs/host/firmware.elf \
          --build_dir .pioenvs/host \
          &
-trap 'kill $(jobs -p)' EXIT
+puncover_pid=$!
+trap "kill $puncover_pid" EXIT
 
 if [ "$1" = "--wget" ]; then
     sleep 5 # dirty way to give puncover enough time to launch webserver
