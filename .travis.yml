@@ -7,6 +7,6 @@ install:
   - python setup.py -q install
 script:
   - nosetests --with-cov
-  - examples/PlatformIO/run.sh
+  - examples/PlatformIO/run.sh --wget
 after_success:
   - codecov
