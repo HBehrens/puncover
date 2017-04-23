@@ -43,11 +43,8 @@ class Builder:
 
     def build_call_trees(self):
         for f in self.collector.all_functions():
-            if len(f[CALLERS]) == 0:
-                self.backtrace_helper.deepest_callee_tree(f)
-
-            if len(f[CALLEES]) == 0:
-                self.backtrace_helper.deepest_caller_tree(f)
+            self.backtrace_helper.deepest_callee_tree(f)
+            self.backtrace_helper.deepest_caller_tree(f)
 
 
 class PebbleProjectBuilder(Builder):

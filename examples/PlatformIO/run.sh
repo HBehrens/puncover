@@ -32,7 +32,7 @@ if [ "$1" = "--wget" ]; then
     rm -rf wget
     mkdir wget
     cd wget
-    wget -r -l 2 localhost:5000
+    wget -e robots=off -r -l 2 localhost:5000
 else
     # infinite wait, user has to hit CTRL+C to exit
     # puncover, executed as background job will be killed through trap

@@ -73,6 +73,8 @@ def symbol_var_size_filter(context, value):
 
 @jinja2.contextfilter
 def symbol_stack_size_filter(context, value, stack_base=None):
+    if isinstance(stack_base, basestring):
+        stack_base = None
     result = traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
     return none_sum(result, stack_base)
 
