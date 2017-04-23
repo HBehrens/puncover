@@ -1,0 +1,2 @@
+include puncover/static/**/*
+include puncover/templates/**
