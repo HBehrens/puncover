@@ -1,1 +1,0 @@
-int __attribute__ ((noinline)) func_ab();
