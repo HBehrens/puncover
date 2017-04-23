@@ -216,7 +216,7 @@
                     {% endif %}
                 </td>
                 <td class="col_size">{{ function | symbol_code_size | bytes }}</td>
-                <td><a href="{{ function | symbol_url }}">{{ function.display_name | e}}</a></td>
+                <td><a href="{{ function | symbol_url }}" class="icon-function">{{ function.display_name | e}}</a></td>
             </tr>
         {% endfor %}
         </tbody>
