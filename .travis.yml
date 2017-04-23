@@ -5,6 +5,8 @@ install:
   - pip install .
   - pip install -r requirements.txt
   - python setup.py -q install
-script: nosetests --with-cov
+script:
+  - nosetests --with-cov
+  - examples/PlatformIO/run.sh
 after_success:
   - codecov
