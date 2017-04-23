@@ -6,17 +6,15 @@ from distutils.spawn import find_executable
 from flask import Flask
 from os.path import dirname
 from collector import Collector
-from builders import PebbleProjectBuilder, ElfBuilder
+from builders import ElfBuilder
 from middleware import BuilderMiddleware
 import renderers
 from gcc_tools import GCCTools
+from version import __version__
 
-
-def create_builder(gcc_base_filename, project_dir=None, elf_file=None, su_dir=None, src_root=None):
+def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
     c = Collector(GCCTools(gcc_base_filename))
-    if project_dir:
-        return PebbleProjectBuilder(c, src_root, project_dir)
-    elif elf_file:
+    if elf_file:
         return ElfBuilder(c, src_root, elf_file, su_dir)
     else:
         raise Exception("Unable to configure builder for collector")
@@ -30,12 +28,14 @@ def find_arm_tools_location():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pebble build analyzer")
+    parser = argparse.ArgumentParser(
+        version=__version__,
+        description="Analyses C/C++ build output for code size, static variables, and stack usage.")
     parser.add_argument('--arm_tools_dir', dest='arm_tools_dir', default=find_arm_tools_location(),
-                        help='DEPRECATED! location of your arm tools. Typically ~/pebble-dev/PebbleSDK-current/arm-cs-tools')
+                        help='DEPRECATED! location of your arm tools.')
     parser.add_argument('--gcc_tools_base', dest='gcc_tools_base',
                         help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
-    parser.add_argument('--elf_file', dest="elf_file",
+    parser.add_argument('--elf_file', dest="elf_file", required=True,
                         help='location of an ELF file')
     parser.add_argument('--src_root', dest='src_root',
                         help='location of your sources')
@@ -45,18 +45,14 @@ def main():
                         help='enable Flask debugger')
     parser.add_argument('--port', dest='port', default=5000, type=int,
                         help='port the HTTP server runs on')
-    parser.add_argument('project_dir', metavar='project_dir', nargs='?',
-                        help='location of your pebble project')
     args = parser.parse_args()
-    if not args.project_dir and not args.elf_file:
-        raise Exception("Specify either a project directory or an ELF file.")
 
     if not args.gcc_tools_base:
         if args.arm_tools_dir:
             print('DEPRECATED: argument --arm_tools_dir will be removed, use --gcc_tools_base instead.')
             args.gcc_tools_base = os.path.join(args.arm_tools_dir, 'bin/arm-none-eabi-')
 
-    builder = create_builder(args.gcc_tools_base, project_dir=args.project_dir, elf_file=args.elf_file,
+    builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)
     builder.build_if_needed()
     renderers.register_jinja_filters(app.jinja_env)

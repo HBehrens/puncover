@@ -2,8 +2,6 @@ import abc
 import os
 from os.path import dirname
 from backtrace_helper import BacktraceHelper
-from collector import CALLERS
-from collector import CALLEES
 
 
 class Builder:
@@ -45,20 +43,6 @@ class Builder:
         for f in self.collector.all_functions():
             self.backtrace_helper.deepest_callee_tree(f)
             self.backtrace_helper.deepest_caller_tree(f)
-
-
-class PebbleProjectBuilder(Builder):
-    def __init__(self, collector, src_root, project_dir):
-        # TODO: check if this is a pebble project dir
-        Builder.__init__(self, collector, src_root if src_root else project_dir)
-        self.project_dir = project_dir
-        self.store_file_time(self.get_elf_path(), store_empty=True)
-
-    def get_elf_path(self):
-        return os.path.join(self.project_dir, 'build', 'pebble-app.elf')
-
-    def get_su_dir(self):
-        return os.path.join(self.project_dir, "build", "src")
 
 
 class ElfBuilder(Builder):
