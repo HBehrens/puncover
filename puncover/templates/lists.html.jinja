@@ -145,7 +145,7 @@
             {% endif %}
 
 {# static vars #}
-            {% for var in variables %}
+            {% for var in variables | sorted %}
              <tr>
                 <td colspan="4"><span class="icon-variable">{{ var.display_name |e }}</span></td>
                 <td class="col_size" style="{{ var | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
