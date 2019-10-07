@@ -41,7 +41,12 @@ class GCCTools:
             for i in range(0, len(l), chunk_size):
                 yield l[i:i + chunk_size]
 
-        lines_list =  [self.gcc_tool_lines('c++filt', c) for c in chunks(symbol_names)]
+        lines_list = [c for c in chunks(symbol_names)]
+        try:
+            lines_list = [self.gcc_tool_lines(
+                'c++filt', c) for c in chunks(symbol_names)]
+        except Exception as e:
+            print("Unable to demangle C++ symbol names: {}".format(e))
         lines = list(itertools.chain.from_iterable(lines_list))
         demangled = list(s.rstrip() for s in lines)
 
