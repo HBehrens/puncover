@@ -20,8 +20,8 @@ platformio run -e host
 echo "-------------------------"
 echo "puncover"
 puncover --gcc_tools_base ~/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi- \
-         --elf .pioenvs/host/firmware.elf \
-         --build_dir .pioenvs/host \
+         --elf .pio/build/host/firmware.elf \
+         --build_dir .pio/build/host \
          --src_root . \
          &
 puncover_pid=$!
