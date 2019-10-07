@@ -15,12 +15,16 @@ class GCCTools:
     def gcc_tool_path(self, name):
         path = self.gcc_base_filename + name
         if not os.path.isfile(path):
-            raise Exception("Could not find %s" % path)
+            # try prepending 'gcc-' - useful for nm on some gcc distributions
+            path = self.gcc_base_filename + "gcc-" + name
+            if not os.path.isfile(path):
+                raise Exception("Could not find %s" % path)
 
         return path
 
     def gcc_tool_lines(self, name, args, cwd=None):
-        proc = subprocess.Popen([self.gcc_tool_path(name)] + args, stdout=subprocess.PIPE, cwd=cwd)
+        proc = subprocess.Popen(
+            [self.gcc_tool_path(name)] + args, stdout=subprocess.PIPE, cwd=cwd)
         return proc.stdout.readlines()
 
     def get_assembly_lines(self, elf_file):
@@ -41,7 +45,8 @@ class GCCTools:
             for i in range(0, len(l), chunk_size):
                 yield l[i:i + chunk_size]
 
-        lines_list =  [self.gcc_tool_lines('c++filt', c) for c in chunks(symbol_names)]
+        lines_list = [self.gcc_tool_lines('c++filt', c)
+                      for c in chunks(symbol_names)]
         lines = list(itertools.chain.from_iterable(lines_list))
         demangled = list(s.rstrip() for s in lines)
 
