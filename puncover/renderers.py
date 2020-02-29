@@ -9,8 +9,8 @@ import jinja2
 import markupsafe
 from werkzeug.urls import Href
 
-from backtrace_helper import BacktraceHelper
-import collector
+from puncover.backtrace_helper import BacktraceHelper
+from puncover import collector
 
 KEY_OUTPUT_FILE_NAME = "output_file_name"
 

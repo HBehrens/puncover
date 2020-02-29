@@ -5,12 +5,12 @@ import os
 from distutils.spawn import find_executable
 from flask import Flask
 from os.path import dirname
-from collector import Collector
-from builders import ElfBuilder
-from middleware import BuilderMiddleware
-import renderers
-from gcc_tools import GCCTools
-from version import __version__
+from puncover.collector import Collector
+from puncover.builders import ElfBuilder
+from puncover.middleware import BuilderMiddleware
+from puncover import renderers
+from puncover.gcc_tools import GCCTools
+from puncover.version import __version__
 
 def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
     c = Collector(GCCTools(gcc_base_filename))
