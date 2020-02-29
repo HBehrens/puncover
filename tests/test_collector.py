@@ -54,9 +54,9 @@ __aeabi_dmul():
 """
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x0000009c))
+        self.assertTrue(0x0000009c in c.symbols)
         self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
-        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertTrue(0x00000098 in c.symbols)
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
 
     def test_parses_assembly2(self):
@@ -71,9 +71,9 @@ __aeabi_dmul():
 """
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x0000009c))
+        self.assertTrue(0x0000009c in c.symbols)
         self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
-        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertTrue(0x00000098 in c.symbols)
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
 
     def test_parses_assembly_and_ignores_c(self):
@@ -85,7 +85,7 @@ pbl_table_addr():
 """
         c = Collector(None)
         self.assertEqual(1, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertTrue(0x00000098 in c.symbols)
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
         self.assertEqual(len(c.symbols[0x00000098]["asm"]), 2)
         self.assertEqual(c.symbols[0x00000098]["asm"][0], "pbl_table_addr():")
@@ -113,7 +113,7 @@ $d():
 
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x000034fc))
+        self.assertTrue(0x000034fc in c.symbols)
         self.assertEqual(c.symbols[0x000034fc]["name"], "window_raw_click_subscribe")
         # print "\n".join(c.symbols["000034fc"]["asm"])
         self.assertEqual(len(c.symbols[0x000034fc]["asm"]), 8)
@@ -127,7 +127,7 @@ pbl_table_addr():
 """
         c = Collector(None)
         self.assertEqual(1, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x00000098))
+        self.assertTrue(0x00000098 in c.symbols)
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
         self.assertEqual(c.symbols[0x00000098]["asm"][1], " 568:\tf7ff ffca \tbl\t98")
 
@@ -144,16 +144,16 @@ $t():
         """
         c = Collector(None)
         self.assertEqual(2, c.parse_assembly_text(assembly))
-        self.assertTrue(c.symbols.has_key(0x00000098))
-        self.assertTrue(c.symbols.has_key(0x00000930))
+        self.assertTrue(0x00000098 in c.symbols)
+        self.assertTrue(0x00000930 in c.symbols)
 
         pbl_table_addr = c.symbols[0x00000098]
         app_log = c.symbols[0x00000930]
 
-        self.assertFalse(pbl_table_addr.has_key("callers"))
-        self.assertFalse(pbl_table_addr.has_key("callees"))
-        self.assertFalse(app_log.has_key("callers"))
-        self.assertFalse(app_log.has_key("callees"))
+        self.assertFalse("callers" in pbl_table_addr)
+        self.assertFalse("callees" in pbl_table_addr)
+        self.assertFalse("callers" in app_log)
+        self.assertFalse("callees" in app_log)
 
         c.enhance_call_tree()
 
@@ -298,7 +298,7 @@ $t():
         }}
 
         s = c.symbol_by_addr("9c")
-        self.assertFalse(s.has_key(collector.SIZE))
+        self.assertFalse(collector.SIZE in s)
         c.enhance_function_size_from_assembly()
         self.assertEqual(8, s[collector.SIZE])
 
@@ -337,14 +337,14 @@ uses_doubles2():
         c.symbols = {int(f[collector.ADDRESS], 16): f for f in [aeabi_drsub, aeabi_dsub, adddf3]}
         c.enhance_sibling_symbols()
 
-        self.assertFalse(aeabi_drsub.has_key(collector.PREV_FUNCTION))
+        self.assertFalse(collector.PREV_FUNCTION in aeabi_drsub)
         self.assertEqual(aeabi_dsub, aeabi_drsub.get(collector.NEXT_FUNCTION))
 
         self.assertEqual(aeabi_drsub, aeabi_dsub.get(collector.PREV_FUNCTION))
         self.assertEqual(adddf3, aeabi_dsub.get(collector.NEXT_FUNCTION))
 
         self.assertEqual(aeabi_dsub, adddf3.get(collector.PREV_FUNCTION))
-        self.assertFalse(adddf3.has_key(collector.NEXT_FUNCTION))
+        self.assertFalse(collector.NEXT_FUNCTION in adddf3)
 
     def test_derive_file_elements(self):
         c = Collector(None)
@@ -412,26 +412,26 @@ uses_doubles2():
         c.enhance_file_elements()
 
         crf = list(c.collapsed_root_folders())
-        self.assertItemsEqual([aa, ab, b], crf)
+        self.assertListEqual([aa, ab, b], crf)
 
         self.assertEqual(a, aa[collector.ROOT])
         self.assertEqual(a, ab[collector.ROOT])
         self.assertEqual(b, ba[collector.ROOT])
         self.assertEqual(b, baa[collector.ROOT])
 
-        self.assertItemsEqual([aa, ab], a[collector.SUB_FOLDERS])
-        self.assertItemsEqual([], aa[collector.SUB_FOLDERS])
-        self.assertItemsEqual([], ab[collector.SUB_FOLDERS])
-        self.assertItemsEqual([ba], b[collector.SUB_FOLDERS])
-        self.assertItemsEqual([baa], ba[collector.SUB_FOLDERS])
-        self.assertItemsEqual([], baa[collector.SUB_FOLDERS])
+        self.assertListEqual([aa, ab], a[collector.SUB_FOLDERS])
+        self.assertListEqual([], aa[collector.SUB_FOLDERS])
+        self.assertListEqual([], ab[collector.SUB_FOLDERS])
+        self.assertListEqual([ba], b[collector.SUB_FOLDERS])
+        self.assertListEqual([baa], ba[collector.SUB_FOLDERS])
+        self.assertListEqual([], baa[collector.SUB_FOLDERS])
 
-        self.assertItemsEqual([], a[collector.FILES])
-        self.assertItemsEqual([aa_c], aa[collector.FILES])
-        self.assertItemsEqual([ab_c], ab[collector.FILES])
-        self.assertItemsEqual([b_c], b[collector.FILES])
-        self.assertItemsEqual([], ba[collector.FILES])
-        self.assertItemsEqual([baa_c], baa[collector.FILES])
+        self.assertListEqual([], a[collector.FILES])
+        self.assertListEqual([aa_c], aa[collector.FILES])
+        self.assertListEqual([ab_c], ab[collector.FILES])
+        self.assertListEqual([b_c], b[collector.FILES])
+        self.assertListEqual([], ba[collector.FILES])
+        self.assertListEqual([baa_c], baa[collector.FILES])
 
         self.assertEqual("a", a[collector.COLLAPSED_NAME])
         self.assertEqual("a/a", aa[collector.COLLAPSED_NAME])
@@ -440,10 +440,10 @@ uses_doubles2():
         self.assertEqual("a", ba[collector.COLLAPSED_NAME])
         self.assertEqual("a/a", baa[collector.COLLAPSED_NAME])
 
-        self.assertItemsEqual([aa, ab], a[collector.COLLAPSED_SUB_FOLDERS])
-        self.assertItemsEqual([], aa[collector.COLLAPSED_SUB_FOLDERS])
-        self.assertItemsEqual([], ab[collector.COLLAPSED_SUB_FOLDERS])
-        self.assertItemsEqual([baa], b[collector.COLLAPSED_SUB_FOLDERS])
-        self.assertItemsEqual([baa], ba[collector.COLLAPSED_SUB_FOLDERS])
-        self.assertItemsEqual([], baa[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([aa, ab], a[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([], aa[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([], ab[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([baa], b[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([baa], ba[collector.COLLAPSED_SUB_FOLDERS])
+        self.assertListEqual([], baa[collector.COLLAPSED_SUB_FOLDERS])
 

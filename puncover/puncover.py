@@ -29,7 +29,6 @@ def find_arm_tools_location():
 
 def main():
     parser = argparse.ArgumentParser(
-        version=__version__,
         description="Analyses C/C++ build output for code size, static variables, and stack usage.")
     parser.add_argument('--arm_tools_dir', dest='arm_tools_dir', default=find_arm_tools_location(),
                         help='DEPRECATED! location of your arm tools.')
