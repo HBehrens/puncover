@@ -9,8 +9,8 @@ import jinja2
 import markupsafe
 from werkzeug.urls import Href
 
-from backtrace_helper import BacktraceHelper
-import collector
+from puncover.backtrace_helper import BacktraceHelper
+from puncover import collector
 
 KEY_OUTPUT_FILE_NAME = "output_file_name"
 
@@ -73,7 +73,7 @@ def symbol_var_size_filter(context, value):
 
 @jinja2.contextfilter
 def symbol_stack_size_filter(context, value, stack_base=None):
-    if isinstance(stack_base, basestring):
+    if isinstance(stack_base, str):
         stack_base = None
     result = traverse_filter_wrapper(value, lambda s: s.get(collector.STACK_SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION else None)
     return none_sum(result, stack_base)
@@ -181,7 +181,7 @@ def style_background_bar_filter(context, x, total, color=None):
         color = 'rgba(0,0,255,0.07)'
 
     x = min(x, total)
-    percent = 100 * x / total
+    percent = 100 * x // total
     return 'background:linear-gradient(90deg, {1} {0}%, transparent {0}%);'.format(percent, color)
 
 @jinja2.contextfilter
@@ -302,9 +302,9 @@ class PathRenderer(HTMLRenderer):
             self.template_vars["folder"] = file_element
             return self.render_template("folder.html.jinja", path)
 
-        print "### " + path
+        print("### " + path)
         for f in sorted([f[collector.PATH] for f in self.collector.file_elements.values()]):
-            print f
+            print(f)
         # print "## root folders"
         # for f in self.collector.root_folders():
         #     print f[collector.PATH]

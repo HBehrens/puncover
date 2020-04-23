@@ -21,7 +21,7 @@ class GCCTools:
 
     def gcc_tool_lines(self, name, args, cwd=None):
         proc = subprocess.Popen([self.gcc_tool_path(name)] + args, stdout=subprocess.PIPE, cwd=cwd)
-        return proc.stdout.readlines()
+        return [l.decode() for l in proc.stdout.readlines()]
 
     def get_assembly_lines(self, elf_file):
         return self.gcc_tool_lines('objdump', ['-dslw', os.path.basename(elf_file)], os.path.dirname(elf_file))

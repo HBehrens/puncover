@@ -1,9 +1,7 @@
-from __future__ import print_function
 import fnmatch
 import os
 import re
 import sys
-from __builtin__ import any
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -75,7 +73,9 @@ class Collector:
         self.symbols_by_name = None
 
     def qualified_symbol_name(self, symbol):
-        return os.path.join(symbol[PATH], symbol[NAME]) if symbol.has_key(BASE_FILE) else symbol[NAME]
+        if BASE_FILE in symbol:
+            return os.path.join(symbol[PATH], symbol[NAME])
+        return symbol[NAME]
 
     def symbol(self, name, qualified=True):
         self.build_symbol_name_index()
@@ -90,7 +90,7 @@ class Collector:
     def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None, stack_size=None):
         int_address = int(address, 16)
         sym = self.symbols.get(int_address, {})
-        if sym.has_key(NAME) and sym[NAME] != name:
+        if NAME in sym and sym[NAME] != name:
             # warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
             pass
         else:
@@ -350,7 +350,7 @@ class Collector:
 
     def enhance_assembly(self):
         for key, symbol in self.symbols.items():
-            if symbol.has_key(ASM):
+            if ASM in symbol:
                 symbol[ASM] = list([self.enhanced_assembly_line(l) for l in symbol[ASM]])
 
     def add_function_call(self, caller, callee):
@@ -429,17 +429,17 @@ class Collector:
     def count_assembly_code_bytes(self, line):
         match = self.count_assembly_code_bytes_re.match(line)
         if match:
-            return len(match.group(1).replace(" ", "")) / 2
+            return len(match.group(1).replace(" ", "")) // 2
         return 0
 
     def enhance_function_size_from_assembly(self):
         for f in self.all_symbols():
-            if f.has_key(ASM):
+            if ASM in f:
                 f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
 
     def enhance_sibling_symbols(self):
         for f in self.all_functions():
-            if f.has_key(SIZE):
+            if SIZE in f:
                 addr = int(f.get(ADDRESS), 16) + f.get(SIZE)
                 next_symbol = self.symbol_by_addr(hex(addr))
                 if next_symbol and next_symbol.get(TYPE, None) == TYPE_FUNCTION:
