@@ -44,6 +44,8 @@ def main():
                         help='enable Flask debugger')
     parser.add_argument('--port', dest='port', default=5000, type=int,
                         help='port the HTTP server runs on')
+    parser.add_argument('--host', dest='host', default='127.0.0.1',
+                        help='host IP the HTTP server runs on')
     args = parser.parse_args()
 
     if not args.gcc_tools_base:
@@ -60,7 +62,7 @@ def main():
 
     if args.debug:
         app.debug = True
-    app.run(port=args.port)
+    app.run(host=args.host, port=args.port)
 
 
 if __name__ == '__main__':
