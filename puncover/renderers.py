@@ -223,6 +223,7 @@ def sorted_filter(context, symbols):
     key = {
         'name': lambda e: e.get(collector.DISPLAY_NAME, e.get(collector.NAME, None)).lower(),
         'code': lambda e: to_num(symbol_code_size_filter(context, e)),
+        'stack': lambda e: to_num(symbol_stack_size_filter(context, e)),
         'vars': lambda e: to_num(symbol_var_size_filter(context, e)),
     }[sort_id]
 

@@ -107,6 +107,25 @@ class TestRenderer(unittest.TestCase):
         actual = renderers.sorted_filter(ctx, [b, c, a])
         self.assertEqual([c, b, a], actual)
 
+    def test_sorted_filter_stack(self):
+        ctx = Mock()
+        ctx.parent = {'sort': 'stack_asc'}
+        a = {'type': 'folder', 'sub_folders': [], 'files': [
+        ]}
+        b = {'type': 'file', 'symbols': [
+            {'type': 'function', 'stack_size': 200}
+        ]}
+        c = {'type': 'file', 'symbols': [
+            {'type': 'function', 'stack_size': 300}
+        ]}
+        actual = renderers.sorted_filter(ctx, [b, c, a])
+
+        self.assertEqual([a, b, c], actual)
+
+        ctx.parent = {'sort': 'stack_desc'}
+        actual = renderers.sorted_filter(ctx, [b, c, a])
+        self.assertEqual([c, b, a], actual)
+
     def test_col_sortable_filter_name(self):
         ctx = Mock()
         ctx.parent = {}
@@ -122,6 +141,23 @@ class TestRenderer(unittest.TestCase):
         self.request.args = {'sort': 'foo'}
         expected = '<a href="http://puncover.com?sort=name_desc" class="sortable sort_asc_alpha">Name</a>'
         actual = renderers.col_sortable_filter(ctx, 'Name', True)
+        self.assertEqual(expected, actual)
+
+    def test_col_sortable_filter_stack(self):
+        ctx = Mock()
+        ctx.parent = {}
+        self.request.args = {'foo': 'bar'}
+
+        expected = '<a href="http://puncover.com?foo=bar&sort=stack_asc" class="sortable">Stack</a>'
+        actual = renderers.col_sortable_filter(ctx, 'Stack', True)
+        self.assertEqual(expected, actual)
+
+        # if current sort is ascending,
+        # mark as sorted ascending and populate link for descending
+        ctx.parent = {'sort': 'stack_asc'}
+        self.request.args = {'sort': 'foo'}
+        expected = '<a href="http://puncover.com?sort=stack_desc" class="sortable sort_asc_alpha">Stack</a>'
+        actual = renderers.col_sortable_filter(ctx, 'Stack', True)
         self.assertEqual(expected, actual)
 
     def test_url_for(self):
