@@ -3,3 +3,5 @@
 /puncover.egg-info/
 /build/
 /dist/
+.tox
+.coverage
