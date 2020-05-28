@@ -8,6 +8,10 @@ with open("puncover/version.py") as f:
     exec(f.read())
 
 
+with open('requirements-test.txt') as f:
+    tests_require = f.readlines()
+
+
 class CleanCommand(Command):
     """Custom clean command to tidy up the project root."""
 
@@ -37,7 +41,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     entry_points={"console_scripts": ["puncover = puncover.puncover:main"]},
-    install_requires=["Flask==0.10.1", "mock==1.3.0", "codecov==2.0.5", "nose-cov==1.6"],
+    install_requires=["Flask==0.10.1"],
+    tests_require=tests_require,
     test_suite="nose.collector",
     cmdclass={"clean": CleanCommand,},
 )
