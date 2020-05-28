@@ -1,6 +1,6 @@
 **/.idea/
 *.pyc
-/puncover.egg-info/
+*.egg-info/
 /build/
 /dist/
 .tox
