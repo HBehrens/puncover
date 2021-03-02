@@ -90,6 +90,26 @@ pbl_table_addr():
         self.assertEqual(len(c.symbols[0x00000098]["asm"]), 2)
         self.assertEqual(c.symbols[0x00000098]["asm"][0], "pbl_table_addr():")
 
+    def test_parses_assembly_and_ignores_c2(self):
+        assembly = """
+int ad;
+00000098 <pbl_table_addr>:
+/path/to.c:8
+pbl_table_addr():
+int pbl_table_addr(void)
+{
+int am;
+  98:	a8a8a8a8 	.word	0xa8a8a8a8
+"""
+        c = Collector(None)
+        self.assertEqual(1, c.parse_assembly_text(assembly))
+        self.assertTrue(0x00000098 in c.symbols)
+        self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
+        print(c.symbols[0x00000098]["asm"])
+        self.assertEqual(len(c.symbols[0x00000098]["asm"]), 5)
+        self.assertEqual(c.symbols[0x00000098]["asm"][0], "pbl_table_addr():")
+
+
     def test_parses_assembly_and_stops_after_function(self):
         assembly = """
 000034fc <window_raw_click_subscribe>:

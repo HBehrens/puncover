@@ -12,8 +12,8 @@ from puncover import renderers
 from puncover.gcc_tools import GCCTools
 from puncover.version import __version__
 
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
-    c = Collector(GCCTools(gcc_base_filename))
+def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None, asm_no_src=False):
+    c = Collector(GCCTools(gcc_base_filename, asm_no_src))
     if elf_file:
         return ElfBuilder(c, src_root, elf_file, su_dir)
     else:
@@ -42,6 +42,8 @@ def main():
                         help='location of your build output')
     parser.add_argument('--debug', action='store_true',
                         help='enable Flask debugger')
+    parser.add_argument('--asm-no-src', action='store_true',
+                        help='Include source code in disassembly')
     parser.add_argument('--port', dest='port', default=5000, type=int,
                         help='port the HTTP server runs on')
     parser.add_argument('--host', dest='host', default='127.0.0.1',
@@ -54,7 +56,8 @@ def main():
             args.gcc_tools_base = os.path.join(args.arm_tools_dir, 'bin/arm-none-eabi-')
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
-                             src_root=args.src_root, su_dir=args.build_dir)
+                             src_root=args.src_root, su_dir=args.build_dir,
+                             asm_no_src=args.asm_no_src)
     builder.build_if_needed()
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
