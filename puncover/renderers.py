@@ -1,4 +1,8 @@
-from collections import Iterable
+try:
+    from collections import Iterable
+except ImportError:
+    from collections.abc import Iterable
+
 import os
 import re
 from flask import Flask, render_template, abort, redirect, request
