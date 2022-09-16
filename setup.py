@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 import os
+from pathlib import Path
 
 from setuptools import setup, find_packages, Command
 
+ROOTDIR = Path(__file__).parent
+
 __version__ = None  # Overwritten by executing version.py.
-with open("puncover/version.py") as f:
+with open(ROOTDIR / "puncover/version.py") as f:
     exec(f.read())
 
 
-with open('requirements-test.txt') as f:
-    tests_require = f.readlines()
+with open(ROOTDIR / "requirements-test.txt") as f:
+    tests_require = list(filter(lambda x: not x.strip().startswith('-r'), f.readlines()))
+
+with open(ROOTDIR / "requirements.txt") as f:
+    requires = f.readlines()
 
 
 class CleanCommand(Command):
@@ -48,15 +54,18 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
     zip_safe=False,
     entry_points={"console_scripts": ["puncover = puncover.puncover:main"]},
-    install_requires=["Flask==0.10.1"],
+    install_requires=requires,
     tests_require=tests_require,
-    test_suite="nose.collector",
-    cmdclass={"clean": CleanCommand,},
+    cmdclass={
+        "clean": CleanCommand,
+    },
     # TODO: https://github.com/HBehrens/puncover/issues/36
     #  Fix Python 3.5
     python_requires=">=3.6",
