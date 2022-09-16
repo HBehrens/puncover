@@ -30,7 +30,21 @@ jobs:
         # use the version of python in PATH, from the github runner
         run: tox -e py
 
+      - name: Build release archive
+        # only upload coverage for the 3.10 run
+        if: ${{ matrix.python-version == '3.10' }}
+        run: |
+          pip install wheel==0.37.1
+          python setup.py sdist bdist_wheel
+
+      - name: Archive release
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: release_dist
+          path: dist
+
       - name: Upload coverage to Codecov
         # only upload coverage for the 3.10 run
-        if: ${{ matrix.python-version }} == "3.10"
+        if: ${{ matrix.python-version == '3.10' }}
         uses: codecov/codecov-action@v3
