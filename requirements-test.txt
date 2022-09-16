@@ -1,0 +1,4 @@
+nose
+codecov
+nose-cov
+mock

@@ -1,6 +1,0 @@
-codecov==2.1.12
-Flask==2.1.2
-jinja2==3
-mock==4.0.3
-nose-cov==1.6
-werkzeug==2.0.2
