@@ -53,7 +53,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     entry_points={"console_scripts": ["puncover = puncover.puncover:main"]},
-    install_requires=["Flask==0.10.1"],
+    install_requires=["Flask==1.0"],
     tests_require=tests_require,
     test_suite="nose.collector",
     cmdclass={"clean": CleanCommand,},
