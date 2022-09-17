@@ -5,12 +5,17 @@ import itertools
 
 
 class GCCTools:
-    def __init__(self, gcc_base_filename):
+    def __init__(self, gcc_base_filename, asm_no_src=False):
         # if base filename is a directory, make sure we have the trailing slash
         if os.path.isdir(gcc_base_filename):
             gcc_base_filename = os.path.join(gcc_base_filename, '')
 
         self.gcc_base_filename = gcc_base_filename
+
+        # include source code in the disassembly
+        self.asm_src = "S"
+        if asm_no_src:
+            self.asm_src = ""
 
     def gcc_tool_path(self, name):
         path = self.gcc_base_filename + name
@@ -24,7 +29,7 @@ class GCCTools:
         return [l.decode() for l in proc.stdout.readlines()]
 
     def get_assembly_lines(self, elf_file):
-        return self.gcc_tool_lines('objdump', ['-dslw', os.path.basename(elf_file)], os.path.dirname(elf_file))
+        return self.gcc_tool_lines('objdump', ['-dslw' + self.asm_src, os.path.basename(elf_file)], os.path.dirname(elf_file))
 
     def get_size_lines(self, elf_file):
         # http://linux.die.net/man/1/nm
