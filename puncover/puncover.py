@@ -2,15 +2,20 @@
 
 import argparse
 import os
+import webbrowser
 from distutils.spawn import find_executable
-from flask import Flask
 from os.path import dirname
-from puncover.collector import Collector
-from puncover.builders import ElfBuilder
-from puncover.middleware import BuilderMiddleware
+from threading import Timer
+
+from flask import Flask
+
 from puncover import renderers
+from puncover.builders import ElfBuilder
+from puncover.collector import Collector
 from puncover.gcc_tools import GCCTools
+from puncover.middleware import BuilderMiddleware
 from puncover.version import __version__
+
 
 def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
     c = Collector(GCCTools(gcc_base_filename))
@@ -25,6 +30,10 @@ app = Flask(__name__)
 def find_arm_tools_location():
     obj_dump = find_executable("arm-none-eabi-objdump")
     return dirname(dirname(obj_dump)) if obj_dump else None
+
+
+def open_browser(host, port):
+    webbrowser.open_new("http://{}:{}/".format(host, port))
 
 
 def main():
@@ -46,6 +55,8 @@ def main():
                         help='port the HTTP server runs on')
     parser.add_argument('--host', dest='host', default='127.0.0.1',
                         help='host IP the HTTP server runs on')
+    parser.add_argument('--no-open-browser', action='store_true',
+                        help="don't automatically open a browser window")
     args = parser.parse_args()
 
     if not args.gcc_tools_base:
@@ -62,6 +73,14 @@ def main():
 
     if args.debug:
         app.debug = True
+
+    # Open a browser window, only if this is the first instance of the server
+    # from https://stackoverflow.com/a/63216793
+    if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
+        # wait one second before starting, so the flask server is ready and we
+        # don't see a 404 for a moment first
+        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
+
     app.run(host=args.host, port=args.port)
 
 
