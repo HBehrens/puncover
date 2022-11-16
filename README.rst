@@ -31,3 +31,53 @@ puncover
 Analyzes C/C++ binaries for code size, static variables and stack usages. It
 creates a report with disassembler and call-stack analysis per directory, file,
 or function.
+
+Installation and Usage
+----------------------
+
+Install with pip:
+
+.. code-block:: bash
+
+   pip install puncover
+
+Run it by passing the binary to analyze:
+
+.. code-block:: bash
+
+   puncover --elf_file project.elf
+   ...
+   * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+
+Open the link in your browser to view the analysis.
+
+Running Tests Locally
+---------------------
+
+To run the tests locally, you need to install the development dependencies:
+
+1. install pyenv: https://github.com/pyenv/pyenv
+
+   ..  code-block:: bash
+
+         curl https://pyenv.run | bash
+
+2. install all the python environments, using this bashism (this can take a few
+   minutes):
+
+   ..  code-block:: bash
+
+         for _py in $(<.python-version ); do pyenv install ${_py}; done
+
+3. install the development dependencies:
+
+   ..  code-block:: bash
+
+      pip install -r requirements-dev.txt
+
+
+Then you can run the tests with:
+
+..  code-block:: bash
+
+   tox
