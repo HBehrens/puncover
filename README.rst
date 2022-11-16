@@ -33,7 +33,7 @@ creates a report with disassembler and call-stack analysis per directory, file,
 or function.
 
 Installation and Usage
-----------------------
+======================
 
 Install with pip:
 
@@ -52,7 +52,7 @@ Run it by passing the binary to analyze:
 Open the link in your browser to view the analysis.
 
 Running Tests Locally
----------------------
+=====================
 
 To run the tests locally, you need to install the development dependencies:
 
@@ -81,3 +81,53 @@ Then you can run the tests with:
 ..  code-block:: bash
 
    tox
+
+Publishing Release
+==================
+
+1. Update the version in ``puncover/__version__.py``.
+2. Commit the version update:
+   ..  code-block:: bash
+
+   git add . && git commit -m "Bump version to x.y.z"
+
+
+3. Create an annotated tag:
+   ..  code-block:: bash
+
+   git tag -a {-m=,}x.y.z
+
+4. Push the commit and tag:
+   ..  code-block:: bash
+
+   git push && git push --tags
+
+5. Either wait for the GitHub Action to complete and download the release
+   artifact for uploading: https://github.com/HBehrens/puncover/actions OR Build
+   the package locally: ``python setup.py sdist bdist_wheel``
+6. Upload the package to PyPI:
+   ..  code-block:: bash
+
+   twine upload dist/*
+
+7. Create GitHub releases:
+   - ``gh release create --generate-notes x.y.z``
+   - attach the artifacts to the release too: ``gh release upload x.y.z dist/*``
+
+Release Script
+--------------
+
+The full release recipe (for local running) looks like this:
+
+..  code-block:: bash
+
+   PUNCOVER_VERSION=x.y.z
+   # little sed magic to update the version in the code
+   sed -i -r 's/(.*__version_info__ = )\(.*\)/\1\('"$(echo ${PUNCOVER_VERSION} | sed 's/\./, /g')"'\)/g' puncover/version.py
+   git add . && git commit -m "Bump version to ${PUNCOVER_VERSION}"
+   git tag -a {-m=,}${PUNCOVER_VERSION}
+   git push && git push --tags
+   python setup.py sdist bdist_wheel
+   twine upload dist/*
+   gh release create --generate-notes ${PUNCOVER_VERSION}
+   gh release upload ${PUNCOVER_VERSION} dist/*
