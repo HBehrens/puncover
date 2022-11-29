@@ -148,7 +148,9 @@ class Collector:
     parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\.?\w+)(\..*)?>:")
 
     # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
-    parse_assembly_text_c_reference_pattern = re.compile(r"^(/[^:]+)(:(\d+))?")
+    # D:\\stack\\targets\\ST\\STM32F0/HW-Abstraction.c:122
+    # D:\\some\\other\\path\\D:\\stack\\targets\\ST\\STM32F0/HW-Abstraction.c:122
+    parse_assembly_text_c_reference_pattern = re.compile(r"^(?:.*(?=\w:[\\/]))?((?:(?:\w:)|/)[^:]+)(:(\d+))?(?: \(discriminator \d+\))?$"")
 
     def parse_assembly_text(self, assembly):
         # print(assembly)
@@ -180,6 +182,8 @@ class Collector:
                     assembly_lines.append(line)
                 elif file_match and not symbol_file:
                     symbol_file = file_match.group(1)
+                    if "\\" in symbol_file:
+                        symbol_file = symbol_file.replace("\\", "/")
                     if file_match.group(3):
                         symbol_line = int(file_match.group(3))
 
