@@ -2,7 +2,8 @@ import unittest
 from puncover.collector import Collector, left_strip_from_list
 from mock import patch
 from puncover import collector
-
+import os
+import pathlib
 
 class TestCollector(unittest.TestCase):
 
@@ -14,21 +15,30 @@ class TestCollector(unittest.TestCase):
 
     def test_parses_function_line(self):
         c = Collector(None)
-        line = "00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
+        file_path = '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c'
+        if os.name == 'nt':
+            file_path = "C:\\"+file_path[1:]
+        line = "00000550 00000034 T main	"+file_path+":25"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
+        self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': pathlib.Path(file_path), 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector(None)
-        line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
+        file_path = '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c'
+        if os.name == 'nt':
+            file_path = "C:\\"+file_path[1:]
+        line = "00000968 000000c8 D foo "+file_path+":15"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c', 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000968: {'name': 'foo', 'base_file': 'puncover.c', 'path': pathlib.Path(file_path), 'address': '00000968', 'line': 15, 'size': 200, 'type': 'variable'}})
 
     def test_parses_variable_line_from_uninitialized_data_section(self):
         c = Collector(None)
-        line = "00000a38 00000008 b some_double_value	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:17"
+        file_path = '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c'
+        if os.name == 'nt':
+            file_path = "C:\\"+file_path[1:]
+        line = "00000a38 00000008 b some_double_value	"+file_path+":17"
         self.assertTrue(c.parse_size_line(line))
-        self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c', 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
+        self.assertDictEqual(c.symbols, {0x00000a38: {'name': 'some_double_value', 'base_file': 'puncover.c', 'path':  pathlib.Path(file_path), 'address': '00000a38', 'line': 17, 'size': 8, 'type': 'variable'}})
 
     def test_ignores_incomplete_size_line_1(self):
         c = Collector(None)
@@ -311,7 +321,7 @@ uses_doubles2():
  8a8:	b508      	push	{r3, lr}
          """)
         s = c.symbol_by_addr("8a8")
-        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c", s[collector.PATH])
+        self.assertEqual(pathlib.Path("/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"), s[collector.PATH])
         self.assertEqual("puncover.c", s[collector.BASE_FILE])
         self.assertEqual(19, s[collector.LINE])
 
@@ -348,9 +358,23 @@ uses_doubles2():
 
     def test_derive_file_elements(self):
         c = Collector(None)
-        s1 = {collector.PATH: "/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"}
-        s2 = {collector.PATH: "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"}
-        s3 = {collector.PATH: "src/puncover.c"}
+        path_to_derive_1 = "/Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c"
+        path_to_derive_2 = "/Users/thomas/work/arm-eabi-toolchain/build/gcc-final/arm-none-eabi/thumb2/libgcc/../../../../../gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"
+        path_to_derive_3 = "src/puncover.c"
+        path_resolved_1 = "/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c"
+        path_resolved_2 = "/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"
+        path_resolved_3 = "src/puncover.c"
+        
+        if os.name == 'nt':
+            path_to_derive_1 = "C:\\"+path_to_derive_1[-1:]
+            path_to_derive_2 = "C:\\"+path_to_derive_2[-1:]
+            path_resolved_1 = "C:\\"+path_resolved_1[-1:]
+            path_resolved_2 = "C:\\"+path_resolved_2[-1:]
+
+        
+        s1 = {collector.PATH: pathlib.Path(path_to_derive_1)}
+        s2 = {collector.PATH: pathlib.Path(path_to_derive_2)}
+        s3 = {collector.PATH: pathlib.Path(path_to_derive_3)}
         c.symbols = {
             1: s1,
             2: s2,
@@ -358,13 +382,13 @@ uses_doubles2():
         }
 
         c.derive_folders()
-        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c", s1[collector.PATH])
+        self.assertEqual(pathlib.Path(path_resolved_1), s1[collector.PATH])
         self.assertIsNotNone(s1[collector.FILE])
 
-        self.assertEqual("/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S", s2[collector.PATH])
+        self.assertEqual(pathlib.Path(path_resolved_2), s2[collector.PATH])
         self.assertIsNotNone(s2[collector.FILE])
 
-        self.assertEqual("src/puncover.c", s3[collector.PATH])
+        self.assertEqual(pathlib.Path(path_resolved_3), s3[collector.PATH])
         self.assertIsNotNone(s3[collector.FILE])
 
     def test_derive_file_elements_for_unknown_files(self):
@@ -374,8 +398,8 @@ uses_doubles2():
         self.assertNotIn(collector.PATH, s)
         self.assertNotIn(collector.BASE_FILE, s)
         c.derive_folders()
-        self.assertEqual("<unknown>/<unknown>", s[collector.PATH])
-        self.assertEqual("<unknown>", s[collector.BASE_FILE])
+        self.assertEqual(pathlib.Path("<unknown>/<unknown>"), s[collector.PATH])
+        self.assertEqual(pathlib.Path("<unknown>"), s[collector.BASE_FILE])
         self.assertIn(collector.FILE, s)
         file = s[collector.FILE]
         self.assertEqual("<unknown>", file[collector.NAME])
@@ -386,17 +410,17 @@ uses_doubles2():
 
     def test_enhance_file_elements(self):
         c = Collector(None)
-        aa_c = c.file_for_path("a/a/aa.c")
-        ab_c = c.file_for_path("a/b/ab.c")
-        b_c = c.file_for_path("b/b.c")
-        baa_c = c.file_for_path("b/a/a/baa.c")
+        aa_c = c.file_for_path(pathlib.Path("a/a/aa.c"))
+        ab_c = c.file_for_path(pathlib.Path("a/b/ab.c"))
+        b_c = c.file_for_path(pathlib.Path("b/b.c"))
+        baa_c = c.file_for_path(pathlib.Path("b/a/a/baa.c"))
 
-        a = c.folder_for_path("a")
-        aa = c.folder_for_path("a/a")
-        ab = c.folder_for_path("a/b")
-        b = c.folder_for_path("b")
-        ba = c.folder_for_path("b/a")
-        baa = c.folder_for_path("b/a/a")
+        a = c.folder_for_path(pathlib.Path("a"))
+        aa = c.folder_for_path(pathlib.Path("a/a"))
+        ab = c.folder_for_path(pathlib.Path("a/b"))
+        b = c.folder_for_path(pathlib.Path("b"))
+        ba = c.folder_for_path(pathlib.Path("b/a"))
+        baa = c.folder_for_path(pathlib.Path("b/a/a"))
 
         self.assertEqual("a", a[collector.NAME])
         self.assertEqual("a", aa[collector.NAME])
@@ -433,12 +457,12 @@ uses_doubles2():
         self.assertListEqual([], ba[collector.FILES])
         self.assertListEqual([baa_c], baa[collector.FILES])
 
-        self.assertEqual("a", a[collector.COLLAPSED_NAME])
-        self.assertEqual("a/a", aa[collector.COLLAPSED_NAME])
-        self.assertEqual("a/b", ab[collector.COLLAPSED_NAME])
-        self.assertEqual("b", b[collector.COLLAPSED_NAME])
-        self.assertEqual("a", ba[collector.COLLAPSED_NAME])
-        self.assertEqual("a/a", baa[collector.COLLAPSED_NAME])
+        self.assertEqual(pathlib.Path("a"), pathlib.Path(a[collector.COLLAPSED_NAME]))
+        self.assertEqual(pathlib.Path("a/a"), pathlib.Path(aa[collector.COLLAPSED_NAME]))
+        self.assertEqual(pathlib.Path("a/b"), pathlib.Path((ab[collector.COLLAPSED_NAME])))
+        self.assertEqual(pathlib.Path("b"), pathlib.Path(b[collector.COLLAPSED_NAME]))
+        self.assertEqual(pathlib.Path("a"), pathlib.Path(ba[collector.COLLAPSED_NAME]))
+        self.assertEqual(pathlib.Path("a/a"), pathlib.Path(baa[collector.COLLAPSED_NAME]))
 
         self.assertListEqual([aa, ab], a[collector.COLLAPSED_SUB_FOLDERS])
         self.assertListEqual([], aa[collector.COLLAPSED_SUB_FOLDERS])
