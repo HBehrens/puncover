@@ -2,7 +2,7 @@ import abc
 import os
 from os.path import dirname
 from puncover.backtrace_helper import BacktraceHelper
-
+import pathlib
 
 class Builder:
 
@@ -10,7 +10,7 @@ class Builder:
         self.files = {}
         self.collector = collector
         self.backtrace_helper = BacktraceHelper(collector)
-        self.src_root = src_root
+        self.src_root = pathlib.Path(src_root)
 
     def store_file_time(self, path, store_empty=False):
         self.files[path] = 0 if store_empty else os.path.getmtime(path)

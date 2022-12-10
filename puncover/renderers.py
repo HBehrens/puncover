@@ -7,6 +7,7 @@ except ImportError:
 
 import itertools
 import re
+import pathlib
 
 import jinja2
 import markupsafe
@@ -296,12 +297,14 @@ class PathRenderer(HTMLRenderer):
         if path.endswith("/"):
             path = path[:-1]
 
+        generic_path = pathlib.Path(path)
         symbol = self.collector.symbol(path)
+
         if symbol:
             self.template_vars["symbol"] = symbol
             return self.render_template("symbol.html.jinja", "symbol")
 
-        file_element = self.collector.file_elements.get(path, None)
+        file_element = self.collector.file_elements.get(generic_path, None)
         if file_element and file_element[collector.TYPE] == collector.TYPE_FILE:
             self.template_vars["file"] = file_element
             return self.render_template("file.html.jinja", path)
