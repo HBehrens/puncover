@@ -201,8 +201,8 @@ class Collector:
         if not match:
             return False
 
-        file = match.group(1)
-        base_file_name = os.path.basename(file)
+        file = pathlib.Path(match.group(1))
+        base_file_name = pathlib.Path(file.name)
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
