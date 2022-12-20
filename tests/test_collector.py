@@ -203,7 +203,7 @@ $t():
         line = "puncover.c:14:40:0	16	dynamic,bounded"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "puncover.c",
+            "base_file": pathlib.Path("puncover.c"),
             "line": 14,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
@@ -214,7 +214,7 @@ $t():
         line = "puncover.c:8:43:dynamic_stack2	16	dynamic"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "puncover.c",
+            "base_file": pathlib.Path("puncover.c"),
             "line": 8,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
@@ -223,7 +223,7 @@ $t():
         line = "ILI9341_t3.h:312:15:void ILI9341_t3::updateDisplayClip()	16	static"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "ILI9341_t3.h",
+            "base_file": pathlib.Path("ILI9341_t3.h"),
             "line": 312,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
@@ -232,7 +232,7 @@ $t():
         line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "Print.cpp",
+            "base_file": pathlib.Path("Print.cpp"),
             "line": 34,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
@@ -243,7 +243,7 @@ $t():
         line = "Print.cpp:34:8:virtual size_t Print::write(const uint8_t*, size_t)	24	static"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "Print.cpp",
+            "base_file": pathlib.Path("Print.cpp"),
             "display_name": "virtual size_t Print::write(const uint8_t*, size_t)",
             "line": 35,
         }}
@@ -255,7 +255,7 @@ $t():
         line = "WString.cpp:82:1:String::String(unsigned int, unsigned char)	32	static"
         c = Collector(None)
         c.symbols = {"123": {
-            "base_file": "WString.cpp",
+            "base_file": pathlib.Path("WString.cpp"),
             "line": 82,
         }}
         self.assertTrue(c.parse_stack_usage_line(line))
