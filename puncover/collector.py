@@ -470,8 +470,14 @@ class Collector:
     def derive_folders(self):
         for s in self.all_symbols():
             p = s.get(PATH, pathlib.Path("<unknown>/<unknown>"))
-            resolved_path = p.resolve(strict=False)
-            if not p.is_absolute():
+            posix_root_path = str(p).startswith("\\")
+            # Detects if parsing posix paths in elf in a windows machine
+            win_parsing_posix = (os.name == "nt" and posix_root_path) 
+            if not win_parsing_posix:
+                resolved_path = p.resolve(strict=False)
+            else:
+                resolved_path = p
+            if not p.is_absolute() and not win_parsing_posix:
                 # pathlib prepends cwd if it couldnt 
             	# resolve locally the file
                 cwd = pathlib.Path().absolute()

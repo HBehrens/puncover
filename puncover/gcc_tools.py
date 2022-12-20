@@ -26,11 +26,11 @@ class GCCTools:
         return [l.decode() for l in proc.stdout.readlines()]
 
     def get_assembly_lines(self, elf_file):
-        return self.gcc_tool_lines('objdump', ['-dslw', os.path.basename(elf_file)], os.path.dirname(elf_file))
+        return self.gcc_tool_lines('objdump', ['-dslw',  elf_file.name], elf_file.parents[0])
 
     def get_size_lines(self, elf_file):
         # http://linux.die.net/man/1/nm
-        return self.gcc_tool_lines('nm', ['-Sl', os.path.basename(elf_file)], os.path.dirname(elf_file))
+        return self.gcc_tool_lines('nm', ['-Sl', elf_file.name], elf_file.parents[0])
 
     # See https://blog.flameeyes.eu/2010/06/c-name-demangling/ for context
     #

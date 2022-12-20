@@ -50,7 +50,7 @@ class ElfBuilder(Builder):
     def __init__(self, collector, src_root, elf_file, su_dir):
         Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
         self.store_file_time(elf_file, store_empty=True)
-        self.elf_file = elf_file
+        self.elf_file = pathlib.Path(elf_file)
         self.su_dir = su_dir
 
     def get_elf_path(self):
