@@ -3,7 +3,7 @@
    :alt: GitHub Link
    :target: https://github.com/HBehrens/puncover
 
-.. image:: https://img.shields.io/github/workflow/status/HBehrens/puncover/Python%20package/master?style=flat-square
+.. image:: https://img.shields.io/github/actions/workflow/status/HBehrens/puncover/ci.yml?style=flat-square&branch=master
    :alt: GitHub Workflow Status (branch)
    :target: https://github.com/HBehrens/puncover/actions?query=branch%3Amaster+
 
