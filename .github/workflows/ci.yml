@@ -23,8 +23,7 @@ jobs:
         os: [
             ubuntu-20.04,
             macos-12,
-            # windows is disabled until path support works there
-            # windows-2022,
+            windows-2022,
           ]
       fail-fast: false
 
