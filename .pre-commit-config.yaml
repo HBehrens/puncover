@@ -62,17 +62,3 @@ repos:
     rev: 0.1.1
     hooks:
       - id: markdown-toc-cli
-
-  - repo: local
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: system
-        types: [python]
-
-      - id: mypy
-        name: mypy
-        entry: mypy
-        language: system
-        types: [python]
