@@ -117,20 +117,7 @@ Publishing Release
 Release Script
 --------------
 
-The full release recipe (for local running) looks like this:
-
-..  code-block:: bash
-
-   PUNCOVER_VERSION=x.y.z
-   # little sed magic to update the version in the code
-   sed -i -r 's/(.*__version_info__ = )\(.*\)/\1\('"$(echo ${PUNCOVER_VERSION} | sed 's/\./, /g')"'\)/g' puncover/version.py
-   git add . && git commit -m "Bump version to ${PUNCOVER_VERSION}"
-   git tag -a {-m=,}${PUNCOVER_VERSION}
-   git push && git push --tags
-   python setup.py sdist bdist_wheel
-   twine upload dist/*
-   gh release create --generate-notes ${PUNCOVER_VERSION}
-   gh release upload ${PUNCOVER_VERSION} dist/*
+See ``scripts/release.sh`` for a script that automates the above steps.
 
 Contributing
 ============
