@@ -131,3 +131,8 @@ The full release recipe (for local running) looks like this:
    twine upload dist/*
    gh release create --generate-notes ${PUNCOVER_VERSION}
    gh release upload ${PUNCOVER_VERSION} dist/*
+
+Contributing
+============
+
+Contributions are welcome! Please open an issue or pull request on GitHub.
