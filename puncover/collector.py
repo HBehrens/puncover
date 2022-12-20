@@ -196,7 +196,7 @@ class Collector:
         if not match:
             return False
 
-        base_file_name = match.group(1)
+        base_file_name = os.path.basename(match.group(1)) # Seems this can sometimes be the complete file name instead of base_file_name
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
