@@ -1,12 +1,13 @@
 import unittest
+
 from mock import MagicMock
-from puncover.backtrace_helper import BacktraceHelper
+
 from puncover import collector
+from puncover.backtrace_helper import BacktraceHelper
 
 
 class TestBacktraceHelper(unittest.TestCase):
-
-    class FakeCollector():
+    class FakeCollector:
         def __init__(self, symbol_names):
             self.symbol_names = symbol_names
 
@@ -23,23 +24,38 @@ class TestBacktraceHelper(unittest.TestCase):
         self.assertEqual([], r.derive_function_symbols(""))
 
     def test_returns_known_symbols(self):
-        r = BacktraceHelper(TestBacktraceHelper.FakeCollector([
-            "codepoint_get_horizontal_advance", "text_walk_lines",
-        ]))
-        actual = r.derive_function_symbols("""
+        r = BacktraceHelper(
+            TestBacktraceHelper.FakeCollector(
+                [
+                    "codepoint_get_horizontal_advance",
+                    "text_walk_lines",
+                ]
+            )
+        )
+        actual = r.derive_function_symbols(
+            """
     fontinfo=0x200010ec <s_system_fonts_info_table+200>) 16 at ../src/fw/applib/graphics/text_resources.c:347
 #4  0x08012220 in codepoint_get_horizontal_advance () 16
 #5  0x08012602 in walk_line () 112
 #6  0x080128d6 in text_walk_lines.constprop.8 () (inlined)
-        """)
+        """
+        )
 
-        self.assertEqual(["codepoint_get_horizontal_advance", "text_walk_lines"], [f[collector.NAME] for f in actual])
-
+        self.assertEqual(
+            ["codepoint_get_horizontal_advance", "text_walk_lines"],
+            [f[collector.NAME] for f in actual],
+        )
 
     def test_transform_known_symbols(self):
-        r = BacktraceHelper(TestBacktraceHelper.FakeCollector([
-            "a", "c", "d",
-        ]))
+        r = BacktraceHelper(
+            TestBacktraceHelper.FakeCollector(
+                [
+                    "a",
+                    "c",
+                    "d",
+                ]
+            )
+        )
 
         def f(symbol):
             return symbol[collector.NAME] + symbol[collector.NAME]
@@ -49,14 +65,23 @@ class TestBacktraceHelper(unittest.TestCase):
 
 
 class TestBacktraceHelperTreeSizes(unittest.TestCase):
-
     def setUp(self):
         self.cc = collector.Collector(None)
-        self.a = self.cc.add_symbol("a", "a", type=collector.TYPE_FUNCTION, stack_size=1)
-        self.b = self.cc.add_symbol("b", "b", type=collector.TYPE_FUNCTION, stack_size=10)
-        self.c = self.cc.add_symbol("c", "c", type=collector.TYPE_FUNCTION, stack_size=100)
-        self.d = self.cc.add_symbol("d", "d", type=collector.TYPE_FUNCTION, stack_size=1000)
-        self.e = self.cc.add_symbol("e", "e", type=collector.TYPE_FUNCTION, stack_size=10000)
+        self.a = self.cc.add_symbol(
+            "a", "a", type=collector.TYPE_FUNCTION, stack_size=1
+        )
+        self.b = self.cc.add_symbol(
+            "b", "b", type=collector.TYPE_FUNCTION, stack_size=10
+        )
+        self.c = self.cc.add_symbol(
+            "c", "c", type=collector.TYPE_FUNCTION, stack_size=100
+        )
+        self.d = self.cc.add_symbol(
+            "d", "d", type=collector.TYPE_FUNCTION, stack_size=1000
+        )
+        self.e = self.cc.add_symbol(
+            "e", "e", type=collector.TYPE_FUNCTION, stack_size=10000
+        )
         self.f = self.cc.add_symbol("f", "f", type=collector.TYPE_FUNCTION)
         self.cc.enhance_call_tree()
         self.cc.add_function_call(self.a, self.b)

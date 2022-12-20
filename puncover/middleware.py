@@ -1,4 +1,3 @@
-
 class BuilderMiddleware(object):
     def __init__(self, app, builder):
         self.app = app

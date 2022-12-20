@@ -1,113 +1,113 @@
 table th {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 span.slash {
-    opacity: 0.6;
-    display: inline-block;
-    margin-left: 0.1em;
-    margin-right: 0.1em;
+  opacity: 0.6;
+  display: inline-block;
+  margin-left: 0.1em;
+  margin-right: 0.1em;
 }
 
 .breadcrumb.folders {
-    background: None;
-    padding: 0;
-    margin-bottom: 8px;
+  background: None;
+  padding: 0;
+  margin-bottom: 8px;
 }
 
-.breadcrumb.folders>li+li:before {
-    padding: 0;
+.breadcrumb.folders > li + li:before {
+  padding: 0;
 }
 
 .icon-folder {
-    background: url("/static/icons/Folder_16x.svg") no-repeat left center;
-    padding-left: 20px;
+  background: url("/static/icons/Folder_16x.svg") no-repeat left center;
+  padding-left: 20px;
 }
 
 .icon-folder-open {
-    background: url("/static/icons/FolderOpen_16x.svg") no-repeat left center;
-    padding-left: 20px;
+  background: url("/static/icons/FolderOpen_16x.svg") no-repeat left center;
+  padding-left: 20px;
 }
 
 .icon-file {
-    background: url("/static/icons/Document_16x.svg") no-repeat left center;
-    padding-left: 20px;
+  background: url("/static/icons/Document_16x.svg") no-repeat left center;
+  padding-left: 20px;
 }
 
 .icon-function {
-    background: url("/static/icons/Method_16x.svg") no-repeat left center;
-    padding-left: 20px;
+  background: url("/static/icons/Method_16x.svg") no-repeat left center;
+  padding-left: 20px;
 }
 
 .icon-variable {
-    background: url("/static/icons/Field_16x.svg") no-repeat left center;
-    padding-left: 20px;
+  background: url("/static/icons/Field_16x.svg") no-repeat left center;
+  padding-left: 20px;
 }
 
 .col_size {
-    text-align: right;
+  text-align: right;
 }
 
 th {
-    background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 th.col_size {
-    min-width: 5em;
+  min-width: 5em;
 }
 
 th a.sortable {
-    position: relative;
-    display: block;
-    color:black;
+  position: relative;
+  display: block;
+  color: black;
 }
 
 th a.sortable:hover {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 th a.sortable:after {
-    position: absolute;
-    right: 4px;
-    top: 0;
-    display: block;
-    font-family: 'Glyphicons Halflings';
-    opacity: 0.15;
+  position: absolute;
+  right: 4px;
+  top: 0;
+  display: block;
+  font-family: "Glyphicons Halflings";
+  opacity: 0.15;
 }
 
 th a.sortable:hover:after {
-    opacity: 1;
+  opacity: 1;
 }
 
 th.col_size .sortable:after {
-    left: 4px;
-    right: auto;
+  left: 4px;
+  right: auto;
 }
 
 th a.sortable:after {
-    content: "\e150";
+  content: "\e150";
 }
 
 th a.sort_asc:after {
-    opacity: 0.5;
-    content: "\e155";
+  opacity: 0.5;
+  content: "\e155";
 }
 
 th a.sort_asc_alpha:after {
-    opacity: 0.5;
-    content: "\e151";
+  opacity: 0.5;
+  content: "\e151";
 }
 
 th a.sort_desc:after {
-    opacity: 0.5;
-    content: "\e156";
+  opacity: 0.5;
+  content: "\e156";
 }
 
 th a.sort_desc_alpha:after {
-    opacity: 0.5;
-    content: "\e152";
+  opacity: 0.5;
+  content: "\e152";
 }
 
 .secondary {
-    opacity: 0.6;
+  opacity: 0.6;
 }
