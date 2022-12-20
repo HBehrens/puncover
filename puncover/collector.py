@@ -202,7 +202,7 @@ class Collector:
             return False
 
         file = pathlib.Path(match.group(1))
-        base_file_name = pathlib.Path(file.name)
+        base_file_name = file.name
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
