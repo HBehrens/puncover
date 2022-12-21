@@ -482,10 +482,14 @@ class Collector:
                     resolved_path = p.resolve(strict=False)
                 else:
                     resolved_path = p
-                cwd_prepend_to_path = PYTHON_VER["major"]==3 and PYTHON_VER["minor"]>9 and windows_os
+                if windows_os and PYTHON_VER["major"]==3 and PYTHON_VER["minor"]<9:
+                    pathlib_prepends_cwd = False
+                else:
+                    pathlib_prepends_cwd = True
+                    
                 if (not p.is_absolute() 
                     and not win_parsing_posix
-                    and cwd_prepend_to_path): 
+                    and pathlib_prepends_cwd): 
                     # pathlib prepends cwd if it couldnt 
                     # resolve locally the file
                     cwd = pathlib.Path().absolute()
