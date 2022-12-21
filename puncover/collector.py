@@ -475,13 +475,14 @@ class Collector:
             p = s.get(PATH, unknown_path)
             if p != unknown_path:
                 posix_root_path = str(p).startswith("\\")
+                windows_os = os.name == "nt"
                 # Detects if parsing posix paths in elf in a windows machine
-                win_parsing_posix = (os.name == "nt" and posix_root_path) 
+                win_parsing_posix = windows_os and posix_root_path
                 if not win_parsing_posix:
                     resolved_path = p.resolve(strict=False)
                 else:
                     resolved_path = p
-                cwd_prepend_to_path = PYTHON_VER["major"]==3 and PYTHON_VER["minor"]>9
+                cwd_prepend_to_path = PYTHON_VER["major"]==3 and PYTHON_VER["minor"]>9 and windows_os
                 if (not p.is_absolute() 
                     and not win_parsing_posix
                     and cwd_prepend_to_path): 
