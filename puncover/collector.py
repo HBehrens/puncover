@@ -38,6 +38,8 @@ CALLERS = "callers"
 DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
+PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
+
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
 
@@ -479,11 +481,13 @@ class Collector:
                     resolved_path = p.resolve(strict=False)
                 else:
                     resolved_path = p
-                if not p.is_absolute() and not win_parsing_posix:
+                cwd_prepend_to_path = PYTHON_VER["major"]==3 and PYTHON_VER["minor"]>9
+                if (not p.is_absolute() 
+                    and not win_parsing_posix
+                    and cwd_prepend_to_path): 
                     # pathlib prepends cwd if it couldnt 
                     # resolve locally the file
                     cwd = pathlib.Path().absolute()
-                    # remove cwd as it is not part of the relative path
                     p = resolved_path.relative_to(cwd)
                 else:
                     p = resolved_path
