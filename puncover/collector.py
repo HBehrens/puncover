@@ -482,7 +482,7 @@ class Collector:
                     resolved_path = p.resolve(strict=False)
                 else:
                     resolved_path = p
-                if windows_os and PYTHON_VER["major"]==3 and PYTHON_VER["minor"]<9:
+                if windows_os and PYTHON_VER["major"]==3 and PYTHON_VER["minor"]<10:
                     pathlib_prepends_cwd = False
                 else:
                     pathlib_prepends_cwd = True
