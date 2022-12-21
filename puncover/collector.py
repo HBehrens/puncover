@@ -469,27 +469,28 @@ class Collector:
 
     def derive_folders(self):
         for s in self.all_symbols():
-            p = s.get(PATH, pathlib.Path("<unknown>/<unknown>"))
-            posix_root_path = str(p).startswith("\\")
-            # Detects if parsing posix paths in elf in a windows machine
-            win_parsing_posix = (os.name == "nt" and posix_root_path) 
-            if not win_parsing_posix:
-                resolved_path = p.resolve(strict=False)
-            else:
-                resolved_path = p
-            if not p.is_absolute() and not win_parsing_posix:
-                # pathlib prepends cwd if it couldnt 
-            	# resolve locally the file
-                cwd = pathlib.Path().absolute()
-                # remove cwd as it is not part of the relative path
-                p = resolved_path.relative_to(cwd)
-            else:
-                p = resolved_path
+            unknown_path = pathlib.Path("<unknown>/<unknown>")
+            p = s.get(PATH, unknown_path)
+            if p != unknown_path:
+                posix_root_path = str(p).startswith("\\")
+                # Detects if parsing posix paths in elf in a windows machine
+                win_parsing_posix = (os.name == "nt" and posix_root_path) 
+                if not win_parsing_posix:
+                    resolved_path = p.resolve(strict=False)
+                else:
+                    resolved_path = p
+                if not p.is_absolute() and not win_parsing_posix:
+                    # pathlib prepends cwd if it couldnt 
+                    # resolve locally the file
+                    cwd = pathlib.Path().absolute()
+                    # remove cwd as it is not part of the relative path
+                    p = resolved_path.relative_to(cwd)
+                else:
+                    p = resolved_path
             s[PATH] = p
             s[BASE_FILE] = p.name
             s[FILE] = self.file_for_path(p)
             s[FILE][SYMBOLS].append(s)
-
 
     def file_element_for_path(self, path, type, default_values):
         if not path:
