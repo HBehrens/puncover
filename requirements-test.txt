@@ -1,0 +1,8 @@
+codecov==2.1.12
+mock==4.0.3
+pytest==7.0.1
+pytest-cov==3.0.0
+tox==3.27.1
+tox-pyenv==1.1.0
+
+-r requirements.txt

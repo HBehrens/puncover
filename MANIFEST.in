@@ -1,2 +1,4 @@
+include requirements.txt
+include requirements-test.txt
 include puncover/static/**/*
 include puncover/templates/**
