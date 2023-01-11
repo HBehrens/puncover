@@ -118,7 +118,7 @@ class Collector:
         return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
-    parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
+    parse_size_line_re = re.compile(r"^([\da-f]{8,16})\s+([\da-f]{8,16})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
 
     def parse_size_line(self, line):
         # print(line)
@@ -145,7 +145,7 @@ class Collector:
 
     # 00000098 <pbl_table_addr>:
     # 00000098 <pbl_table_addr.constprop.0>:
-    parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8})\s+<(\.?\w+)(\..*)?>:")
+    parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8,16})\s+<(\.?\w+)(\..*)?>:")
 
     # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
     parse_assembly_text_c_reference_pattern = re.compile(r"^(/[^:]+)(:(\d+))?")

@@ -18,6 +18,12 @@ class TestCollector(unittest.TestCase):
         self.assertTrue(c.parse_size_line(line))
         self.assertDictEqual(c.symbols, {0x00000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '00000550', 'line': 25, 'size': 52, 'type': 'function'}})
 
+    def test_parses_64bit_function_line(self):
+        c = Collector(None)
+        line = "1000000000000550 1000000000000034 T main    /Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25"
+        self.assertTrue(c.parse_size_line(line))
+        self.assertDictEqual(c.symbols, {0x1000000000000550: {'name': 'main', 'base_file': 'puncover.c', 'path': '/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c', 'address': '1000000000000550', 'line': 25, 'size': 1152921504606847028, 'type': 'function'}})
+
     def test_parses_variable_line_from_initialized_data_section(self):
         c = Collector(None)
         line = "00000968 000000c8 D foo	/Users/behrens/Documents/projects/pebble/puncover/pebble/build/puncover.c:15"
@@ -75,6 +81,23 @@ __aeabi_dmul():
         self.assertEqual(c.symbols[0x0000009c]["name"], "__aeabi_dmul")
         self.assertTrue(0x00000098 in c.symbols)
         self.assertEqual(c.symbols[0x00000098]["name"], "pbl_table_addr")
+
+    def test_parses_64bit_assembly(self):
+        assembly = """
+1000000000000098 <pbl_table_addr>:
+pbl_table_addr():
+  98:   a8a8a8a8    .word   0xa8a8a8a8
+
+100000000000009c <__aeabi_dmul>:
+__aeabi_dmul():
+  9c:   b570        push    {r4, r5, r6, lr}
+"""
+        c = Collector(None)
+        self.assertEqual(2, c.parse_assembly_text(assembly))
+        self.assertTrue(0x100000000000009c in c.symbols)
+        self.assertEqual(c.symbols[0x100000000000009c]["name"], "__aeabi_dmul")
+        self.assertTrue(0x1000000000000098 in c.symbols)
+        self.assertEqual(c.symbols[0x1000000000000098]["name"], "pbl_table_addr")
 
     def test_parses_assembly_and_ignores_c(self):
         assembly = """
