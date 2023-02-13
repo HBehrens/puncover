@@ -359,13 +359,13 @@ uses_doubles2():
         }
 
         c.derive_folders()
-        self.assertEqual("/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c", s1[collector.PATH])
+        self.assertEqual(os.path.normpath("/Users/behrens/Documents/projects/pebble/puncover/pebble/src/puncover.c"), s1[collector.PATH])
         self.assertIsNotNone(s1[collector.FILE])
 
-        self.assertEqual("/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S", s2[collector.PATH])
+        self.assertEqual(os.path.normpath("/Users/thomas/work/arm-eabi-toolchain/gcc-4.7-2012.09/libgcc/config/arm/ieee754-df.S"), s2[collector.PATH])
         self.assertIsNotNone(s2[collector.FILE])
 
-        self.assertEqual("src/puncover.c", s3[collector.PATH])
+        self.assertEqual(os.path.normpath("src/puncover.c"), s3[collector.PATH])
         self.assertIsNotNone(s3[collector.FILE])
 
     def test_derive_file_elements_for_unknown_files(self):
