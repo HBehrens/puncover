@@ -466,7 +466,7 @@ class Collector:
         result = self.file_elements.get(path, None)
         if not result:
             parent_dir = os.path.dirname(path)
-            parent_folder = self.folder_for_path(parent_dir) if parent_dir and parent_dir != "/" else None
+            parent_folder = self.folder_for_path(parent_dir) if parent_dir and parent_dir != os.path.sep else None
             result = {
                 TYPE: type,
                 PATH: path,
