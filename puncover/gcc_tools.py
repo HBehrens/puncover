@@ -1,10 +1,13 @@
 import os
 import subprocess
+import sys
 
 import itertools
 
 
 class GCCTools:
+    _TOOLS_POSTFIX = ".exe" if sys.platform == "win32" else ""
+
     def __init__(self, gcc_base_filename):
         # if base filename is a directory, make sure we have the trailing slash
         if os.path.isdir(gcc_base_filename):
@@ -13,7 +16,7 @@ class GCCTools:
         self.gcc_base_filename = gcc_base_filename
 
     def gcc_tool_path(self, name):
-        path = self.gcc_base_filename + name
+        path = self.gcc_base_filename + name + self._TOOLS_POSTFIX
         if not os.path.isfile(path):
             raise Exception("Could not find %s" % path)
 
