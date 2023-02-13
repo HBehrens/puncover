@@ -1,3 +1,4 @@
+import os
 import unittest
 from puncover.collector import Collector, left_strip_from_list
 from mock import patch
@@ -374,7 +375,7 @@ uses_doubles2():
         self.assertNotIn(collector.PATH, s)
         self.assertNotIn(collector.BASE_FILE, s)
         c.derive_folders()
-        self.assertEqual("<unknown>/<unknown>", s[collector.PATH])
+        self.assertEqual(os.path.join("<unknown>", "<unknown>"), s[collector.PATH])
         self.assertEqual("<unknown>", s[collector.BASE_FILE])
         self.assertIn(collector.FILE, s)
         file = s[collector.FILE]
@@ -386,17 +387,17 @@ uses_doubles2():
 
     def test_enhance_file_elements(self):
         c = Collector(None)
-        aa_c = c.file_for_path("a/a/aa.c")
-        ab_c = c.file_for_path("a/b/ab.c")
-        b_c = c.file_for_path("b/b.c")
-        baa_c = c.file_for_path("b/a/a/baa.c")
+        aa_c = c.file_for_path(os.path.join("a", "a", "aa.c"))
+        ab_c = c.file_for_path(os.path.join("a", "b", "ab.c"))
+        b_c = c.file_for_path(os.path.join("b", "b.c"))
+        baa_c = c.file_for_path(os.path.join("b", "a", "a", "baa.c"))
 
         a = c.folder_for_path("a")
-        aa = c.folder_for_path("a/a")
-        ab = c.folder_for_path("a/b")
+        aa = c.folder_for_path(os.path.join("a", "a"))
+        ab = c.folder_for_path(os.path.join("a", "b"))
         b = c.folder_for_path("b")
-        ba = c.folder_for_path("b/a")
-        baa = c.folder_for_path("b/a/a")
+        ba = c.folder_for_path(os.path.join("b", "a"))
+        baa = c.folder_for_path(os.path.join("b", "a", "a"))
 
         self.assertEqual("a", a[collector.NAME])
         self.assertEqual("a", aa[collector.NAME])
@@ -434,11 +435,11 @@ uses_doubles2():
         self.assertListEqual([baa_c], baa[collector.FILES])
 
         self.assertEqual("a", a[collector.COLLAPSED_NAME])
-        self.assertEqual("a/a", aa[collector.COLLAPSED_NAME])
-        self.assertEqual("a/b", ab[collector.COLLAPSED_NAME])
+        self.assertEqual(os.path.join("a", "a"), aa[collector.COLLAPSED_NAME])
+        self.assertEqual(os.path.join("a", "b"), ab[collector.COLLAPSED_NAME])
         self.assertEqual("b", b[collector.COLLAPSED_NAME])
         self.assertEqual("a", ba[collector.COLLAPSED_NAME])
-        self.assertEqual("a/a", baa[collector.COLLAPSED_NAME])
+        self.assertEqual(os.path.join("a", "a"), baa[collector.COLLAPSED_NAME])
 
         self.assertListEqual([aa, ab], a[collector.COLLAPSED_SUB_FOLDERS])
         self.assertListEqual([], aa[collector.COLLAPSED_SUB_FOLDERS])
