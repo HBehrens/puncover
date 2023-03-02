@@ -74,6 +74,7 @@ def main():
                         help='host IP the HTTP server runs on')
     parser.add_argument('--no-open-browser', action='store_true',
                         help="don't automatically open a browser window")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     args = parser.parse_args()
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
