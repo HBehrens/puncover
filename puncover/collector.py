@@ -204,12 +204,15 @@ class Collector:
             return False
 
         file = pathlib.Path(match.group(1))
-        base_file_name = file.name
+
+        # some build systems will emit absolute paths in the .su file, handle that case here by
+        # stripping all but the last path segment
+        base_file_name = pathlib.PurePath(file).name
+
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
         stack_qualifier = match.group(7)
-
         return self.add_stack_usage(base_file_name, line, symbol_name, stack_size, stack_qualifier)
 
     # TODO: handle operators, e.g. String::operator=(char const*)
@@ -283,11 +286,11 @@ class Collector:
                 symbol[STACK_QUALIFIERS] = stack_qualifier
                 return True
 
-        # warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
+        warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
 
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
-    
+
     def normalize_files_paths(self, base_dir):
         base_dir = os.path.abspath(base_dir) if base_dir else pathlib.Path(".")
         for s in self.all_symbols():
@@ -302,7 +305,7 @@ class Collector:
                     str_path = str_path[1:]
                     path = pathlib.Path(str_path)
                 elif abs_win_path:
-                    # prefix drive letter 
+                    # prefix drive letter
                     # in the rare case where there are two
                     # files with same path and different drive letter
                     drive_letter = abs_win_path.group(1)
@@ -486,11 +489,11 @@ class Collector:
                     pathlib_prepends_cwd = False
                 else:
                     pathlib_prepends_cwd = True
-                    
-                if (not p.is_absolute() 
+
+                if (not p.is_absolute()
                     and not win_parsing_posix
-                    and pathlib_prepends_cwd): 
-                    # pathlib prepends cwd if it couldnt 
+                    and pathlib_prepends_cwd):
+                    # pathlib prepends cwd if it couldnt
                     # resolve locally the file
                     cwd = pathlib.Path().absolute()
                     p = resolved_path.relative_to(cwd)
@@ -513,7 +516,7 @@ class Collector:
             else:
                 parent_dir = path
             parent_available = parent_len > 0 and parent_dir != pathlib.Path(".")
-            parent_folder = self.folder_for_path(parent_dir) if parent_available else None 
+            parent_folder = self.folder_for_path(parent_dir) if parent_available else None
             result = {
                 TYPE: type,
                 PATH: path,
