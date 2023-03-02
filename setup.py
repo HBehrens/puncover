@@ -43,6 +43,7 @@ setup(
     url="https://github.com/hbehrens/puncover",
     download_url="https://github.com/hbehrens/puncover/tarball/%s" % __version__,
     author="Heiko Behrens",
+    maintainer="Victor Chavez",
     license="MIT",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

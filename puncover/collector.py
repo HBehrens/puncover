@@ -2,6 +2,7 @@ import fnmatch
 import os
 import re
 import sys
+import pathlib
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -36,6 +37,8 @@ CALLERS = "callers"
 
 DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
+
+PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -74,12 +77,12 @@ class Collector:
 
     def qualified_symbol_name(self, symbol):
         if BASE_FILE in symbol:
-            return os.path.join(symbol[PATH], symbol[NAME])
+            html_path = pathlib.Path.joinpath(symbol[PATH], symbol[NAME])
+            return str(html_path)
         return symbol[NAME]
 
     def symbol(self, name, qualified=True):
         self.build_symbol_name_index()
-
         index = self.symbols_by_qualified_name if qualified else self.symbols_by_name
         return index.get(name, None)
 
@@ -98,8 +101,8 @@ class Collector:
         if size:
             sym[SIZE] = int(size)
         if file:
-            sym[PATH] = file
-            sym[BASE_FILE] = os.path.basename(file)
+            sym[PATH] = pathlib.Path(file)
+            sym[BASE_FILE] = sym[PATH].name
         if line:
             sym[LINE] = line
         if assembly_lines:
@@ -118,7 +121,11 @@ class Collector:
         return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
-    parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
+    if os.name == 'nt':
+        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([a-zA-Z]:.+)):(\d+)?")
+    else:
+        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
+
 
     def parse_size_line(self, line):
         # print(line)
@@ -196,7 +203,8 @@ class Collector:
         if not match:
             return False
 
-        base_file_name = os.path.basename(match.group(1)) # Seems this can sometimes be the complete file name instead of base_file_name
+        file = pathlib.Path(match.group(1))
+        base_file_name = file.name
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
@@ -278,17 +286,28 @@ class Collector:
         # warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
         return False
 
-
+    windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
+    
     def normalize_files_paths(self, base_dir):
-        base_dir = os.path.abspath(base_dir) if base_dir else "/"
-
+        base_dir = os.path.abspath(base_dir) if base_dir else pathlib.Path(".")
         for s in self.all_symbols():
             path = s.get(PATH, None)
             if path:
-                if path.startswith(base_dir):
-                    path = os.path.relpath(path, base_dir)
-                elif path.startswith("/"):
-                    path = path[1:]
+                str_path = str(path)
+                abs_win_path = self.windows_path_pattern.match(str_path)
+                if base_dir in path.parents:
+                    path = path.relative_to(base_dir)
+                # Remove root from path
+                elif str_path.startswith("/"):
+                    str_path = str_path[1:]
+                    path = pathlib.Path(str_path)
+                elif abs_win_path:
+                    # prefix drive letter 
+                    # in the rare case where there are two
+                    # files with same path and different drive letter
+                    drive_letter = abs_win_path.group(1)
+                    str_path = abs_win_path.group(1)+"_"+abs_win_path.group(4)
+                    path = pathlib.Path(str_path)
                 s[PATH] = path
 
     def unmangle_cpp_names(self):
@@ -452,10 +471,33 @@ class Collector:
 
     def derive_folders(self):
         for s in self.all_symbols():
-            p = s.get(PATH, "<unknown>/<unknown>")
-            p = os.path.normpath(p)
+            unknown_path = pathlib.Path("<unknown>/<unknown>")
+            p = s.get(PATH, unknown_path)
+            if p != unknown_path:
+                posix_root_path = str(p).startswith("\\")
+                windows_os = os.name == "nt"
+                # Detects if parsing posix paths in elf in a windows machine
+                win_parsing_posix = windows_os and posix_root_path
+                if not win_parsing_posix:
+                    resolved_path = p.resolve(strict=False)
+                else:
+                    resolved_path = p
+                if windows_os and PYTHON_VER["major"]==3 and PYTHON_VER["minor"]<10:
+                    pathlib_prepends_cwd = False
+                else:
+                    pathlib_prepends_cwd = True
+                    
+                if (not p.is_absolute() 
+                    and not win_parsing_posix
+                    and pathlib_prepends_cwd): 
+                    # pathlib prepends cwd if it couldnt 
+                    # resolve locally the file
+                    cwd = pathlib.Path().absolute()
+                    p = resolved_path.relative_to(cwd)
+                else:
+                    p = resolved_path
             s[PATH] = p
-            s[BASE_FILE] = os.path.basename(p)
+            s[BASE_FILE] = p.name
             s[FILE] = self.file_for_path(p)
             s[FILE][SYMBOLS].append(s)
 
@@ -465,8 +507,13 @@ class Collector:
 
         result = self.file_elements.get(path, None)
         if not result:
-            parent_dir = os.path.dirname(path)
-            parent_folder = self.folder_for_path(parent_dir) if parent_dir and parent_dir != "/" else None
+            parent_len = len(path.parents)
+            if parent_len > 0:
+                parent_dir = path.parents[0]
+            else:
+                parent_dir = path
+            parent_available = parent_len > 0 and parent_dir != pathlib.Path(".")
+            parent_folder = self.folder_for_path(parent_dir) if parent_available else None 
             result = {
                 TYPE: type,
                 PATH: path,
