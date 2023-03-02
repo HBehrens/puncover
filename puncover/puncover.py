@@ -16,6 +16,20 @@ from puncover.gcc_tools import GCCTools
 from puncover.middleware import BuilderMiddleware
 from puncover.version import __version__
 
+# Default listening port. Fallback to 8000 if the default port is already in use.
+DEFAULT_PORT = 5000
+DEFAULT_PORT_FALLBACK = 8000
+
+
+def is_port_in_use(port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+
+def get_default_port():
+    return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
+
 
 def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
     c = Collector(GCCTools(gcc_base_filename))
@@ -23,6 +37,7 @@ def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None)
         return ElfBuilder(c, src_root, elf_file, su_dir)
     else:
         raise Exception("Unable to configure builder for collector")
+
 
 app = Flask(__name__)
 
@@ -33,7 +48,7 @@ def find_arm_tools_location():
 
 
 def open_browser(host, port):
-    webbrowser.open_new("http://{}:{}/".format(host, port))
+    webbrowser.open("http://{}:{}/".format(host, port))
 
 
 def main():
@@ -51,7 +66,7 @@ def main():
                         help='location of your build output')
     parser.add_argument('--debug', action='store_true',
                         help='enable Flask debugger')
-    parser.add_argument('--port', dest='port', default=5000, type=int,
+    parser.add_argument('--port', dest='port', default=default_port, type=int,
                         help='port the HTTP server runs on')
     parser.add_argument('--host', dest='host', default='127.0.0.1',
                         help='host IP the HTTP server runs on')
@@ -73,6 +88,10 @@ def main():
 
     if args.debug:
         app.debug = True
+
+    if is_port_in_use(args.port):
+        print("Port {} is already in use, please choose a different port.".format(args.port))
+        exit(1)
 
     # Open a browser window, only if this is the first instance of the server
     # from https://stackoverflow.com/a/63216793
