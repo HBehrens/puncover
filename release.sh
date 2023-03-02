@@ -22,6 +22,12 @@ if [[ -z "${PUNCOVER_VERSION:-}" ]]; then
     exit 1
 fi
 
+# check that the twine tool is installed
+if ! command -v twine &> /dev/null; then
+    echo "twine could not be found, install with 'pip install twine'"
+    exit 1
+fi
+
 # check if tag already exists
 if git rev-parse -q --verify "refs/tags/${PUNCOVER_VERSION}"; then
     echo "Tag ${PUNCOVER_VERSION} already exists"
@@ -39,6 +45,7 @@ fi
 sed -i -r 's/(.*__version_info__ = )\(.*\)/\1\('"${PUNCOVER_VERSION_COMMA_DELIMITED}"'\)/g' puncover/version.py
 git add . && git commit -m "Bump version to ${PUNCOVER_VERSION}"
 git tag -a {-m=,}${PUNCOVER_VERSION}
+rm -rf dist
 python setup.py sdist bdist_wheel
 
 read -p "Ready to push to GitHub and publish to PyPi? " -n 1 -r
