@@ -68,7 +68,7 @@ def main():
                         help='location of your build output')
     parser.add_argument('--debug', action='store_true',
                         help='enable Flask debugger')
-    parser.add_argument('--port', dest='port', default=default_port, type=int,
+    parser.add_argument('--port', dest='port', default=get_default_port(), type=int,
                         help='port the HTTP server runs on')
     parser.add_argument('--host', default='127.0.0.1',
                         help='host IP the HTTP server runs on')
