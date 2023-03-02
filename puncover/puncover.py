@@ -52,32 +52,29 @@ def open_browser(host, port):
 
 
 def main():
+    gcc_tools_base = os.path.join(find_arm_tools_location(), 'bin/arm-none-eabi-')
+
     parser = argparse.ArgumentParser(
-        description="Analyses C/C++ build output for code size, static variables, and stack usage.")
-    parser.add_argument('--arm_tools_dir', dest='arm_tools_dir', default=find_arm_tools_location(),
-                        help='DEPRECATED! location of your arm tools.')
-    parser.add_argument('--gcc_tools_base', dest='gcc_tools_base',
+        description="Analyses C/C++ build output for code size, static variables, and stack usage.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument('--gcc-tools-base', '--gcc_tools_base', default=gcc_tools_base,
                         help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
-    parser.add_argument('--elf_file', dest="elf_file", required=True,
+    parser.add_argument('--elf_file', '--elf-file', required=True,
                         help='location of an ELF file')
-    parser.add_argument('--src_root', dest='src_root',
+    parser.add_argument('--src_root', '--src-root',
                         help='location of your sources')
-    parser.add_argument('--build_dir', dest='build_dir',
+    parser.add_argument('--build_dir', '--build-dir',
                         help='location of your build output')
     parser.add_argument('--debug', action='store_true',
                         help='enable Flask debugger')
     parser.add_argument('--port', dest='port', default=default_port, type=int,
                         help='port the HTTP server runs on')
-    parser.add_argument('--host', dest='host', default='127.0.0.1',
+    parser.add_argument('--host', default='127.0.0.1',
                         help='host IP the HTTP server runs on')
     parser.add_argument('--no-open-browser', action='store_true',
                         help="don't automatically open a browser window")
     args = parser.parse_args()
-
-    if not args.gcc_tools_base:
-        if args.arm_tools_dir:
-            print('DEPRECATED: argument --arm_tools_dir will be removed, use --gcc_tools_base instead.')
-            args.gcc_tools_base = os.path.join(args.arm_tools_dir, 'bin/arm-none-eabi-')
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)
