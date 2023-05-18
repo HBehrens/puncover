@@ -52,7 +52,9 @@ def open_browser(host, port):
 
 
 def main():
-    gcc_tools_base = os.path.join(find_arm_tools_location(), 'bin/arm-none-eabi-')
+    gcc_tools_base = find_arm_tools_location()
+    if gcc_tools_base is not None:
+        gcc_tools_base = os.path.join(gcc_tools_base, 'bin/arm-none-eabi-')
 
     parser = argparse.ArgumentParser(
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
