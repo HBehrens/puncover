@@ -42,9 +42,24 @@ def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None)
 app = Flask(__name__)
 
 
-def find_arm_tools_location():
+def get_arm_tools_prefix_path():
+    """
+    Try to find and return the arm tools triple prefix path, like this:
+      /usr/local/gcc-arm-none-eabi-9-2019-q4-major/bin/arm-none-eabi-
+
+    It's used to invoke the other tools, like objdump/nm.
+
+    Note that we could instead use the '-print-prog-name=...' option to gcc,
+    which returns the paths we need. For now stick with the hacky method here.
+    """
     obj_dump = find_executable("arm-none-eabi-objdump")
-    return dirname(dirname(obj_dump)) if obj_dump else None
+    if not obj_dump:
+        return None
+
+    gcc_tools_base_dir = dirname(dirname(obj_dump))
+    assert gcc_tools_base_dir, "Unable to find gcc tools base dir from {}".format(obj_dump)
+
+    return os.path.join(gcc_tools_base_dir, 'bin/arm-none-eabi-')
 
 
 def open_browser(host, port):
@@ -52,7 +67,7 @@ def open_browser(host, port):
 
 
 def main():
-    gcc_tools_base = os.path.join(find_arm_tools_location(), 'bin/arm-none-eabi-')
+    gcc_tools_base = get_arm_tools_prefix_path()
 
     parser = argparse.ArgumentParser(
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
@@ -76,6 +91,10 @@ def main():
                         help="don't automatically open a browser window")
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     args = parser.parse_args()
+
+    if args.gcc_tools_base is None:
+        print("Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base")
+        exit(1)
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)
