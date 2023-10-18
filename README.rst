@@ -117,7 +117,7 @@ Publishing Release
 Release Script
 --------------
 
-See ``scripts/release.sh`` for a script that automates the above steps.
+See ``release.sh`` for a script that automates the above steps.
 
 Contributing
 ============
