@@ -38,7 +38,7 @@ setup(
     name="puncover",
     version=__version__,
     description="Analyses C/C++ build output for code size, static variables, and stack usage.",
-    long_description=open("README.rst").read(),
+    long_description=open("README.md").read(),
     long_description_content_type="text/x-rst",
     url="https://github.com/hbehrens/puncover",
     download_url="https://github.com/hbehrens/puncover/tarball/%s" % __version__,
