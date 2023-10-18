@@ -250,7 +250,7 @@ class HTMLRenderer(View):
             "all_symbols": collector.all_symbols(),
             "all_functions": collector.all_functions(),
             "all_variables": collector.all_variables(),
-            "now": datetime.utcnow(),
+            "now": datetime.now(),
         }
 
     def render_template(self, template_name, file_name):
