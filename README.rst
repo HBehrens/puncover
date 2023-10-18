@@ -100,7 +100,7 @@ Publishing Release
       git tag -a {-m=,}x.y.z
 
 4. Push the commit and tag:
-   
+
    ..  code-block:: bash
 
       git push && git push --tags
@@ -109,7 +109,7 @@ Publishing Release
    artifact for uploading: https://github.com/HBehrens/puncover/actions OR Build
    the package locally: ``python setup.py sdist bdist_wheel``
 6. Upload the package to PyPI:
-   
+
    ..  code-block:: bash
 
       twine upload dist/*
@@ -122,7 +122,12 @@ Publishing Release
 Release Script
 --------------
 
-See ``release.sh`` for a script that automates the above steps.
+See ``release.sh`` for a script that automates the above steps. This example
+will work with the PyPi tokens (now required):
+
+..  code-block:: bash
+
+      PUNCOVER_VERSION=0.3.5 TWINE_PASSWORD="<pypi token>" TWINE_USERNAME=__token__ ./release.sh
 
 Contributing
 ============

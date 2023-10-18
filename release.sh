@@ -28,6 +28,12 @@ if ! command -v twine &> /dev/null; then
     exit 1
 fi
 
+# confirm that the token is set to TWINE_PASSWORD + TWINE_USERNAME
+if [[ -z "${TWINE_PASSWORD:-}" || -z "${TWINE_USERNAME:-}" ]]; then
+    echo "TWINE_PASSWORD and TWINE_USERNAME must be set"
+    exit 1
+fi
+
 # check if tag already exists
 if git rev-parse -q --verify "refs/tags/${PUNCOVER_VERSION}"; then
     echo "Tag ${PUNCOVER_VERSION} already exists"
