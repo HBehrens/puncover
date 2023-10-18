@@ -1,5 +1,0 @@
-# install pip 23.3 on python 3.12+
-pip==23.3 ; python_version >= "3.12"
-
-# this is the latest version of pip that supports python 3.6
-pip==21.3.1 ; python_version < "3.12"
