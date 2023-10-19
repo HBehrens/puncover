@@ -61,6 +61,7 @@ setup(
     ],
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
+    package_data={"": ["static/**", "templates/*"]},
     zip_safe=False,
     entry_points={"console_scripts": ["puncover = puncover.puncover:main"]},
     install_requires=requires,
