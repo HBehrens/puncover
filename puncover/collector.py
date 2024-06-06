@@ -386,18 +386,11 @@ class Collector:
                 if callee_file and caller_file and callee_file != caller_file:
                     callee["called_from_other_file"] = True
 
-    #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
-    # 8e4:	f000 f824 	bl	930 <app_log>
-    #
-    # but not:
-    # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
-    enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
-
     def enhance_call_tree_from_assembly_line(self, function, line):
         if "<" not in line:
             return False
 
-        match = self.enhance_call_tree_pattern.match(line)
+        match = self.gcc_tools.enhance_call_tree_pattern.match(line)
 
         if match:
             callee = self.symbol_by_addr(match.group(3))
