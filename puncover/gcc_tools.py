@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 
 import itertools
 
@@ -11,6 +12,16 @@ class GCCTools:
             gcc_base_filename = os.path.join(gcc_base_filename, '')
 
         self.gcc_base_filename = gcc_base_filename
+
+        if 'riscv' in gcc_base_filename:
+            self.enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+(J|JAL|JR|JALR|BEQZ|BNEZ|BEQ|BNE|NLT|BGE|BLTU|BGEU)()\s+([\d\sa-f]+)", re.IGNORECASE)
+        else: # ARM
+            #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
+            # 8e4:	f000 f824 	bl	930 <app_log>
+            #
+            # but not:
+            # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
+            self.enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
 
     def gcc_tool_path(self, name):
         path = self.gcc_base_filename + name
