@@ -3,7 +3,7 @@
 import argparse
 import os
 import webbrowser
-from distutils.spawn import find_executable
+from shutil import which
 from os.path import dirname
 from threading import Timer
 
@@ -52,7 +52,7 @@ def get_arm_tools_prefix_path():
     Note that we could instead use the '-print-prog-name=...' option to gcc,
     which returns the paths we need. For now stick with the hacky method here.
     """
-    obj_dump = find_executable("arm-none-eabi-objdump")
+    obj_dump = which("arm-none-eabi-objdump")
     if not obj_dump:
         return None
 
