@@ -105,6 +105,12 @@ def main():
     parser.add_argument(
         "--no-open-browser", action="store_true", help="don't automatically open a browser window"
     )
+    parser.add_argument(
+        '--no-interactive',
+        '--no_interactive',
+        action='store_true',
+        help="don't start the interactive website to browse the elf analysis"
+    )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     args = parser.parse_args()
 
@@ -130,18 +136,19 @@ def main():
     if args.debug:
         app.debug = True
 
-    if is_port_in_use(args.port):
-        print("Port {} is already in use, please choose a different port.".format(args.port))
-        exit(1)
+    if not args.no_interactive:
+        if is_port_in_use(args.port):
+            print("Port {} is already in use, please choose a different port.".format(args.port))
+            exit(1)
 
-    # Open a browser window, only if this is the first instance of the server
-    # from https://stackoverflow.com/a/63216793
-    if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
-        # wait one second before starting, so the flask server is ready and we
-        # don't see a 404 for a moment first
-        Timer(1, open_browser, kwargs={"host": args.host, "port": args.port}).start()
+        # Open a browser window, only if this is the first instance of the server
+        # from https://stackoverflow.com/a/63216793
+        if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
+            # wait one second before starting, so the flask server is ready and we
+            # don't see a 404 for a moment first
+            Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
 
-    app.run(host=args.host, port=args.port)
+        app.run(host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
