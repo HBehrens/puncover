@@ -3,6 +3,7 @@
 import argparse
 import importlib.metadata
 import os
+import json
 import webbrowser
 from os.path import dirname
 from shutil import which
@@ -12,7 +13,7 @@ from flask import Flask
 
 from puncover import renderers
 from puncover.builders import ElfBuilder
-from puncover.collector import Collector
+from puncover.collector import Collector, STACK_SIZE, TYPE, TYPE_FUNCTION
 from puncover.gcc_tools import GCCTools
 from puncover.middleware import BuilderMiddleware
 
@@ -21,6 +22,7 @@ version = importlib.metadata.version("puncover")
 # Default listening port. Fallback to 8000 if the default port is already in use.
 DEFAULT_PORT = 5000
 DEFAULT_PORT_FALLBACK = 8000
+SUPPORTED_REPORT_TYPES = ["json"]
 
 
 def is_port_in_use(port: int) -> bool:
@@ -68,6 +70,36 @@ def get_arm_tools_prefix_path():
 def open_browser(host, port):
     webbrowser.open("http://{}:{}/".format(host, port))
 
+def report_max_static_stack_usages_from_function_names(symbols, function_names, filename, report_type):
+    report_max_map = {}
+
+    if report_type not in SUPPORTED_REPORT_TYPES:
+        print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
+        return
+
+    for sym in symbols:
+        if sym["name"] in function_names:
+            lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
+            base_stack_size = renderers.traverse_filter_wrapper(sym, lam)
+            callee_tree_stack_size = renderers.traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
+            function_max_stack = {
+                "max_static_stack_size": base_stack_size + callee_tree_stack_size,
+                "call_stack": [
+                    {
+                        "function":   f["display_name"],
+                        "stack_size": f.get("stack_size", "???")
+                    } for f in sym["deepest_callee_tree"][1]
+                ]
+            }
+            report_max_map[sym["name"]] = function_max_stack
+
+    for function_name in function_names:
+        if function_name not in report_max_map:
+            print(f"WARNING:  Couldn't find symbol '{function_name}' to report")
+
+    with open(f'{filename}.json', 'w') as f:
+        json.dump(report_max_map, f, ensure_ascii=False, indent=4)
+        print(f"Exported report as {f.name}")
 
 def main():
     gcc_tools_base = get_arm_tools_prefix_path()
@@ -76,6 +108,7 @@ def main():
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
     parser.add_argument(
         "--gcc-tools-base",
         "--gcc_tools_base",
@@ -111,6 +144,10 @@ def main():
         action='store_true',
         help="don't start the interactive website to browse the elf analysis"
     )
+    parser.add_argument('--generate-report', '--generate_report', action='store_true')
+    parser.add_argument('--report-type', '--report_type', default="json")
+    parser.add_argument('--report-filename', '--report_filename', default="report")
+    parser.add_argument('--report-max-static-stack-usage', '--report_max_static_stack_usage', action='append')
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     args = parser.parse_args()
 
@@ -132,6 +169,10 @@ def main():
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
+
+    if args.generate_report:
+        report_max_static_stack_usages_from_function_names(builder.collector.symbols.values(), args.report_max_static_stack_usage,
+                                                           filename=args.report_filename, report_type=args.report_type)
 
     if args.debug:
         app.debug = True
