@@ -78,7 +78,7 @@ def report_max_static_stack_usages_from_function_names(symbols, function_names, 
         return
 
     for sym in symbols:
-        if sym["name"] in function_names:
+        if sym["display_name"] in function_names:
             lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
             base_stack_size = renderers.traverse_filter_wrapper(sym, lam)
             callee_tree_stack_size = renderers.traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
@@ -91,7 +91,7 @@ def report_max_static_stack_usages_from_function_names(symbols, function_names, 
                     } for f in sym["deepest_callee_tree"][1]
                 ]
             }
-            report_max_map[sym["name"]] = function_max_stack
+            report_max_map[sym["display_name"]] = function_max_stack
 
     for function_name in function_names:
         if function_name not in report_max_map:
