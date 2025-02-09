@@ -70,15 +70,19 @@ def get_arm_tools_prefix_path():
 def open_browser(host, port):
     webbrowser.open("http://{}:{}/".format(host, port))
 
-def report_max_static_stack_usages_from_function_names(symbols, function_names, filename, report_type):
+def report_max_static_stack_usages_from_function_names(symbols, function_names_and_opt_max_stack, filename, report_type):
     report_max_map = {}
 
     if report_type not in SUPPORTED_REPORT_TYPES:
         print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
         return
 
+    function_names = [f.split(":")[0] if ":" else f for f in function_names_and_opt_max_stack]
+    function_max_stacks = {f.split(":")[0]: f.split(":")[1] if ":" else None for f in function_names_and_opt_max_stack}
+
     for sym in symbols:
-        if sym["display_name"] in function_names:
+        display_name = sym["display_name"]
+        if display_name in function_names:
             lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
             base_stack_size = renderers.traverse_filter_wrapper(sym, lam)
             callee_tree_stack_size = renderers.traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
@@ -91,7 +95,9 @@ def report_max_static_stack_usages_from_function_names(symbols, function_names, 
                     } for f in sym["deepest_callee_tree"][1]
                 ]
             }
-            report_max_map[sym["display_name"]] = function_max_stack
+            if display_name in function_max_stacks:
+                function_max_stack["max_stack_size"] = int(function_max_stacks[display_name])
+            report_max_map[display_name] = function_max_stack
 
     for function_name in function_names:
         if function_name not in report_max_map:
@@ -147,7 +153,12 @@ def main():
     parser.add_argument('--generate-report', '--generate_report', action='store_true')
     parser.add_argument('--report-type', '--report_type', default="json")
     parser.add_argument('--report-filename', '--report_filename', default="report")
-    parser.add_argument('--report-max-static-stack-usage', '--report_max_static_stack_usage', action='append')
+    parser.add_argument(
+        '--report-max-static-stack-usage',
+        '--report_max_static_stack_usage',
+        action='append',
+        help="display_name[:max_stack_size] of functions to report the worst case static stack size with i.e. bg_thread_main or bg_thread_main:1024"
+    )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     args = parser.parse_args()
 
