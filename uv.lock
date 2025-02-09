@@ -178,6 +178,15 @@ wheels = [
 ]
 
 [[package]]
+name = "configargparse"
+version = "1.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/4d/6c9ef746dfcc2a32e26f3860bb4a011c008c392b83eabdfb598d1a8bbe5d/configargparse-1.7.1.tar.gz", hash = "sha256:79c2ddae836a1e5914b71d58e4b9adbd9f7779d4e6351a637b7d2d9b6c46d3d9", size = 43958, upload-time = "2025-05-23T14:26:17.369Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/28/d28211d29bcc3620b1fece85a65ce5bb22f18670a03cd28ea4b75ede270c/configargparse-1.7.1-py3-none-any.whl", hash = "sha256:8b586a31f9d873abd1ca527ffbe58863c99f36d896e2829779803125e83be4b6", size = 25607, upload-time = "2025-05-23T14:26:15.923Z" },
+]
+
+[[package]]
 name = "coverage"
 version = "7.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -714,6 +723,7 @@ name = "puncover"
 version = "0.6.0"
 source = { editable = "." }
 dependencies = [
+    { name = "configargparse" },
     { name = "flask" },
     { name = "jinja2" },
     { name = "werkzeug" },
@@ -734,6 +744,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "configargparse", specifier = ">=1.7.1" },
     { name = "flask", specifier = "==2.2.5" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "werkzeug", specifier = "==3.0.6" },
