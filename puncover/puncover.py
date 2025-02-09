@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import argparse
+import configargparse
 import os
+import yaml
 import webbrowser
 from distutils.spawn import find_executable
 from os.path import dirname
@@ -69,10 +70,13 @@ def open_browser(host, port):
 def main():
     gcc_tools_base = get_arm_tools_prefix_path()
 
-    parser = argparse.ArgumentParser(
+    parser = configargparse.ArgumentParser(
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=configargparse.ArgumentDefaultsHelpFormatter,
+        default_config_files=['./punconfig.yaml'],
+        config_file_parser_class=configargparse.YAMLConfigFileParser
     )
+    parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path', type=yaml.safe_load)
     parser.add_argument('--gcc-tools-base', '--gcc_tools_base', default=gcc_tools_base,
                         help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
     parser.add_argument('--elf_file', '--elf-file', required=True,
