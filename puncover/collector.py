@@ -1,4 +1,5 @@
 import fnmatch
+import json
 import os
 import re
 import sys
@@ -39,6 +40,7 @@ DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
 PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
+SUPPORTED_REPORT_TYPES = ["json"]
 
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
@@ -68,6 +70,7 @@ class Collector:
         self.file_elements = {}
         self.symbols_by_qualified_name = None
         self.symbols_by_name = None
+        self.user_defined_stack_report = None
 
     def reset(self):
         self.symbols = {}
@@ -628,3 +631,46 @@ class Collector:
                 qualified_name = self.qualified_symbol_name(s)
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
+
+    def report_max_static_stack_usages_from_function_names(self, function_names_and_opt_max_stack, filename, report_type):
+        report_max_map = {}
+
+        from puncover.renderers import traverse_filter_wrapper
+
+        if report_type not in SUPPORTED_REPORT_TYPES:
+            print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
+            return
+
+        function_names = [f.split(":")[0] if ":" else f for f in function_names_and_opt_max_stack]
+        function_max_stacks = {f.split(":")[0]: f.split(":")[1] if ":" else None for f in function_names_and_opt_max_stack}
+
+        for sym in self.symbols.values():
+            display_name = sym["display_name"]
+            if display_name in function_names:
+                lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
+                base_stack_size = traverse_filter_wrapper(sym, lam)
+                callee_tree_stack_size = traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
+                function_max_stack = {
+                    "max_static_stack_size": base_stack_size + callee_tree_stack_size,
+                    "call_stack": [
+                        {
+                            "function":   f["display_name"],
+                            "name":       f["name"],
+                            "stack_size": f.get("stack_size", "???")
+                        } for f in sym["deepest_callee_tree"][1]
+                    ]
+                }
+                if display_name in function_max_stacks:
+                    function_max_stack["max_stack_size"] = int(function_max_stacks[display_name])
+                report_max_map[display_name] = function_max_stack
+
+        for function_name in function_names:
+            if function_name not in report_max_map:
+                print(f"WARNING:  Couldn't find symbol '{function_name}' to report")
+
+        with open(f'{filename}.json', 'w') as f:
+            json.dump(report_max_map, f, ensure_ascii=False, indent=4)
+            print(f"Exported report as {f.name}")
+
+        self.user_defined_stack_report = report_max_map
+        return report_max_map

@@ -31,6 +31,14 @@ puncover --elf_file project.elf
 
 Open the link in your browser to view the analysis.
 
+## Non-intereactive usage
+
+For montitor firmware changes in CI it can be useful to run puncover and get out some numbers. For getting stack usage of some RTOS threads i.e.
+
+```bash
+puncover --elf_file ~/zephyrproject/zephyr/samples/modules/lvgl/demos/build/zephyr/zephyr.elf --build_dir ~/zephyrproject/zephyr/samples/modules/lvgl/demos/build/ --generate-report --report-max-static-stack-usage ready_thread --report-max-static-stack-usage shell_thread --report-max-static-stack-usage main --report-max-static-stack-usage unready_thread --report-max-static-stack-usage bg_thread_main --no-interactive
+```
+
 ## Running Tests Locally
 
 ### Setup

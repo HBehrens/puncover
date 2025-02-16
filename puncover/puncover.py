@@ -65,7 +65,6 @@ def get_arm_tools_prefix_path():
 def open_browser(host, port):
     webbrowser.open("http://{}:{}/".format(host, port))
 
-
 def main():
     gcc_tools_base = get_arm_tools_prefix_path()
 
@@ -89,6 +88,13 @@ def main():
                         help='host IP the HTTP server runs on')
     parser.add_argument('--no-open-browser', action='store_true',
                         help="don't automatically open a browser window")
+    parser.add_argument('--no-interactive', '--no_interactive', action='store_true',
+                        help="don't start the interactive website to browse the elf analysis")
+    parser.add_argument('--generate-report', '--generate_report', action='store_true')
+    parser.add_argument('--report-type', '--report_type', default="json")
+    parser.add_argument('--report-filename', '--report_filename', default="report")
+    parser.add_argument('--report-max-static-stack-usage', '--report_max_static_stack_usage', action='append',
+                        help="display_name[:max_stack_size] of functions to report the worst case static stack size with i.e. bg_thread_main or bg_thread_main:1024")
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     args = parser.parse_args()
 
@@ -99,6 +105,10 @@ def main():
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)
     builder.build_if_needed()
+    if args.generate_report:
+        builder.collector.report_max_static_stack_usages_from_function_names(args.report_max_static_stack_usage,
+                                                           filename=args.report_filename, report_type=args.report_type)
+
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
@@ -106,18 +116,19 @@ def main():
     if args.debug:
         app.debug = True
 
-    if is_port_in_use(args.port):
-        print("Port {} is already in use, please choose a different port.".format(args.port))
-        exit(1)
+    if not args.no_interactive:
+        if is_port_in_use(args.port):
+            print("Port {} is already in use, please choose a different port.".format(args.port))
+            exit(1)
 
-    # Open a browser window, only if this is the first instance of the server
-    # from https://stackoverflow.com/a/63216793
-    if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
-        # wait one second before starting, so the flask server is ready and we
-        # don't see a 404 for a moment first
-        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
+        # Open a browser window, only if this is the first instance of the server
+        # from https://stackoverflow.com/a/63216793
+        if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
+            # wait one second before starting, so the flask server is ready and we
+            # don't see a 404 for a moment first
+            Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
 
-    app.run(host=args.host, port=args.port)
+        app.run(host=args.host, port=args.port)
 
 
 if __name__ == '__main__':
