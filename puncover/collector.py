@@ -1,4 +1,5 @@
 import fnmatch
+import json
 import os
 import pathlib
 import re
@@ -39,6 +40,7 @@ DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
 PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
+SUPPORTED_REPORT_TYPES = ["json"]
 
 
 def warning(*objs):
@@ -85,6 +87,7 @@ class Collector:
         self.file_elements = {}
         self.symbols_by_qualified_name = None
         self.symbols_by_name = None
+        self.user_defined_stack_report = None
 
     def reset(self):
         self.symbols = {}
@@ -697,7 +700,7 @@ class Collector:
             display_name = sym["display_name"]
             if display_name in function_names:
                 lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
-                base_stack_size = traverse_filter_wrapper(sym, lam) or 0
+                base_stack_size = traverse_filter_wrapper(sym, lam)
                 callee_tree_stack_size = traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
                 function_max_stack = {
                     "max_static_stack_size": base_stack_size + callee_tree_stack_size,
