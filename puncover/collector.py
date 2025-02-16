@@ -680,3 +680,14 @@ class Collector:
                 qualified_name = self.qualified_symbol_name(s)
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
+
+    def add_dynamic_calls(self, dynamic_calls):
+        for dynamic_call in dynamic_calls:
+            call_pair = dynamic_call.split("->")
+            if len(call_pair)!=2:
+                print("Warning invalid dynamic call format: %s" % call_pair)
+                continue
+            caller_str, callee_str = call_pair
+            caller = self.symbol(name=caller_str, qualified=False)
+            callee = self.symbol(name=callee_str, qualified=False)
+            self.add_function_call(caller, callee)
