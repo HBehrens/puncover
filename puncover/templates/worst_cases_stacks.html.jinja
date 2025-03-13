@@ -1,0 +1,9 @@
+{% extends "base.html.jinja" %}
+{% block title %}Worst-Cases stacks{% endblock %}
+{% block page_header %}<h1>Worst-Cases Stacks</h1>{% endblock %}
+{% block content %}
+
+    {% import 'lists.html.jinja' as lists with context %}
+    {{ lists.worst_stacks(all_functions) }}
+
+{% endblock %}
