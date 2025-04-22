@@ -107,6 +107,30 @@
     {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
 {% endmacro %}
 
+{% macro worst_stacks(functions) -%}
+    <table class="table table-bordered table-hover table-condensed">
+        <thead>
+            <tr>
+                <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
+                <th class="col_size">{{ 'Stack' | col_sortable(true) }}</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for symbol in (functions | sorted) %}
+                {% if symbol.deepest_caller_tree[1] | length <= 1 %}
+                    {% if symbol.deepest_callee_tree[1] | length > 1 %}
+                        <tr>
+                            <td><a href="{{ symbol | symbol_url }}" class="icon-function">{{ symbol.display_name |e }}</a></td>
+                            <td class="col_size">{{ symbol.deepest_callee_tree[1] | symbol_stack_size | bytes }}</td>
+                        </tr>
+                    {% endif %}
+               {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+
 {% macro symbols(functions, variables) -%}
     <table class="table table-bordered table-hover table-condensed">
         <thead>

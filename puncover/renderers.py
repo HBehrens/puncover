@@ -232,6 +232,7 @@ def sorted_filter(context, symbols):
         'name': lambda e: e.get(collector.DISPLAY_NAME, e.get(collector.NAME, None)).lower(),
         'code': lambda e: to_num(symbol_code_size_filter(context, e)),
         'stack': lambda e: to_num(symbol_stack_size_filter(context, e)),
+        'worst_stack': lambda e: to_num(symbol_worst_stack_size_filter(context, e)),
         'vars': lambda e: to_num(symbol_var_size_filter(context, e)),
     }[sort_id]
 
@@ -341,6 +342,11 @@ class AllSymbolsRenderer(HTMLRenderer):
     def dispatch_request(self, symbol_name=None):
         return self.render_template("all_symbols.html.jinja", "all")
 
+class WorstCasesStacksRenderer(HTMLRenderer):
+
+    def dispatch_request(self, symbol_name=None):
+        return self.render_template("worst_cases_stacks.html.jinja", "worst_cases_stacks")
+
 
 class RackRenderer(HTMLRenderer):
 
@@ -376,6 +382,7 @@ def register_jinja_filters(jinja_env):
 def register_urls(app, collector):
     app.add_url_rule("/", view_func=OverviewRenderer.as_view("overview", collector=collector))
     app.add_url_rule("/all/", view_func=AllSymbolsRenderer.as_view("all", collector=collector))
+    app.add_url_rule("/worst_cases_stacks/", view_func=WorstCasesStacksRenderer.as_view("worst_cases_stacks", collector=collector))
     app.add_url_rule("/path/<path:path>/", view_func=PathRenderer.as_view("path", collector=collector))
     app.add_url_rule("/symbol/<string:symbol_name>", view_func=SymbolRenderer.as_view("symbol", collector=collector))
     app.add_url_rule("/rack/", view_func=RackRenderer.as_view("rack", collector=collector), methods=["GET", "POST"])
