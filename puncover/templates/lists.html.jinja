@@ -187,9 +187,9 @@
                 <th rowspan="2" width="100%">Name</th>
             </tr>
             <tr>
-                <th class="col_size">&sum; = {{ functions | symbol_stack_size(stack_base) | bytes }}</th>
+                <th class="col_size stack total">&sum; = {{ functions | symbol_stack_size(stack_base) | bytes }}</th>
                 <th class="col_size"></th>
-                <th class="col_size">&sum;= {{ functions | unique | symbol_code_size | bytes }}</th>
+                <th class="col_size code total">&sum;= {{ functions | unique | symbol_code_size | bytes }}</th>
                 <th class="col_size"></th>
             </tr>
         </thead>
@@ -197,25 +197,25 @@
         {% for function in functions %}
             <tr>
                 <th>{{ loop.index }}</th>
-                <td class="col_size">{% if stack_base or not loop.last %}
+                <td class="col_size stack sum">{% if stack_base or not loop.last %}
                     {% if function.stack_size  %}
                     {{ functions[loop.index - 1:] | symbol_stack_size(stack_base) | if_not_none | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td class="col_size">
+                <td class="col_size stack">
             {% if function.stack_size %}
                 {{ function.stack_size | bytes }} {% if function.stack_qualifiers != "static" %}({{ function.stack_qualifiers }}){% endif %}
             {% endif %}
                 </td>
-                <td class="col_size">
+                <td class="col_size code sum">
                     {% if not loop.last %}
                     {% if functions[loop.index - 1:] | unique | symbol_code_size != functions[loop.index:] | unique | symbol_code_size %}
                     {{ functions[loop.index - 1:] | unique | symbol_code_size | bytes }}
                     {% endif %}
                     {% endif %}
                 </td>
-                <td class="col_size">{{ function | symbol_code_size | bytes }}</td>
+                <td class="col_size code">{{ function | symbol_code_size | bytes }}</td>
                 <td><a href="{{ function | symbol_url }}" class="icon-function">{{ function.display_name | e}}</a></td>
             </tr>
         {% endfor %}
