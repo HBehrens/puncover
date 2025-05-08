@@ -205,15 +205,11 @@ class Collector:
 
         file = pathlib.Path(match.group(1))
 
-        # some build systems will emit absolute paths in the .su file, handle that case here by
-        # stripping all but the last path segment
-        base_file_name = pathlib.PurePath(file).name
-
         line = int(match.group(3))
         symbol_name = match.group(5)
         stack_size = int(match.group(6))
         stack_qualifier = match.group(7)
-        return self.add_stack_usage(base_file_name, line, symbol_name, stack_size, stack_qualifier)
+        return self.add_stack_usage(file, line, symbol_name, stack_size, stack_qualifier)
 
     # TODO: handle operators, e.g. String::operator=(char const*)
     # TODO: handle templates, e.g. void LinkedList<T>::clear() [with T = Loggable]
@@ -277,7 +273,11 @@ class Collector:
         simplified_b = self.display_name_simplified(b)
         return simplified_a == simplified_b
 
-    def add_stack_usage(self, base_file_name, line, symbol_name, stack_size, stack_qualifier):
+    def add_stack_usage(self, file, line, symbol_name, stack_size, stack_qualifier):
+        # some build systems will emit absolute paths in the .su file, handle that case here by
+        # stripping all but the last path segment
+        base_file_name = pathlib.PurePath(file).name
+
         basename_symbols = [s for s in self.symbols.values() if s.get(BASE_FILE, None) == base_file_name]
         for symbol in basename_symbols:
 
@@ -286,7 +286,7 @@ class Collector:
                 symbol[STACK_QUALIFIERS] = stack_qualifier
                 return True
 
-        warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
+        warning("Couldn't find symbol for %s:%d:%s" % (file, line, symbol_name))
         return False
 
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
