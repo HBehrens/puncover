@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from setuptools import setup, find_packages, Command
+from setuptools import Command, find_packages, setup
 
 ROOTDIR = Path(__file__).parent
 
@@ -12,7 +12,9 @@ with open(ROOTDIR / "puncover/version.py") as f:
 
 
 with open(ROOTDIR / "requirements-test.txt") as f:
-    tests_require = list(filter(lambda x: not x.strip().startswith('-r'), f.readlines()))
+    tests_require = list(
+        filter(lambda x: not x.strip().startswith("-r"), f.readlines())
+    )
 
 with open(ROOTDIR / "requirements.txt") as f:
     requires = f.readlines()
@@ -52,12 +54,12 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
