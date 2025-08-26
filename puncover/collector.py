@@ -40,6 +40,7 @@ DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
 PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
 
+
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
 
@@ -51,16 +52,17 @@ def left_strip_from_list(lines):
     # detect longest common sequence of white spaces
     longest_match = re.match(r"^\s*", lines[0]).group(0)
 
-
     for line in lines:
         while not line.startswith(longest_match):
             longest_match = longest_match[:-1]
 
     # remove from each string
-    return list([line[len(longest_match):] for line in lines])
+    return list([line[len(longest_match) :] for line in lines])
+
 
 class StubGccTool:
     """Stub gcc_tools container, for tests"""
+
     #  934:    f7ff bba8       b.w     88 <jump_to_pbl_function>
     # 8e4:     f000 f824       bl      930 <app_log>
     #
@@ -73,7 +75,6 @@ class StubGccTool:
 
 
 class Collector:
-
     def __init__(self, gcc_tools):
         if gcc_tools is None:
             self.gcc_tools = StubGccTool()
@@ -106,7 +107,17 @@ class Collector:
         int_addr = int(addr, 16)
         return self.symbols.get(int_addr, None)
 
-    def add_symbol(self, name, address, size=None, file=None, line=None, assembly_lines=None, type=None, stack_size=None):
+    def add_symbol(
+        self,
+        name,
+        address,
+        size=None,
+        file=None,
+        line=None,
+        assembly_lines=None,
+        type=None,
+        stack_size=None,
+    ):
         int_address = int(address, 16)
         sym = self.symbols.get(int_address, {})
         if NAME in sym and sym[NAME] != name:
@@ -137,11 +148,14 @@ class Collector:
         return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
-    if os.name == 'nt':
-        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([a-zA-Z]:.+)):(\d+)?")
+    if os.name == "nt":
+        parse_size_line_re = re.compile(
+            r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([a-zA-Z]:.+)):(\d+)?"
+        )
     else:
-        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
-
+        parse_size_line_re = re.compile(
+            r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?"
+        )
 
     def parse_size_line(self, line):
         # print(line)
@@ -160,9 +174,17 @@ class Collector:
             file = None
             line = None
 
-        types = {"A": TYPE_FUNCTION, "T": TYPE_FUNCTION, "D": TYPE_VARIABLE, "B": TYPE_VARIABLE, "R": TYPE_VARIABLE}
+        types = {
+            "A": TYPE_FUNCTION,
+            "T": TYPE_FUNCTION,
+            "D": TYPE_VARIABLE,
+            "B": TYPE_VARIABLE,
+            "R": TYPE_VARIABLE,
+        }
 
-        self.add_symbol(name, address=addr, size=size, file=file, line=line, type = types.get(type.upper(), None))
+        self.add_symbol(
+            name, address=addr, size=size, file=file, line=line, type=types.get(type.upper(), None)
+        )
 
         return True
 
@@ -184,7 +206,9 @@ class Collector:
 
         def flush_current_symbol():
             if name and addr:
-                self.add_symbol(name, addr, assembly_lines=assembly_lines, file=symbol_file, line=symbol_line)
+                self.add_symbol(
+                    name, addr, assembly_lines=assembly_lines, file=symbol_file, line=symbol_line
+                )
                 return 1
             return 0
 
@@ -212,7 +236,9 @@ class Collector:
     # puncover.c:8:43:dynamic_stack2	16	dynamic
     # puncover.c:14:40:0	16	dynamic,bounded
     # puncover.c:8:43:dynamic_stack2	16	dynamic
-    parse_stack_usage_line_pattern = re.compile(r"^(.*?\.[ch](pp)?):(\d+):(\d+):([^\t]+)\t+(\d+)\s+([a-z,]+)")
+    parse_stack_usage_line_pattern = re.compile(
+        r"^(.*?\.[ch](pp)?):(\d+):(\d+):([^\t]+)\t+(\d+)\s+([a-z,]+)"
+    )
 
     def parse_stack_usage_line(self, line):
         match = self.parse_stack_usage_line_pattern.match(line)
@@ -241,7 +267,7 @@ class Collector:
 
         m = self.re_cpp_display_name.match(name)
         if m:
-            groups = list(m.groups(''))
+            groups = list(m.groups(""))
 
             def replace_identifiers(m):
                 # these values were derived from an ARM 32Bit target
@@ -249,24 +275,24 @@ class Collector:
                 # yes, we are treating int as long works only for 32bit platforms
                 # right now, our sample projects use both types unpredictably in the same binary (oh, dear)
                 mapping = {
-                    'const': '', # we ignore those as a feasible simplification
-                    'size_t': 'unsigned long',
-                    'uint8_t': 'unsigned char',
-                    'int8_t': 'signed char',
-                    'uint16_t': 'unsigned short',
-                    'int16_t': 'short',
-                    'uint32_t': 'unsigned long',
-                    'int32_t': 'long',
-                    'uint64_t': 'unsigned long long',
-                    'int64_t': 'long long',
-                    'byte': 'unsigned char',
-                    'int': 'long',
+                    "const": "",  # we ignore those as a feasible simplification
+                    "size_t": "unsigned long",
+                    "uint8_t": "unsigned char",
+                    "int8_t": "signed char",
+                    "uint16_t": "unsigned short",
+                    "int16_t": "short",
+                    "uint32_t": "unsigned long",
+                    "int32_t": "long",
+                    "uint64_t": "unsigned long long",
+                    "int64_t": "long long",
+                    "byte": "unsigned char",
+                    "int": "long",
                 }
 
                 return mapping.get(m.group(), m.group())
 
             # in case, we have parameters, simplify those
-            groups[3] = re.sub(r'\w+', replace_identifiers, groups[3])
+            groups[3] = re.sub(r"\w+", replace_identifiers, groups[3])
 
             # TODO: C allows you to write the same C types in many different notations
             # http://ieng9.ucsd.edu/~cs30x/Std.C/types.html#Basic%20Integer%20Types
@@ -274,10 +300,19 @@ class Collector:
 
             # remove leading "virtual size_t" etc.
             # non-matching groups should be empty strings
-            name = ''.join(groups[1:])
+            name = "".join(groups[1:])
 
         # remove white space artifacts from previous replacements
-        for k, v in [('   ', ' '), ('  ', ' '), ('( ', '('), (' )', ')'), ('< ', '<'), (' >', '>'), (' *', '*'), (' &', '&')]:
+        for k, v in [
+            ("   ", " "),
+            ("  ", " "),
+            ("( ", "("),
+            (" )", ")"),
+            ("< ", "<"),
+            (" >", ">"),
+            (" *", "*"),
+            (" &", "&"),
+        ]:
             name = name.replace(k, v)
 
         return name
@@ -294,10 +329,13 @@ class Collector:
         return simplified_a == simplified_b
 
     def add_stack_usage(self, base_file_name, line, symbol_name, stack_size, stack_qualifier):
-        basename_symbols = [s for s in self.symbols.values() if s.get(BASE_FILE, None) == base_file_name]
+        basename_symbols = [
+            s for s in self.symbols.values() if s.get(BASE_FILE, None) == base_file_name
+        ]
         for symbol in basename_symbols:
-
-            if symbol.get(LINE, None) == line or self.display_names_match(symbol_name, symbol.get(DISPLAY_NAME, None)):
+            if symbol.get(LINE, None) == line or self.display_names_match(
+                symbol_name, symbol.get(DISPLAY_NAME, None)
+            ):
                 symbol[STACK_SIZE] = stack_size
                 symbol[STACK_QUALIFIERS] = stack_qualifier
                 return True
@@ -325,7 +363,7 @@ class Collector:
                     # in the rare case where there are two
                     # files with same path and different drive letter
                     drive_letter = abs_win_path.group(1)
-                    str_path = abs_win_path.group(1)+"_"+abs_win_path.group(4)
+                    str_path = abs_win_path.group(1) + "_" + abs_win_path.group(4)
                     path = pathlib.Path(str_path)
                 s[PATH] = path
 
@@ -338,7 +376,6 @@ class Collector:
             s[DISPLAY_NAME] = unmangled_names[s[NAME]]
 
     def parse_elf(self, elf_file):
-
         print("parsing ELF at %s" % elf_file)
 
         self.parse_assembly_text("".join(self.gcc_tools.get_assembly_lines(elf_file)))
@@ -348,11 +385,10 @@ class Collector:
         self.elf_mtime = os.path.getmtime(elf_file)
 
     def parse_su_dir(self, su_dir):
-
-        def gen_find(filepat,top):
+        def gen_find(filepat, top):
             for path, dirlist, filelist in os.walk(top):
-                for name in fnmatch.filter(filelist,filepat):
-                    yield os.path.join(path,name)
+                for name in fnmatch.filter(filelist, filepat):
+                    yield os.path.join(path, name)
 
         def gen_open(filenames):
             for name in filenames:
@@ -444,14 +480,16 @@ class Collector:
         self.unmangle_cpp_names()
 
     #   98: a8a8a8a8  bl 98
-    enhanced_assembly_line_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$")
+    enhanced_assembly_line_pattern = re.compile(
+        r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+bl\s+([\d\sa-f]+)\s*$"
+    )
 
     def enhanced_assembly_line(self, line):
         match = self.enhanced_assembly_line_pattern.match(line)
         if match:
             symbol = self.symbol_by_addr(match.group(1))
             if symbol:
-                return line+ " <%s>" % (symbol["name"])
+                return line + " <%s>" % (symbol["name"])
         return line
 
     # 88a:	ebad 0d03 	sub.w	sp, sp, r3
@@ -494,14 +532,12 @@ class Collector:
                     resolved_path = p.resolve(strict=False)
                 else:
                     resolved_path = p
-                if windows_os and PYTHON_VER["major"]==3 and PYTHON_VER["minor"]<10:
+                if windows_os and PYTHON_VER["major"] == 3 and PYTHON_VER["minor"] < 10:
                     pathlib_prepends_cwd = False
                 else:
                     pathlib_prepends_cwd = True
 
-                if (not p.is_absolute()
-                    and not win_parsing_posix
-                    and pathlib_prepends_cwd):
+                if not p.is_absolute() and not win_parsing_posix and pathlib_prepends_cwd:
                     # pathlib prepends cwd if it couldnt
                     # resolve locally the file
                     cwd = pathlib.Path().absolute()
@@ -539,10 +575,12 @@ class Collector:
         return result if result[TYPE] == type else None
 
     def file_for_path(self, path):
-        return self.file_element_for_path(path, TYPE_FILE, {SYMBOLS:[]})
+        return self.file_element_for_path(path, TYPE_FILE, {SYMBOLS: []})
 
     def folder_for_path(self, path):
-        return self.file_element_for_path(path, TYPE_FOLDER, {FILES:[], SUB_FOLDERS:[], COLLAPSED_SUB_FOLDERS:[]})
+        return self.file_element_for_path(
+            path, TYPE_FOLDER, {FILES: [], SUB_FOLDERS: [], COLLAPSED_SUB_FOLDERS: []}
+        )
 
     def file_items_ancestors(self, item):
         while item.get(FOLDER):
@@ -580,7 +618,9 @@ class Collector:
         for f in self.all_folders():
             for k in [FILES, SUB_FOLDERS]:
                 f[k] = sorted(f[k], key=lambda s: s[NAME])
-            f[COLLAPSED_SUB_FOLDERS] = sorted(f[COLLAPSED_SUB_FOLDERS], key=lambda s: s[COLLAPSED_NAME])
+            f[COLLAPSED_SUB_FOLDERS] = sorted(
+                f[COLLAPSED_SUB_FOLDERS], key=lambda s: s[COLLAPSED_NAME]
+            )
 
     def all_files(self):
         return [f for f in self.file_elements.values() if f[TYPE] == TYPE_FILE]
@@ -608,6 +648,7 @@ class Collector:
 
     def enhance_symbol_flags(self):
         is_float_function_pattern = re.compile(r"^__aeabi_(f.*|.*2f)|__addsf3$")
+
         def is_float_function_name(n):
             return is_float_function_pattern.match(n)
 
@@ -618,7 +659,6 @@ class Collector:
 
         for file in self.all_files():
             file["calls_float_function"] = any([f["calls_float_function"] for f in file[FUNCTIONS]])
-
 
         def folder_calls_float_function(folder):
             result = any([f["calls_float_function"] for f in folder[FILES]])
