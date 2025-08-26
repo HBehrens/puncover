@@ -50,7 +50,7 @@ jobs:
           python setup.py sdist bdist_wheel
 
       - name: Archive release
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04' }}
         uses: actions/upload-artifact@v4
         with:
           name: release_dist
