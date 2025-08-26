@@ -19,8 +19,8 @@ jobs:
         # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         os: [
             ubuntu-22.04,
-            macos-12,
-            windows-2022
+            macos-14,
+            windows-2025
           ]
       fail-fast: false
 
