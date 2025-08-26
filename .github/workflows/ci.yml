@@ -9,6 +9,10 @@ on:
 
   workflow_dispatch:
 
+env:
+  # https://docs.astral.sh/uv/guides/integration/github/#using-uv-pip
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -31,32 +35,33 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          # Install a specific version of uv.
+          version: "0.8.13"
+          python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          # bind pip to a specific version to hopefully avoid breakage
-          pip install pip==23.3
-
-          pip install -r requirements-test.txt
+          uv pip install -r requirements-test.txt
 
       - name: Run tox
         # use the version of python in PATH, from the github runner
         run: tox -e py
 
       - name: Build release archive
-        # only upload coverage for the 3.10 run
-        if: ${{ matrix.python-version == '3.10' }}
         run: |
-          pip install wheel==0.37.1
-          python setup.py sdist bdist_wheel
+          uv build
 
       - name: Archive release
-        if: ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-22.04' }}
+        if: ${{ matrix.python-version == '3.13' && matrix.os == 'ubuntu-22.04' }}
         uses: actions/upload-artifact@v4
         with:
           name: release_dist
           path: dist
 
       - name: Upload coverage to Codecov
-        # only upload coverage for the 3.10 run
-        if: ${{ matrix.python-version == '3.10' }}
+        # only upload coverage for the 3.13 run
+        if: ${{ matrix.python-version == '3.13' && matrix.os == 'ubuntu-22.04' }}
         uses: codecov/codecov-action@v5
