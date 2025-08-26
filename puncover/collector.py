@@ -1,8 +1,8 @@
 import fnmatch
 import os
+import pathlib
 import re
 import sys
-import pathlib
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -59,11 +59,27 @@ def left_strip_from_list(lines):
     # remove from each string
     return list([line[len(longest_match):] for line in lines])
 
+class StubGccTool:
+    """Stub gcc_tools container, for tests"""
+    #  934:    f7ff bba8       b.w     88 <jump_to_pbl_function>
+    # 8e4:     f000 f824       bl      930 <app_log>
+    #
+    # but not:
+    # 805bbac: 2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
+    enhance_call_tree_pattern = re.compile(
+        r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)",
+        re.IGNORECASE,
+    )
+
 
 class Collector:
 
     def __init__(self, gcc_tools):
-        self.gcc_tools = gcc_tools
+        if gcc_tools is None:
+            self.gcc_tools = StubGccTool()
+        else:
+            self.gcc_tools = gcc_tools
+
         self.symbols = {}
         self.file_elements = {}
         self.symbols_by_qualified_name = None

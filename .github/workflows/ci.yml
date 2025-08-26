@@ -15,20 +15,19 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
-        # it's convenient to stay on an older ubuntu as long as we need
-        # python3.6:
+        # setup-python's version support is limited by runner version:
         # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         os: [
-            ubuntu-20.04,
+            ubuntu-22.04,
             macos-12,
             windows-2022
           ]
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -52,7 +51,7 @@ jobs:
 
       - name: Archive release
         if: ${{ matrix.python-version == '3.10' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_dist
           path: dist
@@ -60,4 +59,4 @@ jobs:
       - name: Upload coverage to Codecov
         # only upload coverage for the 3.10 run
         if: ${{ matrix.python-version == '3.10' }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
