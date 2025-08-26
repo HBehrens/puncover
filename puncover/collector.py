@@ -1,8 +1,8 @@
 import fnmatch
 import os
+import pathlib
 import re
 import sys
-import pathlib
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -299,7 +299,7 @@ class Collector:
                 str_path = str(path)
                 abs_win_path = self.windows_path_pattern.match(str_path)
                 if base_dir in path.parents:
-                    path = path.relative_to(base_dir)
+                    path = path.relative_to(base_dir, walk_up=True)
                 # Remove root from path
                 elif str_path.startswith("/"):
                     str_path = str_path[1:]
@@ -489,7 +489,7 @@ class Collector:
                     # pathlib prepends cwd if it couldnt
                     # resolve locally the file
                     cwd = pathlib.Path().absolute()
-                    p = resolved_path.relative_to(cwd)
+                    p = resolved_path.relative_to(cwd, walk_up=True)
                 else:
                     p = resolved_path
             s[PATH] = p
