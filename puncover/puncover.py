@@ -62,8 +62,9 @@ def get_arm_tools_prefix_path():
     return os.path.join(gcc_tools_base_dir, 'bin/arm-none-eabi-')
 
 
-def open_browser(host, port):
-    webbrowser.open("http://{}:{}/".format(host, port))
+def open_browser(host, port, new_window):
+    new = 1 if new_window else 0
+    webbrowser.open("http://{}:{}/".format(host, port), new)
 
 
 def main():
@@ -88,6 +89,8 @@ def main():
     parser.add_argument('--host', default='127.0.0.1',
                         help='host IP the HTTP server runs on')
     parser.add_argument('--no-open-browser', action='store_true',
+                        help="don't automatically open a browser window")
+    parser.add_argument('--new-window', action='store_true',
                         help="don't automatically open a browser window")
     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
     args = parser.parse_args()
@@ -115,7 +118,7 @@ def main():
     if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
         # wait one second before starting, so the flask server is ready and we
         # don't see a 404 for a moment first
-        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
+        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port, "new_window":args.new_window}).start()
 
     app.run(host=args.host, port=args.port)
 
