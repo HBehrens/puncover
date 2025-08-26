@@ -52,14 +52,14 @@ sed -i -r 's/(.*__version_info__ = )\(.*\)/\1\('"${PUNCOVER_VERSION_COMMA_DELIMI
 git add . && git commit -m "Bump version to ${PUNCOVER_VERSION}"
 git tag -a {-m=,}${PUNCOVER_VERSION}
 rm -rf dist
-python setup.py sdist bdist_wheel
+uv build
 
 read -p "Ready to push to GitHub and publish to PyPi? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     git push && git push --tags
-    twine upload dist/*
+    uv publish dist/*
     gh release create --generate-notes ${PUNCOVER_VERSION}
     gh release upload ${PUNCOVER_VERSION} dist/*
 fi

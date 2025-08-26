@@ -74,8 +74,9 @@ tox -e py
 
 ### Release Script
 
-See `release.sh` for a script that automates the above steps. This example will
-work with the PyPi tokens (now required):
+See `release.sh` for a script that automates the above steps. Requires
+[uv](https://github.com/astral-sh/uv) to be installed. This example will work
+with the PyPi tokens (now required):
 
 ```bash
 PUNCOVER_VERSION=0.3.5 TWINE_PASSWORD="<pypi token>" TWINE_USERNAME=__token__ ./release.sh
