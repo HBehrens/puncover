@@ -22,15 +22,9 @@ if [[ -z "${PUNCOVER_VERSION:-}" ]]; then
     exit 1
 fi
 
-# check that the twine tool is installed
-if ! command -v twine &> /dev/null; then
-    echo "twine could not be found, install with 'pip install twine'"
-    exit 1
-fi
-
-# confirm that the token is set to TWINE_PASSWORD + TWINE_USERNAME
-if [[ -z "${TWINE_PASSWORD:-}" || -z "${TWINE_USERNAME:-}" ]]; then
-    echo "TWINE_PASSWORD and TWINE_USERNAME must be set"
+# confirm that the pypi token is set
+if [[ -z "${PYPI_TOKEN:-}" ]]; then
+    echo "PYPI_TOKEN must be set"
     exit 1
 fi
 
@@ -59,7 +53,7 @@ echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     git push && git push --tags
-    uv publish dist/*
+    uv publish --token=${PYPI_TOKEN} dist/*
     gh release create --generate-notes ${PUNCOVER_VERSION}
     gh release upload ${PUNCOVER_VERSION} dist/*
 fi
