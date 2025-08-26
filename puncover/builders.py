@@ -4,8 +4,8 @@ from os.path import dirname
 from puncover.backtrace_helper import BacktraceHelper
 import pathlib
 
-class Builder:
 
+class Builder:
     def __init__(self, collector, src_root):
         self.files = {}
         self.collector = collector
@@ -25,7 +25,7 @@ class Builder:
         self.build_call_trees()
 
     def needs_build(self):
-        return any([os.path.getmtime(f) > t for f,t in self.files.items()])
+        return any([os.path.getmtime(f) > t for f, t in self.files.items()])
 
     def build_if_needed(self):
         if self.needs_build():
@@ -46,7 +46,6 @@ class Builder:
 
 
 class ElfBuilder(Builder):
-
     def __init__(self, collector, src_root, elf_file, su_dir):
         Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
         self.store_file_time(elf_file, store_empty=True)

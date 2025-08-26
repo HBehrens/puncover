@@ -1,0 +1,5 @@
+target-version = "py312"
+preview = true
+
+# match black config
+line-length = 100

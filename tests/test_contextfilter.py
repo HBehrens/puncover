@@ -3,7 +3,6 @@ from puncover.renderers import traverse_filter_wrapper
 
 
 class TestBacktraceHelper(unittest.TestCase):
-
     def test_traverse_filter_wrapper_single_none(self):
         actual = traverse_filter_wrapper({}, lambda s: None)
         self.assertIsNone(actual)

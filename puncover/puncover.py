@@ -23,8 +23,9 @@ DEFAULT_PORT_FALLBACK = 8000
 
 def is_port_in_use(port: int) -> bool:
     import socket
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+        return s.connect_ex(("localhost", port)) == 0
 
 
 def get_default_port():
@@ -59,7 +60,7 @@ def get_arm_tools_prefix_path():
     gcc_tools_base_dir = dirname(dirname(obj_dump))
     assert gcc_tools_base_dir, "Unable to find gcc tools base dir from {}".format(obj_dump)
 
-    return os.path.join(gcc_tools_base_dir, 'bin/arm-none-eabi-')
+    return os.path.join(gcc_tools_base_dir, "bin/arm-none-eabi-")
 
 
 def open_browser(host, port):
@@ -73,31 +74,39 @@ def main():
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument('--gcc-tools-base', '--gcc_tools_base', default=gcc_tools_base,
-                        help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
-    parser.add_argument('--elf_file', '--elf-file', required=True,
-                        help='location of an ELF file')
-    parser.add_argument('--src_root', '--src-root',
-                        help='location of your sources')
-    parser.add_argument('--build_dir', '--build-dir',
-                        help='location of your build output')
-    parser.add_argument('--debug', action='store_true',
-                        help='enable Flask debugger')
-    parser.add_argument('--port', dest='port', default=get_default_port(), type=int,
-                        help='port the HTTP server runs on')
-    parser.add_argument('--host', default='127.0.0.1',
-                        help='host IP the HTTP server runs on')
-    parser.add_argument('--no-open-browser', action='store_true',
-                        help="don't automatically open a browser window")
-    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    parser.add_argument(
+        "--gcc-tools-base",
+        "--gcc_tools_base",
+        default=gcc_tools_base,
+        help="filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-",
+    )
+    parser.add_argument("--elf_file", "--elf-file", required=True, help="location of an ELF file")
+    parser.add_argument("--src_root", "--src-root", help="location of your sources")
+    parser.add_argument("--build_dir", "--build-dir", help="location of your build output")
+    parser.add_argument("--debug", action="store_true", help="enable Flask debugger")
+    parser.add_argument(
+        "--port",
+        dest="port",
+        default=get_default_port(),
+        type=int,
+        help="port the HTTP server runs on",
+    )
+    parser.add_argument("--host", default="127.0.0.1", help="host IP the HTTP server runs on")
+    parser.add_argument(
+        "--no-open-browser", action="store_true", help="don't automatically open a browser window"
+    )
+    parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
     args = parser.parse_args()
 
     if args.gcc_tools_base is None:
-        print("Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base")
+        print(
+            "Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base"
+        )
         exit(1)
 
-    builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
-                             src_root=args.src_root, su_dir=args.build_dir)
+    builder = create_builder(
+        args.gcc_tools_base, elf_file=args.elf_file, src_root=args.src_root, su_dir=args.build_dir
+    )
     builder.build_if_needed()
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
@@ -115,10 +124,10 @@ def main():
     if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
         # wait one second before starting, so the flask server is ready and we
         # don't see a 404 for a moment first
-        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
+        Timer(1, open_browser, kwargs={"host": args.host, "port": args.port}).start()
 
     app.run(host=args.host, port=args.port)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

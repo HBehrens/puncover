@@ -5,8 +5,7 @@ from puncover import collector
 
 
 class TestBacktraceHelper(unittest.TestCase):
-
-    class FakeCollector():
+    class FakeCollector:
         def __init__(self, symbol_names):
             self.symbol_names = symbol_names
 
@@ -23,9 +22,12 @@ class TestBacktraceHelper(unittest.TestCase):
         self.assertEqual([], r.derive_function_symbols(""))
 
     def test_returns_known_symbols(self):
-        r = BacktraceHelper(TestBacktraceHelper.FakeCollector([
-            "codepoint_get_horizontal_advance", "text_walk_lines",
-        ]))
+        r = BacktraceHelper(
+            TestBacktraceHelper.FakeCollector([
+                "codepoint_get_horizontal_advance",
+                "text_walk_lines",
+            ])
+        )
         actual = r.derive_function_symbols("""
     fontinfo=0x200010ec <s_system_fonts_info_table+200>) 16 at ../src/fw/applib/graphics/text_resources.c:347
 #4  0x08012220 in codepoint_get_horizontal_advance () 16
@@ -33,13 +35,19 @@ class TestBacktraceHelper(unittest.TestCase):
 #6  0x080128d6 in text_walk_lines.constprop.8 () (inlined)
         """)
 
-        self.assertEqual(["codepoint_get_horizontal_advance", "text_walk_lines"], [f[collector.NAME] for f in actual])
-
+        self.assertEqual(
+            ["codepoint_get_horizontal_advance", "text_walk_lines"],
+            [f[collector.NAME] for f in actual],
+        )
 
     def test_transform_known_symbols(self):
-        r = BacktraceHelper(TestBacktraceHelper.FakeCollector([
-            "a", "c", "d",
-        ]))
+        r = BacktraceHelper(
+            TestBacktraceHelper.FakeCollector([
+                "a",
+                "c",
+                "d",
+            ])
+        )
 
         def f(symbol):
             return symbol[collector.NAME] + symbol[collector.NAME]
@@ -49,7 +57,6 @@ class TestBacktraceHelper(unittest.TestCase):
 
 
 class TestBacktraceHelperTreeSizes(unittest.TestCase):
-
     def setUp(self):
         self.cc = collector.Collector(None)
         self.a = self.cc.add_symbol("a", "a", type=collector.TYPE_FUNCTION, stack_size=1)
