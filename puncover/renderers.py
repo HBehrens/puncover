@@ -4,17 +4,17 @@ try:
 except ImportError:
     from collections.abc import Iterable
 
-from datetime import datetime
 import itertools
-import re
 import pathlib
+import re
+from datetime import datetime
+from urllib.parse import urlencode, urljoin
 
 import jinja2
 import markupsafe
 from flask import abort, redirect, render_template, request
 from flask.helpers import url_for
 from flask.views import View
-from werkzeug.urls import Href
 
 from puncover import collector
 from puncover.backtrace_helper import BacktraceHelper
@@ -247,9 +247,11 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
     # replace/set ?sort= in URL
     args = request.args.copy()
     args["sort"] = next_sort
-    url = Href(request.base_url, sort=True)
-
-    return '<a href="%s" class="%s">%s</a>' % (url(args), " ".join(classes), title)
+    # Build the URL with updated query parameters
+    base_url = request.base_url
+    query_string = urlencode(args)
+    full_url = base_url + ("?" + query_string if query_string else "")
+    return '<a href="%s" class="%s">%s</a>' % (full_url, " ".join(classes), title)
 
 
 @jinja2.pass_context
@@ -300,11 +302,14 @@ class HTMLRenderer(View):
         return symbol["display_name"] if symbol else name
 
     def url_for(self, endpoint, **values):
+        # Build the base URL for the endpoint
         result = url_for(endpoint, **values)
-        href = Href(result)
-        # pass along any query parameters
-        # this is kind of hacky as it replaces any existing parameters
-        return href(request.args)
+        # Ensure result is a string (for tests with mocks)
+        result_str = str(result)
+        # Append current query parameters
+        args = request.args.copy()
+        query_string = urlencode(args)
+        return result_str + ("?" + query_string if query_string else "")
 
     def url_for_symbol(self, value):
         if value[collector.TYPE] in [collector.TYPE_FUNCTION]:

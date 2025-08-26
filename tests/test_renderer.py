@@ -1,32 +1,19 @@
 import unittest
+from unittest.mock import Mock, patch
 
-from mock.mock import Mock, patch
-from flask import globals
 from puncover import renderers
 
 
 class TestRenderer(unittest.TestCase):
     def setUp(self):
-        self.request = Mock(name="request")
+        # Use a mock request object for tests
+        self.request = Mock()
         self.request.args = {}
-        self.request.base_url = "http://puncover.com"
+        self.request.base_url = "http://localhost/"
         self.request.blueprint = None
 
-        def url_adapter_func(url, *args, **kwargs):
-            return url
-
-        reqctx = Mock(name="reqctx")
-        reqctx.request = self.request
-        reqctx.url_adapter = Mock(name="url_adapter")
-        reqctx.url_adapter.build = Mock(side_effect=url_adapter_func)
-        globals._request_ctx_stack.push(reqctx)
-
-        self.appctx = Mock(name="appctx")
-        globals._app_ctx_stack.push(self.appctx)
-
     def tearDown(self):
-        globals._request_ctx_stack.pop()
-        globals._app_ctx_stack.pop()
+        pass
 
     def test_bytes_filter_ignores(self):
         f = renderers.bytes_filter
@@ -114,53 +101,95 @@ class TestRenderer(unittest.TestCase):
         self.assertEqual([c, b, a], actual)
 
     def test_col_sortable_filter_name(self):
-        ctx = Mock()
-        ctx.parent = {}
-        self.request.args = {"foo": "bar"}
+        from flask import Flask
 
-        expected = '<a href="http://puncover.com?foo=bar&sort=name_asc" class="sortable">Name</a>'
-        actual = renderers.col_sortable_filter(ctx, "Name", True)
-        self.assertEqual(expected, actual)
+        app = Flask(__name__)
+        # First test with foo=bar
+        with app.test_request_context(query_string="foo=bar"):
+            ctx = Mock()
+            ctx.parent = {}
+            expected = '<a href="http://localhost/?foo=bar&sort=name_asc" class="sortable">Name</a>'
+            actual = renderers.col_sortable_filter(ctx, "Name", True)
+            self.assertEqual(expected, actual)
 
-        # if current sort is ascending,
-        # mark as sorted ascending and populate link for descending
-        ctx.parent = {"sort": "name_asc"}
-        self.request.args = {"sort": "foo"}
-        expected = (
-            '<a href="http://puncover.com?sort=name_desc" class="sortable sort_asc_alpha">Name</a>'
-        )
-        actual = renderers.col_sortable_filter(ctx, "Name", True)
-        self.assertEqual(expected, actual)
+        # Second test with sort=foo
+        with app.test_request_context(query_string="sort=foo"):
+            ctx = Mock()
+            ctx.parent = {"sort": "name_asc"}
+            expected = '<a href="http://localhost/?sort=name_desc" class="sortable sort_asc_alpha">Name</a>'
+            actual = renderers.col_sortable_filter(ctx, "Name", True)
+            self.assertEqual(expected, actual)
 
     def test_col_sortable_filter_stack(self):
-        ctx = Mock()
-        ctx.parent = {}
-        self.request.args = {"foo": "bar"}
+        from flask import Flask
 
-        expected = '<a href="http://puncover.com?foo=bar&sort=stack_asc" class="sortable">Stack</a>'
-        actual = renderers.col_sortable_filter(ctx, "Stack", True)
-        self.assertEqual(expected, actual)
+        app = Flask(__name__)
+        # First test with foo=bar
+        with app.test_request_context(query_string="foo=bar"):
+            ctx = Mock()
+            ctx.parent = {}
+            expected = (
+                '<a href="http://localhost/?foo=bar&sort=stack_asc" class="sortable">Stack</a>'
+            )
+            actual = renderers.col_sortable_filter(ctx, "Stack", True)
+            self.assertEqual(expected, actual)
 
-        # if current sort is ascending,
-        # mark as sorted ascending and populate link for descending
-        ctx.parent = {"sort": "stack_asc"}
-        self.request.args = {"sort": "foo"}
-        expected = '<a href="http://puncover.com?sort=stack_desc" class="sortable sort_asc_alpha">Stack</a>'
-        actual = renderers.col_sortable_filter(ctx, "Stack", True)
-        self.assertEqual(expected, actual)
+        # Second test with sort=foo
+        with app.test_request_context(query_string="sort=foo"):
+            ctx = Mock()
+            ctx.parent = {"sort": "stack_asc"}
+            expected = '<a href="http://localhost/?sort=stack_desc" class="sortable sort_asc_alpha">Stack</a>'
+            actual = renderers.col_sortable_filter(ctx, "Stack", True)
+            self.assertEqual(expected, actual)
 
     def test_url_for(self):
-        c = Mock()
-        c.root_folders = Mock(return_value=[])
-        c.all_symbols = Mock(return_value=[])
-        c.all_functions = Mock(return_value=[])
-        c.all_variables = Mock(return_value=[])
-        c = renderers.HTMLRenderer(c)
+        from flask import Flask
 
-        actual = c.url_for("/")
-        self.assertEqual("/", actual)
+        app = Flask(__name__)
+        with app.test_request_context():
+            c = Mock()
+            c.root_folders = Mock(return_value=[])
+            c.all_symbols = Mock(return_value=[])
+            c.all_functions = Mock(return_value=[])
+            c.all_variables = Mock(return_value=[])
+            c = renderers.HTMLRenderer(c)
 
-        # preserves query parameters
-        self.request.args = {"foo": "bar"}
-        actual = c.url_for("/")
-        self.assertEqual("/?foo=bar", actual)
+            from unittest.mock import patch
+
+            with patch("puncover.renderers.url_for", return_value="/"):
+                actual = c.url_for("/")
+                self.assertEqual("/", actual)
+
+                # preserves query parameters
+                from flask import Flask
+
+                app = Flask(__name__)
+                # First test with no query string
+                with app.test_request_context():
+                    c = Mock()
+                    c.root_folders = Mock(return_value=[])
+                    c.all_symbols = Mock(return_value=[])
+                    c.all_functions = Mock(return_value=[])
+                    c.all_variables = Mock(return_value=[])
+                    c = renderers.HTMLRenderer(c)
+
+                    from unittest.mock import patch
+
+                    with patch("puncover.renderers.url_for", return_value="/"):
+                        actual = c.url_for("/")
+                        self.assertEqual("/", actual)
+
+                # Second test with foo=bar
+                with app.test_request_context(query_string="foo=bar"):
+                    c = Mock()
+                    c.root_folders = Mock(return_value=[])
+                    c.all_symbols = Mock(return_value=[])
+                    c.all_functions = Mock(return_value=[])
+                    c.all_variables = Mock(return_value=[])
+                    c = renderers.HTMLRenderer(c)
+
+                    from unittest.mock import patch
+
+                    with patch("puncover.renderers.url_for", return_value="/"):
+                        actual = c.url_for("/")
+                        self.assertEqual("/?foo=bar", actual)
