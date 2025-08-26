@@ -346,7 +346,7 @@ class Collector:
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
 
     def normalize_files_paths(self, base_dir):
-        base_dir = os.path.abspath(base_dir) if base_dir else pathlib.Path(".")
+        base_dir = pathlib.Path(base_dir).absolute() if base_dir else pathlib.Path(".")
         for s in self.all_symbols():
             path = s.get(PATH, None)
             if path:
