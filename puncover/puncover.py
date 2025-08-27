@@ -3,8 +3,8 @@
 import argparse
 import os
 import webbrowser
-from shutil import which
 from os.path import dirname
+from shutil import which
 from threading import Timer
 
 from flask import Flask
@@ -76,11 +76,17 @@ def main():
     )
     parser.add_argument(
         "--gcc-tools-base",
-        "--gcc_tools_base",
         default=gcc_tools_base,
         help="filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-",
     )
-    parser.add_argument("--elf_file", "--elf-file", required=True, help="location of an ELF file")
+    parser.add_argument(
+        "elf_file", nargs="?", help="location of an ELF file (positional or --elf_file)"
+    )
+    parser.add_argument(
+        "--elf_file",
+        dest="elf_file_opt",
+        help="location of an ELF file (positional or --elf_file)",
+    )
     parser.add_argument("--src_root", "--src-root", help="location of your sources")
     parser.add_argument("--build_dir", "--build-dir", help="location of your build output")
     parser.add_argument("--debug", action="store_true", help="enable Flask debugger")
@@ -98,6 +104,11 @@ def main():
     parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
     args = parser.parse_args()
 
+    # Determine ELF file from positional or optional argument
+    elf_file = args.elf_file_opt if args.elf_file_opt else args.elf_file
+    if not elf_file:
+        parser.error("the following arguments are required: elf_file (positional or --elf_file)")
+
     if args.gcc_tools_base is None:
         print(
             "Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base"
@@ -105,7 +116,7 @@ def main():
         exit(1)
 
     builder = create_builder(
-        args.gcc_tools_base, elf_file=args.elf_file, src_root=args.src_root, su_dir=args.build_dir
+        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
     )
     builder.build_if_needed()
     renderers.register_jinja_filters(app.jinja_env)
