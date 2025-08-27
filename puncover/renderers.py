@@ -8,7 +8,7 @@ import itertools
 import pathlib
 import re
 from datetime import datetime
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode
 
 import jinja2
 import markupsafe
