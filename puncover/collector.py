@@ -359,10 +359,6 @@ class Collector:
                     str_path = str_path[1:]
                     path = pathlib.Path(str_path)
                 elif abs_win_path:
-                    # prefix drive letter
-                    # in the rare case where there are two
-                    # files with same path and different drive letter
-                    drive_letter = abs_win_path.group(1)
                     str_path = abs_win_path.group(1) + "_" + abs_win_path.group(4)
                     path = pathlib.Path(str_path)
                 s[PATH] = path
@@ -379,8 +375,8 @@ class Collector:
         print("parsing ELF at %s" % elf_file)
 
         self.parse_assembly_text("".join(self.gcc_tools.get_assembly_lines(elf_file)))
-        for l in self.gcc_tools.get_size_lines(elf_file):
-            self.parse_size_line(l)
+        for line in self.gcc_tools.get_size_lines(elf_file):
+            self.parse_size_line(line)
 
         self.elf_mtime = os.path.getmtime(elf_file)
 
@@ -407,8 +403,8 @@ class Collector:
 
         if su_dir:
             print("parsing stack usages starting at %s" % su_dir)
-            for l in get_stack_usage_lines(su_dir):
-                self.parse_stack_usage_line(l)
+            for line in get_stack_usage_lines(su_dir):
+                self.parse_stack_usage_line(line)
 
     def sorted_by_size(self, symbols):
         return sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
@@ -425,13 +421,13 @@ class Collector:
     def enhance_assembly(self):
         for key, symbol in self.symbols.items():
             if ASM in symbol:
-                symbol[ASM] = list([self.enhanced_assembly_line(l) for l in symbol[ASM]])
+                symbol[ASM] = list([self.enhanced_assembly_line(line) for line in symbol[ASM]])
 
     def add_function_call(self, caller, callee):
         if caller != callee:
-            if not callee in caller[CALLEES]:
+            if callee not in caller[CALLEES]:
                 caller[CALLEES].append(callee)
-            if not caller in callee[CALLERS]:
+            if caller not in callee[CALLERS]:
                 callee[CALLERS].append(caller)
                 caller_file = caller.get("file", None)
                 callee_file = callee.get("file", None)
@@ -459,7 +455,7 @@ class Collector:
 
         for f in self.all_functions():
             if ASM in f:
-                [self.enhance_call_tree_from_assembly_line(f, l) for l in f[ASM]]
+                [self.enhance_call_tree_from_assembly_line(f, line) for line in f[ASM]]
 
     def enhance(self, src_root):
         self.normalize_files_paths(src_root)
@@ -504,7 +500,7 @@ class Collector:
     def enhance_function_size_from_assembly(self):
         for f in self.all_symbols():
             if ASM in f:
-                f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
+                f[SIZE] = sum([self.count_assembly_code_bytes(line) for line in f[ASM]])
 
     def enhance_sibling_symbols(self):
         for f in self.all_functions():

@@ -1,8 +1,7 @@
-import os
-import subprocess
-import re
-
 import itertools
+import os
+import re
+import subprocess
 
 
 class GCCTools:
@@ -40,7 +39,7 @@ class GCCTools:
 
     def gcc_tool_lines(self, name, args, cwd=None):
         proc = subprocess.Popen([self.gcc_tool_path(name)] + args, stdout=subprocess.PIPE, cwd=cwd)
-        return [l.decode() for l in proc.stdout.readlines()]
+        return [line.decode() for line in proc.stdout.readlines()]
 
     def get_assembly_lines(self, elf_file):
         return self.gcc_tool_lines("objdump", ["-dslw", elf_file.name], elf_file.parents[0])
@@ -56,9 +55,9 @@ class GCCTools:
     def get_unmangled_names(self, symbol_names, chunk_size=1000):
         # for very long lists we can exceed the maximum length of the command line
         # so we split the names in chunks
-        def chunks(l):
-            for i in range(0, len(l), chunk_size):
-                yield l[i : i + chunk_size]
+        def chunks(line):
+            for i in range(0, len(line), chunk_size):
+                yield line[i : i + chunk_size]
 
         lines_list = [self.gcc_tool_lines("c++filt", c) for c in chunks(symbol_names)]
         lines = list(itertools.chain.from_iterable(lines_list))

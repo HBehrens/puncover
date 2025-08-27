@@ -1,9 +1,11 @@
-import unittest
-from puncover.collector import Collector, left_strip_from_list
-from mock import patch
-from puncover import collector
 import os
 import pathlib
+import unittest
+
+from mock import patch
+
+from puncover import collector
+from puncover.collector import Collector, left_strip_from_list
 
 
 class TestCollector(unittest.TestCase):
@@ -517,7 +519,6 @@ uses_doubles2():
         self.assertIn(collector.FILE, s)
         file = s[collector.FILE]
         self.assertEqual("<unknown>", file[collector.NAME])
-        folder = file[collector.FOLDER]
         self.assertEqual("<unknown>", file[collector.NAME])
 
     def test_enhance_file_elements(self):
