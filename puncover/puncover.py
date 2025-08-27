@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import importlib.metadata
 import os
 import webbrowser
 from os.path import dirname
@@ -14,7 +15,8 @@ from puncover.builders import ElfBuilder
 from puncover.collector import Collector
 from puncover.gcc_tools import GCCTools
 from puncover.middleware import BuilderMiddleware
-from puncover.version import __version__
+
+version = importlib.metadata.version("puncover")
 
 # Default listening port. Fallback to 8000 if the default port is already in use.
 DEFAULT_PORT = 5000
@@ -101,7 +103,7 @@ def main():
     parser.add_argument(
         "--no-open-browser", action="store_true", help="don't automatically open a browser window"
     )
-    parser.add_argument("--version", action="version", version="%(prog)s " + __version__)
+    parser.add_argument("--version", action="version", version="%(prog)s " + version)
     args = parser.parse_args()
 
     # Determine ELF file from positional or optional argument

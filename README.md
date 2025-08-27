@@ -24,21 +24,29 @@ pip install puncover
 Run it by passing the binary to analyze:
 
 ```bash
-puncover --elf_file project.elf
+puncover project.elf
 ...
 * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 ```
 
 Open the link in your browser to view the analysis.
 
+You can also use `uvx` to run the script without installing globally:
+
+```bash
+uvx puncover project.elf
+```
+
 ## Running Tests Locally
 
 ### Setup
 
-To run the tests locally, you need to install the development dependencies:
+To run the tests locally, you need to install the development dependencies. This
+project uses `uv` to manage the python environment.
 
 ```bash
-pip install -r requirements-dev.txt
+uv venv && source .venv/bin/activate
+uv sync
 ```
 
 ### Running Tests
