@@ -37,28 +37,14 @@ Open the link in your browser to view the analysis.
 
 To run the tests locally, you need to install the development dependencies:
 
-1. install pyenv: https://github.com/pyenv/pyenv
-
-   ```bash
-   curl https://pyenv.run | bash
-   ```
-
-2. install all the python environments, using this bashism (this can take a few
-   minutes):
-
-   ```bash
-   for _py in $(<.python-version ); do pyenv install ${_py}; done
-   ```
-
-3. install the development dependencies:
-
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
+```bash
+pip install -r requirements-dev.txt
+```
 
 ### Running Tests
 
-Then you can run the tests with:
+Then you can run the tests with `tox` (note that this will fail if any of the
+supported python versions aren't found, see [`tox.ini`](tox.ini)):
 
 ```bash
 tox
