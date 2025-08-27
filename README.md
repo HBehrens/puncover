@@ -79,7 +79,7 @@ See `release.sh` for a script that automates the above steps. Requires
 with the PyPi tokens (now required):
 
 ```bash
-PUNCOVER_VERSION=0.3.5 TWINE_PASSWORD="<pypi token>" TWINE_USERNAME=__token__ ./release.sh
+PUNCOVER_VERSION=0.3.5 PYPI_TOKEN=<pypi token> ./release.sh
 ```
 
 ### Manual Steps
