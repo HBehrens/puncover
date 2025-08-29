@@ -10,7 +10,7 @@ requires-python = ">=3.8"
 dependencies = [
     "Flask==2.2.5",
     "jinja2==3.1.6",
-    "werkzeug==3.0.1"
+    "werkzeug==3.0.6"
 ]
 classifiers = [
         "Development Status :: 5 - Production/Stable",
@@ -40,7 +40,7 @@ dev = [
     "setuptools>=75",
     "Flask==2.2.5",
     "jinja2==3.1.6",
-    "werkzeug==3.0.1",
+    "werkzeug==3.0.6",
     "ruff>=0.12.10",
 ]
 
