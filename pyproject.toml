@@ -12,6 +12,19 @@ dependencies = [
     "jinja2==3.1.6",
     "werkzeug==3.0.1"
 ]
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+]
 
 [project.scripts]
 puncover = "puncover.puncover:main"
@@ -48,6 +61,8 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["puncover"]
 package-data = {"puncover"= ["puncover/templates/*", "puncover/static/*"]}
 include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["static", "templates", "examples", "images", "scripts", "tests"]
