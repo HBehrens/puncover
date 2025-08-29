@@ -85,6 +85,7 @@ def main():
         "elf_file", nargs="?", help="location of an ELF file (positional or --elf_file)"
     )
     parser.add_argument(
+        "--elf",
         "--elf_file",
         dest="elf_file_opt",
         help="location of an ELF file (positional or --elf_file)",
