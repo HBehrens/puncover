@@ -38,9 +38,6 @@ dev = [
     "tox==3.27.1; python_version < '3.12'",
     "tox==4.11.3; python_version >= '3.12'",
     "setuptools>=75",
-    "Flask==2.2.5",
-    "jinja2==3.1.6",
-    "werkzeug==3.0.6",
     "ruff>=0.12.10",
 ]
 
