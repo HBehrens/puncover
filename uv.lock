@@ -722,8 +722,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "codecov" },
-    { name = "flask" },
-    { name = "jinja2" },
     { name = "mock" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -732,21 +730,18 @@ dev = [
     { name = "setuptools", version = "80.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "tox", version = "3.27.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "tox", version = "4.11.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "werkzeug" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "flask", specifier = "==2.2.5" },
     { name = "jinja2", specifier = "==3.1.6" },
-    { name = "werkzeug", specifier = "==3.0.1" },
+    { name = "werkzeug", specifier = "==3.0.6" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "codecov", specifier = "==2.1.13" },
-    { name = "flask", specifier = "==2.2.5" },
-    { name = "jinja2", specifier = "==3.1.6" },
     { name = "mock", specifier = "==4.0.3" },
     { name = "pytest", specifier = "==8.3.5" },
     { name = "pytest-cov", specifier = "==5.0.0" },
@@ -754,7 +749,6 @@ dev = [
     { name = "setuptools", specifier = ">=75" },
     { name = "tox", marker = "python_full_version < '3.12'", specifier = "==3.27.1" },
     { name = "tox", marker = "python_full_version >= '3.12'", specifier = "==4.11.3" },
-    { name = "werkzeug", specifier = "==3.0.1" },
 ]
 
 [[package]]
@@ -1068,15 +1062,15 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.0.1"
+version = "3.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe", version = "2.1.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "markupsafe", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0d/cc/ff1904eb5eb4b455e442834dabf9427331ac0fa02853bf83db817a7dd53d/werkzeug-3.0.1.tar.gz", hash = "sha256:507e811ecea72b18a404947aded4b3390e1db8f826b494d76550ef45bb3b1dcc", size = 801436, upload-time = "2023-10-24T20:57:50.084Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/f9/0ba83eaa0df9b9e9d1efeb2ea351d0677c37d41ee5d0f91e98423c7281c9/werkzeug-3.0.6.tar.gz", hash = "sha256:a8dd59d4de28ca70471a34cba79bed5f7ef2e036a76b3ab0835474246eb41f8d", size = 805170, upload-time = "2024-10-25T18:52:31.688Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/fc/254c3e9b5feb89ff5b9076a23218dafbc99c96ac5941e900b71206e6313b/werkzeug-3.0.1-py3-none-any.whl", hash = "sha256:90a285dc0e42ad56b34e696398b8122ee4c681833fb35b8334a095d82c56da10", size = 226669, upload-time = "2023-10-24T20:57:47.326Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/69/05837f91dfe42109203ffa3e488214ff86a6d68b2ed6c167da6cdc42349b/werkzeug-3.0.6-py3-none-any.whl", hash = "sha256:1bc0c2310d2fbb07b1dd1105eba2f7af72f322e1e455f2f93c993bee8c8a5f17", size = 227979, upload-time = "2024-10-25T18:52:30.129Z" },
 ]
 
 [[package]]
