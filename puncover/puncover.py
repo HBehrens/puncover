@@ -36,7 +36,9 @@ def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
 
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None, dynamic_calls=None):
+def create_builder(
+    gcc_base_filename, elf_file=None, su_dir=None, src_root=None, dynamic_calls=None
+):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
         return ElfBuilder(c, src_root, elf_file, su_dir, dynamic_calls)
@@ -155,13 +157,13 @@ def main():
         ),
     )
     parser.add_argument(
-        '--add-dynamic-calls',
-        '--add_dynamic_calls',
-        action='append',
+        "--add-dynamic-calls",
+        "--add_dynamic_calls",
+        action="append",
         help=(
             "adds a dynamic callee to another function"
             "i.e. --add-dynamic-calls 'func_a->func_1' to add func_1 as a calee to func_a "
-        )
+        ),
     )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     parser.add_argument(
@@ -189,7 +191,11 @@ def main():
         exit(1)
 
     builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir, dynamic_calls=args.add_dynamic_calls
+        args.gcc_tools_base,
+        elf_file=elf_file,
+        src_root=args.src_root,
+        su_dir=args.build_dir,
+        dynamic_calls=args.add_dynamic_calls,
     )
     builder.build_if_needed()
 

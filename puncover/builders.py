@@ -7,7 +7,6 @@ from puncover.backtrace_helper import BacktraceHelper
 
 
 class Builder:
-
     def __init__(self, collector, src_root, dynamic_calls):
         self.files = {}
         self.collector = collector
@@ -51,7 +50,9 @@ class Builder:
 
 class ElfBuilder(Builder):
     def __init__(self, collector, src_root, elf_file, su_dir, dynamic_calls):
-        Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)), dynamic_calls)
+        Builder.__init__(
+            self, collector, src_root if src_root else dirname(dirname(elf_file)), dynamic_calls
+        )
         self.store_file_time(elf_file, store_empty=True)
         self.elf_file = pathlib.Path(elf_file)
         self.su_dir = su_dir
