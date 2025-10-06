@@ -50,25 +50,22 @@ def symbol_file_url_filter(context, value):
     return symbol_url_filter(context, f) if f else None
 
 
-def none_sum(a, b):
-    if a is not None:
-        return a + b if b is not None else a
-    return b
-
+def none_sum(l):
+    values = [a for a in l if a is not None]
+    if values:
+        return sum(values)
+    else:
+        return None
 
 def symbol_traverse(s, func):
     if isinstance(s, list):
-        result = None
-        for si in [symbol_traverse(i, func) for i in s]:
-            if si is not None:
-                result = none_sum(result, si)
-        return result
+        return none_sum([symbol_traverse(i, func) for i in s])
 
     if collector.TYPE in s:
         if s[collector.TYPE] == collector.TYPE_FILE:
-            return sum([symbol_traverse(s, func) for s in s[collector.SYMBOLS]])
+            return none_sum([symbol_traverse(s, func) for s in s[collector.SYMBOLS]])
         if s[collector.TYPE] == collector.FOLDER:
-            return sum([
+            return none_sum([
                 symbol_traverse(s, func)
                 for s in itertools.chain(s[collector.SUB_FOLDERS], s[collector.FILES])
             ])
@@ -111,7 +108,7 @@ def symbol_stack_size_filter(context, value, stack_base=None):
         if s.get(collector.TYPE, None) == collector.TYPE_FUNCTION
         else None,
     )
-    return none_sum(result, stack_base)
+    return none_sum([result, stack_base])
 
 
 @jinja2.pass_context
