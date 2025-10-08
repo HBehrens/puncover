@@ -78,6 +78,7 @@ def main():
     )
     parser.add_argument(
         "--gcc-tools-base",
+        "--gcc_tools_base",
         default=gcc_tools_base,
         help="filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-",
     )
