@@ -3,6 +3,21 @@ import os
 import pathlib
 import re
 import sys
+import pathlib
+from elftools.elf.elffile import ELFFile
+from elftools.elf.sections import (
+    NoteSection, SymbolTableSection, SymbolTableIndexSection
+)
+from elftools.elf.descriptions import (
+    describe_ei_class, describe_ei_data, describe_ei_version,
+    describe_ei_osabi, describe_e_type, describe_e_machine,
+    describe_e_version_numeric, describe_p_type, describe_p_flags,
+    describe_rh_flags, describe_sh_type, describe_sh_flags,
+    describe_symbol_type, describe_symbol_bind, describe_symbol_shndx, describe_reloc_type, describe_dyn_tag,
+    describe_dt_flags, describe_dt_flags_1, describe_ver_flags, describe_note,
+    describe_attr_tag_arm, describe_attr_tag_riscv, describe_symbol_other
+    )
+from pathlib import Path
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -375,8 +390,53 @@ class Collector:
         print("parsing ELF at %s" % elf_file)
 
         self.parse_assembly_text("".join(self.gcc_tools.get_assembly_lines(elf_file)))
-        for line in self.gcc_tools.get_size_lines(elf_file):
-            self.parse_size_line(line)
+        types = set()
+        with open(elf_file, 'rb') as f:
+            elffile = ELFFile(f)
+            # elfclass is a public attribute of ELFFile, read from its header
+            print('%s: elfclass is %s' % (elf_file, elffile.elfclass))
+
+            symbol_tables = [(idx, s) for idx, s in enumerate(elffile.iter_sections())
+                            if isinstance(s, SymbolTableSection)]
+
+            shndx_sections = {sec.symboltable: sec for sec in elffile.iter_sections()
+                                    if isinstance(sec, SymbolTableIndexSection)}
+
+            for section_index, section in symbol_tables:
+                if not isinstance(section, SymbolTableSection):
+                    continue
+
+                if section['sh_entsize'] == 0:
+                    # Symbol table '%s' has a sh_entsize of zero
+                    continue
+
+                # TODO add section name to symbol section.name,
+                for nsym, symbol in enumerate(section.iter_symbols()):
+                    symbol_name = symbol.name
+                    # Print section names for STT_SECTION symbols as readelf does
+                    if (symbol['st_info']['type'] == 'STT_SECTION'
+                        and symbol['st_shndx'] != 'SHN_UNDEF'
+                        and symbol['st_shndx'] < elffile.num_sections()
+                        and symbol['st_name'] == 0):
+                        symbol_name = elffile.get_section(symbol['st_shndx']).name
+
+                    ########
+                    addr = hex(symbol['st_value'])
+                    size = str(symbol['st_size'])
+                    dtype = describe_symbol_type(symbol['st_info']['type'])
+                    file = None
+                    line = None
+                    if dtype == 'OBJECT':
+                        dtype = TYPE_FUNCTION
+                    elif dtype == 'FUNC':
+                        dtype = TYPE_FUNCTION
+                    else:
+                        print("ignoring unexpected symbol type", dtype, symbol_name)
+                        continue
+                    # symbol_shndx = symbol['st_shndx']
+                    # sym_sction_index = shndx_sections[section_index].get_section_index(nsym)
+                    # describe_symbol_shndx(sym_sction_index)
+                    self.add_symbol(symbol_name, address=addr, size=size, file=file, line=line, type = dtype)
 
         self.elf_mtime = os.path.getmtime(elf_file)
 
