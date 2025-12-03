@@ -12,19 +12,7 @@ dependencies = [
     "jinja2==3.1.6",
     "werkzeug==3.0.6"
 ]
-classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "Natural Language :: English",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
-]
+dynamic = ["classifiers"]
 
 [project.scripts]
 puncover = "puncover.puncover:main"
@@ -54,12 +42,20 @@ preview = true
 line-length = 100
 
 [build-system]
-requires = ["setuptools>=75", "wheel"]
-build-backend = "setuptools.build_meta"
+# use the poetry build backend, which enables automatic classifier generation
+# see https://github.com/astral-sh/uv/issues/8716
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.setuptools]
-package-data = {"puncover"= ["puncover/templates/*", "puncover/static/*"]}
-include-package-data = true
-
-[tool.setuptools.packages.find]
-exclude = ["static", "templates", "examples", "images", "scripts", "tests"]
+[tool.poetry]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+]
+packages = [{ include = "puncover" }]
+include = [
+    { path = "puncover/templates/**/*", format = ["wheel", "sdist"] },
+    { path = "puncover/static/**/*", format = ["wheel", "sdist"] },
+]
+exclude = ["examples", "images", "scripts", "tests"]
