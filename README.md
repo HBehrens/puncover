@@ -5,7 +5,7 @@
 [![](https://img.shields.io/pypi/pyversions/puncover?style=flat-square)](https://pypi.org/project/puncover)
 [![](https://img.shields.io/github/license/HBehrens/puncover?color=blue&style=flat-square)](https://github.com/HBehrens/puncover)
 
-# puncover
+# 🔍 puncover
 
 ![](https://raw.githubusercontent.com/HBehrens/puncover/master/images/overview.png)
 

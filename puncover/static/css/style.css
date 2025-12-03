@@ -19,30 +19,32 @@ span.slash {
     padding: 0;
 }
 
-.icon-folder {
-    background: url("/static/icons/Folder_16x.svg") no-repeat left center;
-    padding-left: 20px;
-}
-
-.icon-folder-open {
-    background: url("/static/icons/FolderOpen_16x.svg") no-repeat left center;
-    padding-left: 20px;
-}
-
-.icon-file {
-    background: url("/static/icons/Document_16x.svg") no-repeat left center;
-    padding-left: 20px;
-}
-
-.icon-function {
-    background: url("/static/icons/Method_16x.svg") no-repeat left center;
-    padding-left: 20px;
-}
-
+.icon-folder,
+.icon-folder-open,
+.icon-file,
+.icon-function,
 .icon-variable {
-    background: url("/static/icons/Field_16x.svg") no-repeat left center;
+    position: relative;
     padding-left: 20px;
+    background: none;
 }
+
+.icon-folder::before,
+.icon-folder-open::before,
+.icon-file::before,
+.icon-function::before,
+.icon-variable::before {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.icon-folder::before { content: "📁"; }
+.icon-folder-open::before { content: "📂"; }
+.icon-file::before { content: "📄"; }
+.icon-function::before { content: "𝑓"; font-weight: 700; }
+.icon-variable::before { content: "𝑥"; font-weight: 700; }
 
 .col_size {
     text-align: right;
@@ -71,8 +73,8 @@ th a.sortable:after {
     right: 4px;
     top: 0;
     display: block;
-    font-family: 'Glyphicons Halflings';
     opacity: 0.15;
+    content: "⇅";
 }
 
 th a.sortable:hover:after {
@@ -84,29 +86,10 @@ th.col_size .sortable:after {
     right: auto;
 }
 
-th a.sortable:after {
-    content: "\e150";
-}
-
-th a.sort_asc:after {
-    opacity: 0.5;
-    content: "\e155";
-}
-
-th a.sort_asc_alpha:after {
-    opacity: 0.5;
-    content: "\e151";
-}
-
-th a.sort_desc:after {
-    opacity: 0.5;
-    content: "\e156";
-}
-
-th a.sort_desc_alpha:after {
-    opacity: 0.5;
-    content: "\e152";
-}
+th a.sort_asc:after { opacity: 0.5; content: "↑"; }
+th a.sort_asc_alpha:after { opacity: 0.5; content: "↑"; }
+th a.sort_desc:after { opacity: 0.5; content: "↓"; }
+th a.sort_desc_alpha:after { opacity: 0.5; content: "↓"; }
 
 .secondary {
     opacity: 0.6;

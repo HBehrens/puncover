@@ -8,6 +8,8 @@
 
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20128%20128%22%3E%3Ctext%20x=%228%22%20y=%22112%22%20font-size=%22112%22%3E%F0%9F%94%8D%3C/text%3E%3C/svg%3E" />
+
     <title>{% block title %}{% endblock %} - puncover</title>
     {% endblock %}
 </head>
@@ -19,7 +21,7 @@
               <div class="container-fluid">
                 <div class="navbar-header">
                   <a class="navbar-brand" href="{{ url_for('overview') }}">
-                    Puncover
+                    🔍 Puncover
                   </a>
                 </div>
               </div>
