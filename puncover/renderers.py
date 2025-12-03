@@ -57,6 +57,7 @@ def none_sum(l):
     else:
         return None
 
+
 def symbol_traverse(s, func):
     if isinstance(s, list):
         return none_sum([symbol_traverse(i, func) for i in s])
