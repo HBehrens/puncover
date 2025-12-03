@@ -50,10 +50,10 @@ def symbol_file_url_filter(context, value):
     return symbol_url_filter(context, f) if f else None
 
 
-def none_sum(l):
-    values = [a for a in l if a is not None]
-    if values:
-        return sum(values)
+def none_sum(values):
+    filtered_values = [a for a in values if a is not None]
+    if filtered_values:
+        return sum(filtered_values)
     else:
         return None
 
