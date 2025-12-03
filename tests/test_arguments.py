@@ -1,4 +1,6 @@
 import unittest
+from contextlib import contextmanager
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from puncover.puncover import main
@@ -33,6 +35,42 @@ class TestArguments(unittest.TestCase):
 
         return patches
 
+    def _run_main_with_args(self, test_args):
+        """Helper to run main() with given arguments and mocked environment."""
+        patches = self._create_mock_environment()
+
+        with patch("sys.argv", test_args):
+            for p in patches:
+                p.start()
+
+            try:
+                main()
+            finally:
+                for p in patches:
+                    p.stop()
+
+    @contextmanager
+    def _patched_main(self, test_args):
+        """Context manager that patches environment and exposes patched objects.
+
+        Usage:
+            with self._patched_main(args) as env:
+                main()
+                env.create_builder.assert_called_once()
+        """
+        patches = self._create_mock_environment()
+        with patch("sys.argv", test_args):
+            for p in patches:
+                p.start()
+            try:
+                # Import patched objects after patches are active
+                from puncover.puncover import app, create_builder
+
+                yield SimpleNamespace(create_builder=create_builder, app=app)
+            finally:
+                for p in patches:
+                    p.stop()
+
     def test_gcc_tools_base_underscore_format(self):
         """Test that --gcc_tools_base argument works (underscore format)."""
         test_args = [
@@ -43,23 +81,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/file.elf",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the gcc_tools_base argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[0][0], "/path/to/gcc")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the gcc_tools_base argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+        self.assertEqual(call_args[0][0], "/path/to/gcc")
 
     def test_gcc_tools_base_hyphen_format(self):
         """Test that --gcc-tools-base argument works (hyphen format)."""
@@ -71,23 +98,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/file.elf",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the gcc_tools_base argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[0][0], "/path/to/gcc")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the gcc_tools_base argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+        self.assertEqual(call_args[0][0], "/path/to/gcc")
 
     def test_elf_file_underscore_format(self):
         """Test that --elf_file argument works (underscore format)."""
@@ -99,23 +115,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/kernel.elf",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the elf_file argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[1]["elf_file"], "/path/to/kernel.elf")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the elf_file argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["elf_file"], "/path/to/kernel.elf")
 
     def test_src_root_underscore_format(self):
         """Test that --src_root argument works (underscore format)."""
@@ -129,23 +134,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/sources",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the src_root argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[1]["src_root"], "/path/to/sources")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the src_root argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["src_root"], "/path/to/sources")
 
     def test_src_root_hyphen_format(self):
         """Test that --src-root argument works (hyphen format)."""
@@ -159,23 +153,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/sources",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the src_root argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[1]["src_root"], "/path/to/sources")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the src_root argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["src_root"], "/path/to/sources")
 
     def test_build_dir_underscore_format(self):
         """Test that --build_dir argument works (underscore format)."""
@@ -189,23 +172,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/build",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the su_dir (build_dir) argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the su_dir (build_dir) argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
 
     def test_build_dir_hyphen_format(self):
         """Test that --build-dir argument works (hyphen format)."""
@@ -219,23 +191,12 @@ class TestArguments(unittest.TestCase):
             "/path/to/build",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import create_builder
-
-                main()
-                # Verify create_builder was called with the su_dir (build_dir) argument
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-                self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify create_builder was called with the su_dir (build_dir) argument
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
 
     def test_host_argument(self):
         """Test that --host argument works."""
@@ -249,23 +210,12 @@ class TestArguments(unittest.TestCase):
             "0.0.0.0",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import app
-
-                main()
-                # Verify app.run was called with the host argument
-                app.run.assert_called_once()
-                call_kwargs = app.run.call_args[1]
-                self.assertEqual(call_kwargs["host"], "0.0.0.0")
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify app.run was called with the host argument
+            env.app.run.assert_called_once()
+            call_kwargs = env.app.run.call_args[1]
+            self.assertEqual(call_kwargs["host"], "0.0.0.0")
 
     def test_port_argument(self):
         """Test that --port argument works."""
@@ -279,23 +229,12 @@ class TestArguments(unittest.TestCase):
             "8080",
         ]
 
-        patches = self._create_mock_environment()
-
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
-
-            try:
-                from puncover.puncover import app
-
-                main()
-                # Verify app.run was called with the port argument
-                app.run.assert_called_once()
-                call_kwargs = app.run.call_args[1]
-                self.assertEqual(call_kwargs["port"], 8080)
-            finally:
-                for p in patches:
-                    p.stop()
+        with self._patched_main(test_args) as env:
+            main()
+            # Verify app.run was called with the port argument
+            env.app.run.assert_called_once()
+            call_kwargs = env.app.run.call_args[1]
+            self.assertEqual(call_kwargs["port"], 8080)
 
     def test_all_critical_arguments_together(self):
         """
@@ -320,35 +259,24 @@ class TestArguments(unittest.TestCase):
             "5000",
         ]
 
-        patches = self._create_mock_environment()
+        with self._patched_main(test_args) as env:
+            main()
 
-        with patch("sys.argv", test_args):
-            for p in patches:
-                p.start()
+            # Verify all arguments were passed correctly
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
 
-            try:
-                from puncover.puncover import app, create_builder
+            # Check create_builder arguments
+            self.assertEqual(call_args[0][0], "/usr/bin/arm-zephyr-eabi-")  # gcc_base_filename
+            self.assertEqual(call_args[1]["elf_file"], "/build/zephyr/zephyr.elf")
+            self.assertEqual(call_args[1]["src_root"], "/zephyr")
+            self.assertEqual(call_args[1]["su_dir"], "/build")
 
-                main()
-
-                # Verify all arguments were passed correctly
-                create_builder.assert_called_once()
-                call_args = create_builder.call_args
-
-                # Check create_builder arguments
-                self.assertEqual(call_args[0][0], "/usr/bin/arm-zephyr-eabi-")  # gcc_base_filename
-                self.assertEqual(call_args[1]["elf_file"], "/build/zephyr/zephyr.elf")
-                self.assertEqual(call_args[1]["src_root"], "/zephyr")
-                self.assertEqual(call_args[1]["su_dir"], "/build")
-
-                # Check app.run arguments
-                app.run.assert_called_once()
-                run_kwargs = app.run.call_args[1]
-                self.assertEqual(run_kwargs["host"], "0.0.0.0")
-                self.assertEqual(run_kwargs["port"], 5000)
-            finally:
-                for p in patches:
-                    p.stop()
+            # Check app.run arguments
+            env.app.run.assert_called_once()
+            run_kwargs = env.app.run.call_args[1]
+            self.assertEqual(run_kwargs["host"], "0.0.0.0")
+            self.assertEqual(run_kwargs["port"], 5000)
 
 
 if __name__ == "__main__":
