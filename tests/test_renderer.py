@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from puncover import renderers
+from puncover import collector, renderers
 
 
 class TestRenderer(unittest.TestCase):
@@ -193,3 +193,157 @@ class TestRenderer(unittest.TestCase):
                     with patch("puncover.renderers.url_for", return_value="/"):
                         actual = c.url_for("/")
                         self.assertEqual("/?foo=bar", actual)
+
+    def test_none_sum_empty_list(self):
+        """Test that none_sum returns None for an empty list"""
+        self.assertIsNone(renderers.none_sum([]))
+
+    def test_none_sum_all_none(self):
+        """Test that none_sum returns None when all values are None"""
+        self.assertIsNone(renderers.none_sum([None, None, None]))
+
+    def test_none_sum_some_none(self):
+        """Test that none_sum ignores None values and sums the rest"""
+        self.assertEqual(10, renderers.none_sum([None, 3, None, 7]))
+        self.assertEqual(5, renderers.none_sum([5, None]))
+        self.assertEqual(5, renderers.none_sum([None, 5]))
+
+    def test_none_sum_no_none(self):
+        """Test that none_sum works correctly when there are no None values"""
+        self.assertEqual(15, renderers.none_sum([5, 10]))
+        self.assertEqual(10, renderers.none_sum([1, 2, 3, 4]))
+
+    def test_none_sum_single_value(self):
+        """Test that none_sum works with a single value"""
+        self.assertEqual(42, renderers.none_sum([42]))
+        self.assertIsNone(renderers.none_sum([None]))
+
+    def test_symbol_stack_size_filter_with_none_values(self):
+        """Test that symbol_stack_size_filter handles directories with no stack data"""
+        from flask import Flask
+
+        app = Flask(__name__)
+        with app.test_request_context():
+            ctx = Mock()
+
+            # Test folder with files that have no stack size
+            folder = {
+                collector.TYPE: collector.TYPE_FOLDER,
+                collector.SUB_FOLDERS: [],
+                collector.FILES: [
+                    {
+                        collector.TYPE: collector.TYPE_FILE,
+                        collector.SYMBOLS: [
+                            {
+                                collector.TYPE: collector.TYPE_FUNCTION,
+                                # No stack_size key - should be treated as None
+                            }
+                        ],
+                    }
+                ],
+            }
+
+            result = renderers.symbol_stack_size_filter(ctx, folder)
+            # Should return None when all stack sizes are None
+            self.assertIsNone(result)
+
+    def test_symbol_stack_size_filter_with_stack_values(self):
+        """Test that symbol_stack_size_filter correctly sums stack sizes"""
+        from flask import Flask
+
+        app = Flask(__name__)
+        with app.test_request_context():
+            ctx = Mock()
+
+            # Test folder with files that have stack sizes
+            folder = {
+                collector.TYPE: collector.TYPE_FOLDER,
+                collector.SUB_FOLDERS: [],
+                collector.FILES: [
+                    {
+                        collector.TYPE: collector.TYPE_FILE,
+                        collector.SYMBOLS: [
+                            {collector.TYPE: collector.TYPE_FUNCTION, collector.STACK_SIZE: 100},
+                            {collector.TYPE: collector.TYPE_FUNCTION, collector.STACK_SIZE: 200},
+                        ],
+                    }
+                ],
+            }
+
+            result = renderers.symbol_stack_size_filter(ctx, folder)
+            self.assertEqual(300, result)
+
+    def test_symbol_stack_size_filter_mixed_stack_values(self):
+        """Test symbol_stack_size_filter with mixed None and actual values"""
+        from flask import Flask
+
+        app = Flask(__name__)
+        with app.test_request_context():
+            ctx = Mock()
+
+            # Test folder with mixed stack sizes and missing values
+            folder = {
+                collector.TYPE: collector.TYPE_FOLDER,
+                collector.SUB_FOLDERS: [],
+                collector.FILES: [
+                    {
+                        collector.TYPE: collector.TYPE_FILE,
+                        collector.SYMBOLS: [
+                            {collector.TYPE: collector.TYPE_FUNCTION, collector.STACK_SIZE: 150},
+                            {
+                                collector.TYPE: collector.TYPE_FUNCTION,
+                                # No stack_size - should be treated as None
+                            },
+                        ],
+                    },
+                    {
+                        collector.TYPE: collector.TYPE_FILE,
+                        collector.SYMBOLS: [
+                            {
+                                collector.TYPE: collector.TYPE_VARIABLE,
+                                # Variables don't have stack_size
+                            }
+                        ],
+                    },
+                ],
+            }
+
+            result = renderers.symbol_stack_size_filter(ctx, folder)
+            self.assertEqual(150, result)
+
+    def test_sorted_filter_stack_with_none_values(self):
+        """Test that sorting by stack size works correctly with None values (PR #128)"""
+        ctx = Mock()
+        ctx.parent = {"sort": "stack_asc"}
+
+        # Folder with no stack data (should be treated as 0/None)
+        a = {collector.TYPE: collector.TYPE_FOLDER, collector.SUB_FOLDERS: [], collector.FILES: []}
+
+        # File with function that has no stack_size
+        b = {
+            collector.TYPE: collector.TYPE_FILE,
+            collector.SYMBOLS: [
+                {
+                    collector.TYPE: collector.TYPE_FUNCTION,
+                    # No stack_size key
+                }
+            ],
+        }
+
+        # File with function that has stack_size
+        c = {
+            collector.TYPE: collector.TYPE_FILE,
+            collector.SYMBOLS: [
+                {collector.TYPE: collector.TYPE_FUNCTION, collector.STACK_SIZE: 300}
+            ],
+        }
+
+        # Should not crash when sorting - this was the bug in PR #128
+        actual = renderers.sorted_filter(ctx, [c, b, a])
+
+        # Items with no stack size (converted to 0) should come first in ascending order,
+        # then items with stack size. The order of a and b may vary since both are 0.
+        # The key point is that c (with stack_size=300) comes last and no crash occurs.
+        self.assertEqual(c, actual[2])
+        self.assertIn(a, actual[:2])
+        self.assertIn(b, actual[:2])
