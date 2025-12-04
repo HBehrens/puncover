@@ -10,7 +10,9 @@ requires-python = ">=3.9"
 dependencies = [
     "Flask==2.2.5",
     "jinja2==3.1.6",
-    "werkzeug==3.0.6"
+    "pyelftools==0.32",
+    "pyyaml==6.0.3",
+    "werkzeug==3.0.6",
 ]
 dynamic = ["classifiers"]
 
