@@ -105,6 +105,7 @@
 {% macro symbol_remarks(symbol) %}
     {% if symbol.called_from_other_file %}<span class="label label-success">x-module</span>{% endif %}
     {% if symbol.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}
+    {% if symbol.performs_indirect_call %}<span class="label label-danger">indirect call</span>{% endif %}
 {% endmacro %}
 
 {% macro symbols(functions, variables) -%}
