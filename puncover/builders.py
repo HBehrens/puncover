@@ -24,6 +24,8 @@ class Builder:
         self.collector.enhance(self.src_root)
         self.collector.parse_su_dir(self.get_su_dir())
         self.build_call_trees()
+        if self.export_json:
+            self.collector.export_to_json(self.feature_version, export_json_path=self.export_json)
 
     def needs_build(self):
         return any([os.path.getmtime(f) > t for f, t in self.files.items()])
@@ -47,11 +49,13 @@ class Builder:
 
 
 class ElfBuilder(Builder):
-    def __init__(self, collector, src_root, elf_file, su_dir):
+    def __init__(self, collector, src_root, elf_file, su_dir, feature_version, export_json):
         Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
         self.store_file_time(elf_file, store_empty=True)
         self.elf_file = pathlib.Path(elf_file)
         self.su_dir = su_dir
+        self.feature_version = feature_version
+        self.export_json = export_json
 
     def get_elf_path(self):
         return self.elf_file
