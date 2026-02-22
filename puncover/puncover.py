@@ -37,11 +37,11 @@ def get_default_port():
 
 def create_builder(
         gcc_base_filename, elf_file=None, su_dir=None,
-        src_root=None, feature_version=None, export_json=None
+        src_root=None, feature_tag=None, export_json=None
     ):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
-        return ElfBuilder(c, src_root, elf_file, su_dir, feature_version, export_json)
+        return ElfBuilder(c, src_root, elf_file, su_dir, feature_tag, export_json)
     else:
         raise Exception("Unable to configure builder for collector")
 
@@ -113,6 +113,7 @@ def main():
     )
     parser.add_argument('--generate-report', '--generate_report', action='store_true')
     parser.add_argument('--report-type', '--report_type', default="json")
+    parser.add_argument('--report-tag', '--report_tag', default="no_tag")
     parser.add_argument('--report-filename', '--report_filename', default="report")
     parser.add_argument(
         '--report-max-static-stack-usage',
@@ -138,13 +139,13 @@ def main():
     # append file with new version if already exists
     if args.generate_report and os.path.isfile(args.report_filename+".json"):
         export_json = json.load(open(args.report_filename+".json", "r"))
-    export_json[args.report_filename] = {}
+    export_json[args.report_tag] = {}
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file, src_root=args.src_root,
-                             su_dir=args.build_dir, feature_version=args.report_filename, export_json=export_json
+                             su_dir=args.build_dir, feature_tag=args.report_tag, export_json=export_json
     )
     builder.build_if_needed()
     if args.generate_report:
-        export_json[args.report_filename]["timestamp"] = datetime.datetime.now().isoformat()
+        export_json[args.report_tag]["timestamp"] = datetime.datetime.now().isoformat()
         json.dump(export_json, open(args.report_filename+".json", "w+"), ensure_ascii=False)
 
     renderers.register_jinja_filters(app.jinja_env)

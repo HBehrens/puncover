@@ -726,7 +726,7 @@ class Collector:
         self.user_defined_stack_report = report_max_map
         return report_max_map,  "\n".join(reported_fn_with_stack_error)
 
-    def export_to_json(self, feature_version, export_json_path):
+    def export_to_json(self, feature_tag, export_json_path):
         fn_symbols = []
         var_symbols = []
         if not self.symbols_by_qualified_name:
@@ -786,5 +786,5 @@ class Collector:
             non_circular_sym.pop("type")
             symbols += [non_circular_sym]
         # if file exist
-        export_json_path[feature_version]["functions"] = fn_symbols
-        export_json_path[feature_version]["variables"] = var_symbols
+        export_json_path[feature_tag]["functions"] = fn_symbols
+        export_json_path[feature_tag]["variables"] = var_symbols
