@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
+import datetime
 import importlib.metadata
+import json
 import os
 import webbrowser
 from os.path import dirname
@@ -33,11 +35,13 @@ def is_port_in_use(port: int) -> bool:
 def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
-
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
+def create_builder(
+        gcc_base_filename, elf_file=None, su_dir=None,
+        src_root=None, feature_version=None, export_json=None
+    ):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
-        return ElfBuilder(c, src_root, elf_file, su_dir)
+        return ElfBuilder(c, src_root, elf_file, su_dir, feature_version, export_json)
     else:
         raise Exception("Unable to configure builder for collector")
 
@@ -103,12 +107,8 @@ def main():
     )
     parser.add_argument("--host", default="127.0.0.1", help="host IP the HTTP server runs on")
     parser.add_argument(
-        "--no-open-browser", action="store_true", help="don't automatically open a browser window"
-    )
-    parser.add_argument(
-        '--no-interactive',
-        '--no_interactive',
-        action='store_true',
+        '--non_interactive',
+        action='store_true', dest="non_interactive",
         help="don't start the interactive website to browse the elf analysis"
     )
     parser.add_argument('--generate-report', '--generate_report', action='store_true')
@@ -134,13 +134,18 @@ def main():
         )
         exit(1)
 
-    builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
+    export_json = {}
+    # append file with new version if already exists
+    if args.generate_report and os.path.isfile(args.report_filename+".json"):
+        export_json = json.load(open(args.report_filename+".json", "r"))
+    export_json[args.report_filename] = {}
+    builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file, src_root=args.src_root,
+                             su_dir=args.build_dir, feature_version=args.report_filename, export_json=export_json
     )
     builder.build_if_needed()
     if args.generate_report:
-        builder.collector.report_max_static_stack_usages_from_function_names(args.report_max_static_stack_usage,
-                                                           filename=args.report_filename, report_type=args.report_type)
+        export_json[args.report_filename]["timestamp"] = datetime.datetime.now().isoformat()
+        json.dump(export_json, open(args.report_filename+".json", "w+"), ensure_ascii=False)
 
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
@@ -149,18 +154,16 @@ def main():
     if args.debug:
         app.debug = True
 
-    if not args.no_interactive:
-        if is_port_in_use(args.port):
-            print("Port {} is already in use, please choose a different port.".format(args.port))
-            exit(1)
+    if is_port_in_use(args.port):
+        print("Port {} is already in use, please choose a different port.".format(args.port))
+        exit(1)
 
-        # Open a browser window, only if this is the first instance of the server
-        # from https://stackoverflow.com/a/63216793
-        if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
-            # wait one second before starting, so the flask server is ready and we
-            # don't see a 404 for a moment first
-            Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
-
+    # Open a browser window, only if this is the first instance of the server
+    # from https://stackoverflow.com/a/63216793
+    if not args.non_interactive and not os.environ.get("WERKZEUG_RUN_MAIN"):
+        # wait one second before starting, so the flask server is ready and we
+        # don't see a 404 for a moment first
+        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
         app.run(host=args.host, port=args.port)
 
 

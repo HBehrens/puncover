@@ -684,45 +684,107 @@ class Collector:
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
 
-    def report_max_static_stack_usages_from_function_names(self, function_names_and_opt_max_stack, filename, report_type):
+    def report_max_static_stack_usages_from_function_names(self, function_names_and_opt_max_stack, report_type):
         report_max_map = {}
-
         from puncover.renderers import traverse_filter_wrapper
 
         if report_type not in SUPPORTED_REPORT_TYPES:
             print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
             return
 
-        function_names = [f.split(":")[0] if ":" else f for f in function_names_and_opt_max_stack]
-        function_max_stacks = {f.split(":")[0]: f.split(":")[1] if ":" else None for f in function_names_and_opt_max_stack}
+        function_names = [f.split(":::")[0] if ":::" else f for f in function_names_and_opt_max_stack or []]
+        function_max_stacks = {f.split(":::")[0]: f.split(":::")[1] if ":::" else None for f in function_names_and_opt_max_stack or []}
+        reported_fn_with_stack_error = []
 
         for sym in self.symbols.values():
-            display_name = sym["display_name"]
-            if display_name in function_names:
+            name = sym["display_name"]
+            if name in function_names:
                 lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
-                base_stack_size = traverse_filter_wrapper(sym, lam)
-                callee_tree_stack_size = traverse_filter_wrapper(sym["deepest_callee_tree"][1][1:], lam)
+
+                base_stack_size = sym.get("stack_size", 0)
+                max_callee_tree_stack_size = sym["deepest_callee_tree"][0]
+                max_caller_tree_stack_size = sym["deepest_caller_tree"][0]
+                max_static_stack_size = max_callee_tree_stack_size+max_caller_tree_stack_size-base_stack_size
                 function_max_stack = {
-                    "max_static_stack_size": base_stack_size + callee_tree_stack_size,
+                    # -base_stack_size => is counted in callee's and caler's
+                    "max_static_stack_size": max_static_stack_size,
                     "call_stack": [
                         {
                             "function":   f["display_name"],
                             "name":       f["name"],
                             "stack_size": f.get("stack_size", "???")
-                        } for f in sym["deepest_callee_tree"][1]
+                        } for f in (sym["deepest_callee_tree"][1][1:] + sym["deepest_caller_tree"][1])
+                        # [1:] => dont include the thread itself twice => TODO make it independent of the list order
                     ]
                 }
-                if display_name in function_max_stacks:
-                    function_max_stack["max_stack_size"] = int(function_max_stacks[display_name])
                 report_max_map[display_name] = function_max_stack
 
         for function_name in function_names:
             if function_name not in report_max_map:
                 print(f"WARNING:  Couldn't find symbol '{function_name}' to report")
 
-        with open(f'{filename}.json', 'w') as f:
-            json.dump(report_max_map, f, ensure_ascii=False, indent=4)
-            print(f"Exported report as {f.name}")
-
         self.user_defined_stack_report = report_max_map
-        return report_max_map
+        return report_max_map,  "\n".join(reported_fn_with_stack_error)
+
+    def export_to_json(self, feature_version, export_json_path):
+        fn_symbols = []
+        var_symbols = []
+        if not self.symbols_by_qualified_name:
+            self.build_symbol_name_index()
+        for full_path, sym in self.symbols_by_qualified_name.items():
+            # if we use the plain symbols there are circular references
+            # and memory explodes into 10's of GB's serializing it so make
+            # symbols non-circular before serializing them to the database
+            non_circular_sym = {}
+            filepath = "NONE"
+            identifier = "NONE"
+            # print(sym["name"])
+            for sym_ele in sym.keys():
+                if sym_ele in [
+                    'line', 'type', 'address', 'size',
+                    'called_from_other_file', 'stack_size', 'stack_qualifiers'
+                ]:
+                    non_circular_sym[sym_ele] = sym[sym_ele]
+                elif sym_ele == 'name':
+                    # do not override display name if it came first
+                    if "name" not in non_circular_sym:
+                        non_circular_sym[sym_ele] = sym[sym_ele]
+                elif sym_ele == "asm":
+                    non_circular_sym["disasm"] = sym[sym_ele]
+                elif sym_ele == "base_file":
+                    non_circular_sym['file'] = sym[sym_ele]
+                elif sym_ele == "display_name":
+                    non_circular_sym['name'] = sym[sym_ele]
+                elif sym_ele == "file":
+                    filepath = str(sym["file"]["path"])
+                    non_circular_sym[sym_ele] = filepath
+                elif sym_ele in ['callers', 'callees']:
+                    callexs = []
+                    for callex in sym[sym_ele]:
+                        identifier = str(callex["file"]["path"]) + "/" + callex["display_name"]
+                        callexs += [identifier]
+                    non_circular_sym[sym_ele] = json.dumps(callexs)
+                elif sym_ele in ['deepest_caller_tree', 'deepest_callee_tree']:
+                    callexs = []
+                    size, fns = sym[sym_ele]
+                    non_circular_sym[sym_ele+"_size"] = size
+                    for callex in fns:
+                        identifier = str(callex["file"]["path"]) + "/" + callex["display_name"]
+                        callexs += [{
+                            "full_symbol_path": identifier,
+                            "code_size": callex.get("size", "?"),
+                            "stack_size": callex.get("stack_size", "?")
+                        }]
+                    non_circular_sym[sym_ele] = json.dumps(callexs)
+                elif sym_ele in ['calls_float_function', 'next_function', 'prev_function', 'path']:
+                    # todo nothing?
+                    pass
+                else:
+                    print("unknown key " + sym_ele)
+            # add flatten symbol to list
+            symbols = fn_symbols if non_circular_sym["type"] == "function" else var_symbols
+            non_circular_sym.pop("type")
+            symbols += [non_circular_sym]
+        # if file exist
+        export_json_path[feature_version]["functions"] = fn_symbols
+        export_json_path[feature_version]["variables"] = var_symbols
