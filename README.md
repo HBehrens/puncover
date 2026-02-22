@@ -36,13 +36,13 @@ You can also use `uvx` to run the script without installing globally:
 ```bash
 uvx puncover project.elf
 
-## Non-intereactive usage
+### Report export and non-intereactive usage
 
-For montitor firmware changes in CI it can be useful to run puncover and get out some numbers. For getting stack usage of some RTOS threads i.e.
+For montitor firmware changes in CI it can be useful to run puncover and save a json report.
 
-```bash
-puncover --elf_file ~/zephyrproject/zephyr/samples/modules/lvgl/demos/build/zephyr/zephyr.elf --build_dir ~/zephyrproject/zephyr/samples/modules/lvgl/demos/build/ --generate-report --report-max-static-stack-usage ready_thread --report-max-static-stack-usage shell_thread --report-max-static-stack-usage main --report-max-static-stack-usage unready_thread --report-max-static-stack-usage bg_thread_main --no-interactive
-```
+In this case you want puncover to exit after the report was generated.
+
+To generate a report add these flags `--generate-report --no-interactive --report-type json` and for a distinguishing entry to save more then one report in one file also add a report tag `--report-tag $COMMIT_FEATURE`. The report is saved under this tag as a object entry.
 
 ## Running Tests Locally
 
