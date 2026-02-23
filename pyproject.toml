@@ -1,7 +1,7 @@
 [project]
 name = "puncover"
 description = "Analyses C/C++ build output for code size, static variables, and stack usage."
-version = "0.7.0"
+version = "0.7.1"
 authors = [
     { name = "Hendrik Behrens", email = "hendrik.behrens@gmail.com" }
 ]
