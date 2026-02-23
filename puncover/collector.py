@@ -190,7 +190,9 @@ class Collector:
 
     # 00000098 <pbl_table_addr>:
     # 00000098 <pbl_table_addr.constprop.0>:
-    parse_assembly_text_function_start_pattern = re.compile(r"^([\da-f]{8,16})\s+<(\.?\w+)(\..*)?>:")
+    parse_assembly_text_function_start_pattern = re.compile(
+        r"^([\da-f]{8,16})\s+<(\.?\w+)(\..*)?>:"
+    )
 
     # /Users/behrens/Documents/projects/pebble/puncover/pebble/build/../src/puncover.c:8
     parse_assembly_text_c_reference_pattern = re.compile(r"^(/[^:]+)(:(\d+))?")
