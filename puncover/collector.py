@@ -741,14 +741,16 @@ class Collector:
             # print(sym["name"])
             for sym_ele in sym.keys():
                 if sym_ele in [
-                    'line', 'type', 'address', 'size',
-                    'called_from_other_file', 'stack_size', 'stack_qualifiers'
+                    'line', 'type', 'size', 'called_from_other_file',
+                    'stack_size', 'stack_qualifiers'
                 ]:
                     non_circular_sym[sym_ele] = sym[sym_ele]
                 elif sym_ele == 'name':
                     # do not override display name if it came first
                     if "name" not in non_circular_sym:
                         non_circular_sym[sym_ele] = sym[sym_ele]
+                elif sym_ele == "address":
+                    non_circular_sym[sym_ele] = int(sym[sym_ele], 16)
                 elif sym_ele == "asm":
                     non_circular_sym["disasm"] = sym[sym_ele]
                 elif sym_ele == "base_file":
