@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
+import datetime
 import importlib.metadata
+import json
 import os
 import webbrowser
 from os.path import dirname
@@ -33,11 +35,13 @@ def is_port_in_use(port: int) -> bool:
 def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
-
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
+def create_builder(
+        gcc_base_filename, elf_file=None, su_dir=None,
+        src_root=None, feature_tag=None, export_json=None
+    ):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
-        return ElfBuilder(c, src_root, elf_file, su_dir)
+        return ElfBuilder(c, src_root, elf_file, su_dir, feature_tag, export_json)
     else:
         raise Exception("Unable to configure builder for collector")
 
@@ -68,7 +72,6 @@ def get_arm_tools_prefix_path():
 def open_browser(host, port):
     webbrowser.open("http://{}:{}/".format(host, port))
 
-
 def main():
     gcc_tools_base = get_arm_tools_prefix_path()
 
@@ -76,6 +79,7 @@ def main():
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
     parser.add_argument(
         "--gcc-tools-base",
         "--gcc_tools_base",
@@ -103,7 +107,19 @@ def main():
     )
     parser.add_argument("--host", default="127.0.0.1", help="host IP the HTTP server runs on")
     parser.add_argument(
-        "--no-open-browser", action="store_true", help="don't automatically open a browser window"
+        '--non_interactive',
+        action='store_true', dest="non_interactive",
+        help="don't start the interactive website to browse the elf analysis"
+    )
+    parser.add_argument('--generate-report', '--generate_report', action='store_true')
+    parser.add_argument('--report-type', '--report_type', default="json")
+    parser.add_argument('--report-tag', '--report_tag', default="no_tag")
+    parser.add_argument('--report-filename', '--report_filename', default="report")
+    parser.add_argument(
+        '--report-max-static-stack-usage',
+        '--report_max_static_stack_usage',
+        action='append',
+        help="display_name[:max_stack_size] of functions to report the worst case static stack size with i.e. bg_thread_main or bg_thread_main:1024"
     )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     args = parser.parse_args()
@@ -119,10 +135,19 @@ def main():
         )
         exit(1)
 
-    builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
+    export_json = {}
+    # append file with new version if already exists
+    if args.generate_report and os.path.isfile(args.report_filename+".json"):
+        export_json = json.load(open(args.report_filename+".json", "r"))
+    export_json[args.report_tag] = {}
+    builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file, src_root=args.src_root,
+                             su_dir=args.build_dir, feature_tag=args.report_tag, export_json=export_json
     )
     builder.build_if_needed()
+    if args.generate_report:
+        export_json[args.report_tag]["timestamp"] = datetime.datetime.now().isoformat()
+        json.dump(export_json, open(args.report_filename+".json", "w+"), ensure_ascii=False)
+
     renderers.register_jinja_filters(app.jinja_env)
     renderers.register_urls(app, builder.collector)
     app.wsgi_app = BuilderMiddleware(app.wsgi_app, builder)
@@ -136,12 +161,11 @@ def main():
 
     # Open a browser window, only if this is the first instance of the server
     # from https://stackoverflow.com/a/63216793
-    if not args.no_open_browser and not os.environ.get("WERKZEUG_RUN_MAIN"):
+    if not args.non_interactive and not os.environ.get("WERKZEUG_RUN_MAIN"):
         # wait one second before starting, so the flask server is ready and we
         # don't see a 404 for a moment first
-        Timer(1, open_browser, kwargs={"host": args.host, "port": args.port}).start()
-
-    app.run(host=args.host, port=args.port)
+        Timer(1, open_browser, kwargs={"host":args.host, "port":args.port}).start()
+        app.run(host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

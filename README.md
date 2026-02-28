@@ -35,7 +35,14 @@ You can also use `uvx` to run the script without installing globally:
 
 ```bash
 uvx puncover project.elf
-```
+
+### Report export and non-intereactive usage
+
+For montitor firmware changes in CI it can be useful to run puncover and save a json report.
+
+In this case you want puncover to exit after the report was generated.
+
+To generate a report add these flags `--generate-report --no-interactive --report-type json` and for a distinguishing entry to save more then one report in one file also add a report tag `--report-tag $COMMIT_FEATURE`. The report is saved under this tag as a object entry.
 
 ## Running Tests Locally
 
