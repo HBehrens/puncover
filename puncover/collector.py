@@ -755,12 +755,11 @@ class Collector:
                     non_circular_sym[sym_ele] = int(sym[sym_ele], 16)
                 elif sym_ele == "asm":
                     non_circular_sym["disasm"] = sym[sym_ele]
-                elif sym_ele == "base_file":
-                    non_circular_sym['file'] = sym[sym_ele]
                 elif sym_ele == "display_name":
                     non_circular_sym['name'] = sym[sym_ele]
                 elif sym_ele == "file":
-                    filepath = str(sym["file"]["path"])
+                    # TODO why is /-root missing, handle windows...
+                    filepath = "/" + str(sym["file"]["path"])
                     non_circular_sym[sym_ele] = filepath
                 elif sym_ele in ['callers', 'callees']:
                     callexs = []
