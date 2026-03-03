@@ -761,24 +761,14 @@ class Collector:
                     # TODO why is /-root missing, handle windows...
                     filepath = "/" + str(sym["file"]["path"])
                     non_circular_sym[sym_ele] = filepath
-                elif sym_ele in ['callers', 'callees']:
+                elif sym_ele in ['callees']:
                     callexs = []
                     for callex in sym[sym_ele]:
-                        identifier = str(callex["file"]["path"]) + "/" + callex["display_name"]
-                        callexs += [identifier]
-                    non_circular_sym[sym_ele] = json.dumps(callexs)
-                elif sym_ele in ['deepest_caller_tree', 'deepest_callee_tree']:
-                    callexs = []
-                    size, fns = sym[sym_ele]
-                    non_circular_sym[sym_ele+"_size"] = size
-                    for callex in fns:
-                        identifier = str(callex["file"]["path"]) + "/" + callex["display_name"]
-                        callexs += [{
-                            "full_symbol_path": identifier,
-                            "code_size": callex.get("size", "?"),
-                            "stack_size": callex.get("stack_size", "?")
-                        }]
-                    non_circular_sym[sym_ele] = json.dumps(callexs)
+                        from_addr = int(sym["address"], 16)
+                        to_addr = int(callex["address"], 16)
+                        call = {"from": from_addr, "to": to_addr, "dynamic": False}
+                        callexs += [call]
+                    non_circular_sym[sym_ele] = callexs
                 elif sym_ele in ['calls_float_function', 'next_function', 'prev_function', 'path']:
                     # todo nothing?
                     pass
