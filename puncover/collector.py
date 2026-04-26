@@ -348,7 +348,15 @@ class Collector:
                 symbol[STACK_QUALIFIERS] = stack_qualifier
                 return True
 
-        warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
+        # when a i.e. a function is compiled into the object file, but unused
+        # then during the complilation it is mentioned in the .su file,
+        # later during linking the function may be optimized out and not get into the final .elf
+        # TODO this causes many warnings for fw optimizing during linking,
+        # as long as each function in the ELF gets a .su value maybe this does not need to
+        # generate a warning for symbols not in the ELF, which are mentioned here?
+        warning(
+            f"Couldn't find symbol for {base_file_name}:{line}:{symbol_name}) - may be optimized out?"
+        )
         return False
 
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
