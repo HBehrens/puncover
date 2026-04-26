@@ -28,6 +28,7 @@ dev = [
     "tox==4.11.3; python_version >= '3.12'",
     "setuptools>=75",
     "ruff>=0.12.10",
+    "pydantic>=2.13.3",
 ]
 
 [project.urls]

@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "CallFrame": {
+      "properties": {
+        "function": {
+          "title": "Function",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "stack_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Stack Size"
+        }
+      },
+      "required": [
+        "function",
+        "name",
+        "stack_size"
+      ],
+      "title": "CallFrame",
+      "type": "object"
+    },
+    "FunctionStackReport": {
+      "properties": {
+        "max_static_stack_size": {
+          "title": "Max Static Stack Size",
+          "type": "integer"
+        },
+        "call_stack": {
+          "items": {
+            "$ref": "#/$defs/CallFrame"
+          },
+          "title": "Call Stack",
+          "type": "array"
+        },
+        "max_stack_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Stack Size"
+        }
+      },
+      "required": [
+        "max_static_stack_size",
+        "call_stack"
+      ],
+      "title": "FunctionStackReport",
+      "type": "object"
+    },
+    "TagEntry": {
+      "properties": {
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "stack_report": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/FunctionStackReport"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stack Report"
+        }
+      },
+      "required": [
+        "timestamp"
+      ],
+      "title": "TagEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/TagEntry"
+  },
+  "description": "Top-level report: keys are report tags, values are tagged run entries.",
+  "title": "Report",
+  "type": "object"
+}
