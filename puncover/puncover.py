@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import configargparse
 import importlib.metadata
 import os
 import webbrowser
@@ -8,6 +7,7 @@ from os.path import dirname
 from shutil import which
 from threading import Timer
 
+import configargparse
 from flask import Flask
 
 from puncover import renderers
