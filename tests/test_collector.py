@@ -615,3 +615,106 @@ uses_doubles2():
         self.assertListEqual([baa], b[collector.COLLAPSED_SUB_FOLDERS])
         self.assertListEqual([baa], ba[collector.COLLAPSED_SUB_FOLDERS])
         self.assertListEqual([], baa[collector.COLLAPSED_SUB_FOLDERS])
+
+
+class TestReportMaxStaticStackUsage(unittest.TestCase):
+    """Tests for report_max_static_stack_usages_from_function_names."""
+
+    def setUp(self):
+        from puncover.backtrace_helper import BacktraceHelper
+
+        self.cc = Collector(None)
+        # Simple call chain: thread_fn (10) -> middle_fn (20) -> leaf_fn (30)
+        self.thread_fn = self.cc.add_symbol(
+            "thread_fn", "0x0001", type=collector.TYPE_FUNCTION, stack_size=10
+        )
+        self.middle_fn = self.cc.add_symbol(
+            "middle_fn", "0x0002", type=collector.TYPE_FUNCTION, stack_size=20
+        )
+        self.leaf_fn = self.cc.add_symbol(
+            "leaf_fn", "0x0003", type=collector.TYPE_FUNCTION, stack_size=30
+        )
+        # Set display_name (normally populated by unmangle_cpp_names via gcc_tools)
+        self.thread_fn[collector.DISPLAY_NAME] = "thread_fn"
+        self.middle_fn[collector.DISPLAY_NAME] = "middle_fn"
+        self.leaf_fn[collector.DISPLAY_NAME] = "leaf_fn"
+
+        self.cc.enhance_call_tree()
+        self.cc.add_function_call(self.thread_fn, self.middle_fn)
+        self.cc.add_function_call(self.middle_fn, self.leaf_fn)
+
+        h = BacktraceHelper(self.cc)
+        for f in self.cc.all_functions():
+            h.deepest_callee_tree(f)
+            h.deepest_caller_tree(f)
+
+    def test_max_static_stack_size(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
+        self.assertIn("thread_fn", result)
+        # callee tree: 10+20+30=60, caller tree: 10 (no callers), base: 10
+        # max = 60 + 10 - 10 = 60
+        self.assertEqual(60, result["thread_fn"]["max_static_stack_size"])
+
+    def test_max_stack_size_limit_included_when_specified(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["thread_fn:::128"], "json"
+        )
+        self.assertIn("thread_fn", result)
+        self.assertEqual(60, result["thread_fn"]["max_static_stack_size"])
+        self.assertEqual(128, result["thread_fn"]["max_stack_size"])
+
+    def test_max_stack_size_limit_absent_when_not_specified(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
+        self.assertNotIn("max_stack_size", result["thread_fn"])
+
+    def test_missing_symbol_returns_empty_entry(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["nonexistent_fn"], "json"
+        )
+        self.assertNotIn("nonexistent_fn", result)
+
+    def test_multiple_functions(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["thread_fn", "leaf_fn"], "json"
+        )
+        self.assertIn("thread_fn", result)
+        self.assertIn("leaf_fn", result)
+
+    def test_call_stack_entries_have_expected_keys(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
+        for frame in result["thread_fn"]["call_stack"]:
+            self.assertIn("function", frame)
+            self.assertIn("name", frame)
+            self.assertIn("stack_size", frame)
+
+    def test_call_stack_order_is_caller_to_callee(self):
+        # thread_fn has no callers; its callees are middle_fn -> leaf_fn
+        # Expected order (top-down): [thread_fn, middle_fn, leaf_fn]
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
+        names = [f["function"] for f in result["thread_fn"]["call_stack"]]
+        self.assertEqual(["thread_fn", "middle_fn", "leaf_fn"], names)
+
+    def test_call_stack_order_includes_callers_before_function(self):
+        # middle_fn has thread_fn as caller and leaf_fn as callee
+        # Expected order: [thread_fn, middle_fn, leaf_fn]
+        result = self.cc.report_max_static_stack_usages_from_function_names(["middle_fn"], "json")
+        names = [f["function"] for f in result["middle_fn"]["call_stack"]]
+        self.assertEqual(["thread_fn", "middle_fn", "leaf_fn"], names)
+
+    def test_invalid_stack_limit_returns_empty(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["thread_fn:::notanint"], "json"
+        )
+        self.assertEqual({}, result)
+
+    def test_unsupported_report_type_returns_empty(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "xml")
+        self.assertEqual({}, result)
+
+    def test_cpp_style_separator_not_confused_with_name(self):
+        # Verify that "name:::limit" splits correctly: name="name", limit=128
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["thread_fn:::128"], "json"
+        )
+        self.assertIn("thread_fn", result)
+        self.assertNotIn("thread_fn:::128", result)

@@ -39,6 +39,7 @@ DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
 PYTHON_VER = {"major": sys.version_info[0], "minor": sys.version_info[1]}
+SUPPORTED_REPORT_TYPES = ["json"]
 
 
 def warning(*objs):
@@ -87,6 +88,7 @@ class Collector:
         self.file_elements = {}
         self.symbols_by_qualified_name = None
         self.symbols_by_name = None
+        self.user_defined_stack_report = None
 
     def reset(self):
         self.symbols = {}
@@ -699,3 +701,126 @@ class Collector:
                 qualified_name = self.qualified_symbol_name(s)
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
+
+    def report_max_static_stack_usages_from_function_names(
+        self, function_names_and_opt_max_stack, report_type
+    ):
+        if report_type not in SUPPORTED_REPORT_TYPES:
+            print(
+                f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}"
+            )
+            return {}
+
+        # Parse "name" or "name:::limit" entries; use ::: to avoid confusion with C++ ::
+        function_names = []
+        function_max_stacks = {}
+        for entry in function_names_and_opt_max_stack or []:
+            if ":::" in entry:
+                fn_name, limit = entry.split(":::", 1)
+                try:
+                    parsed_limit = int(limit)
+                except ValueError:
+                    print(f"ERROR: stack limit for '{fn_name}' must be an integer, got '{limit}'")
+                    return {}
+                function_names.append(fn_name)
+                function_max_stacks[fn_name] = parsed_limit
+            else:
+                function_names.append(entry)
+                function_max_stacks[entry] = None
+
+        report_max_map = {}
+        for sym in self.symbols.values():
+            name = sym["display_name"]
+            if name not in function_names:
+                continue
+
+            base_stack_size = sym.get("stack_size", 0) or 0
+            max_callee_tree_stack_size = sym["deepest_callee_tree"][0]
+            max_caller_tree_stack_size = sym["deepest_caller_tree"][0]
+            # base_stack_size is counted in both callee and caller trees, so subtract once
+            max_static_stack_size = (
+                max_callee_tree_stack_size + max_caller_tree_stack_size - base_stack_size
+            )
+            # caller_tree[1] = [sym, caller, grandcaller, ...]; reverse for top-down order
+            # callee_tree[1] = [sym, callee, leaf, ...]; skip sym (already in reversed caller tree)
+            ordered = (
+                list(reversed(sym["deepest_caller_tree"][1])) + sym["deepest_callee_tree"][1][1:]
+            )
+            entry = {
+                "max_static_stack_size": max_static_stack_size,
+                "call_stack": [
+                    {
+                        "function": f["display_name"],
+                        "name": f["name"],
+                        "stack_size": f.get("stack_size", "???"),
+                    }
+                    for f in ordered
+                ],
+            }
+            if function_max_stacks.get(name) is not None:
+                entry["max_stack_size"] = function_max_stacks[name]
+
+            report_max_map[name] = entry
+
+        for function_name in function_names:
+            if function_name not in report_max_map:
+                print(f"WARNING: Couldn't find symbol '{function_name}' to report")
+
+        self.user_defined_stack_report = report_max_map
+        return report_max_map
+
+    def export_to_json(self, feature_tag, export_json_path):
+        fn_symbols = []
+        var_symbols = []
+        if not self.symbols_by_qualified_name:
+            self.build_symbol_name_index()
+        for full_path, sym in self.symbols_by_qualified_name.items():
+            # if we use the plain symbols there are circular references
+            # and memory explodes into 10's of GB's serializing it so make
+            # symbols non-circular before serializing them to the database
+            non_circular_sym = {}
+            filepath = "NONE"
+            for sym_ele in sym.keys():
+                if sym_ele in [
+                    "line",
+                    "type",
+                    "size",
+                    "called_from_other_file",
+                    "stack_size",
+                    "stack_qualifiers",
+                ]:
+                    non_circular_sym[sym_ele] = sym[sym_ele]
+                elif sym_ele == "name":
+                    # do not override display name if it came first
+                    if "name" not in non_circular_sym:
+                        non_circular_sym[sym_ele] = sym[sym_ele]
+                elif sym_ele == "address":
+                    non_circular_sym[sym_ele] = int(sym[sym_ele], 16)
+                elif sym_ele == "asm":
+                    non_circular_sym["disasm"] = sym[sym_ele]
+                elif sym_ele == "display_name":
+                    non_circular_sym["name"] = sym[sym_ele]
+                elif sym_ele == "file":
+                    # TODO why is /-root missing, handle windows...
+                    filepath = "/" + str(sym["file"]["path"])
+                    non_circular_sym[sym_ele] = filepath
+                elif sym_ele in ["callees"]:
+                    callexs = []
+                    for callex in sym[sym_ele]:
+                        from_addr = int(sym["address"], 16)
+                        to_addr = int(callex["address"], 16)
+                        call = {"from": from_addr, "to": to_addr, "dynamic": False}
+                        callexs += [call]
+                    non_circular_sym[sym_ele] = callexs
+                elif sym_ele in ["calls_float_function", "next_function", "prev_function", "path"]:
+                    # todo nothing?
+                    pass
+                else:
+                    print("unknown key " + sym_ele)
+            # add flatten symbol to list
+            symbols = fn_symbols if non_circular_sym["type"] == "function" else var_symbols
+            non_circular_sym.pop("type")
+            symbols += [non_circular_sym]
+        # if file exist
+        export_json_path[feature_tag]["functions"] = fn_symbols
+        export_json_path[feature_tag]["variables"] = var_symbols
