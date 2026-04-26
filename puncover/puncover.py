@@ -155,7 +155,17 @@ def main():
         ),
     )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
+    parser.add_argument(
+        "--report-schema",
+        action="store_true",
+        help="print the JSON schema for the report output and exit",
+    )
     args = parser.parse_args()
+
+    if args.report_schema:
+        from puncover.report_schema import generate_schema
+        print(json.dumps(generate_schema(), indent=2))
+        return
 
     # Determine ELF file from positional or optional argument
     elf_file = args.elf_file_opt if args.elf_file_opt else args.elf_file
