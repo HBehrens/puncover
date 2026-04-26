@@ -164,6 +164,7 @@ def main():
 
     if args.report_schema:
         from puncover.report_schema import generate_schema
+
         print(json.dumps(generate_schema(), indent=2))
         return
 
