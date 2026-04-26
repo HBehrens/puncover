@@ -687,46 +687,56 @@ class Collector:
                     self.symbols_by_qualified_name[qualified_name] = s
 
     def report_max_static_stack_usages_from_function_names(self, function_names_and_opt_max_stack, report_type):
-        report_max_map = {}
-        from puncover.renderers import traverse_filter_wrapper
-
         if report_type not in SUPPORTED_REPORT_TYPES:
             print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
-            return
+            return {}
 
-        function_names = [f.split(":::")[0] if ":::" else f for f in function_names_and_opt_max_stack or []]
-        function_max_stacks = {f.split(":::")[0]: f.split(":::")[1] if ":::" else None for f in function_names_and_opt_max_stack or []}
-        reported_fn_with_stack_error = []
+        # Parse "name" or "name:::limit" entries; use ::: to avoid confusion with C++ ::
+        function_names = []
+        function_max_stacks = {}
+        for entry in (function_names_and_opt_max_stack or []):
+            if ":::" in entry:
+                fn_name, limit = entry.split(":::", 1)
+                function_names.append(fn_name)
+                function_max_stacks[fn_name] = int(limit)
+            else:
+                function_names.append(entry)
+                function_max_stacks[entry] = None
 
+        report_max_map = {}
         for sym in self.symbols.values():
             name = sym["display_name"]
-            if name in function_names:
-                lam = lambda s: s.get(STACK_SIZE, None) if s.get(TYPE, None) == TYPE_FUNCTION else None
+            if name not in function_names:
+                continue
 
-                base_stack_size = sym.get("stack_size", 0)
-                max_callee_tree_stack_size = sym["deepest_callee_tree"][0]
-                max_caller_tree_stack_size = sym["deepest_caller_tree"][0]
-                max_static_stack_size = max_callee_tree_stack_size+max_caller_tree_stack_size-base_stack_size
-                function_max_stack = {
-                    # -base_stack_size => is counted in callee's and caler's
-                    "max_static_stack_size": max_static_stack_size,
-                    "call_stack": [
-                        {
-                            "function":   f["display_name"],
-                            "name":       f["name"],
-                            "stack_size": f.get("stack_size", "???")
-                        } for f in (sym["deepest_callee_tree"][1][1:] + sym["deepest_caller_tree"][1])
-                        # [1:] => dont include the thread itself twice => TODO make it independent of the list order
-                    ]
-                }
-                report_max_map[display_name] = function_max_stack
+            base_stack_size = sym.get("stack_size", 0) or 0
+            max_callee_tree_stack_size = sym["deepest_callee_tree"][0]
+            max_caller_tree_stack_size = sym["deepest_caller_tree"][0]
+            # base_stack_size is counted in both callee and caller trees, so subtract once
+            max_static_stack_size = max_callee_tree_stack_size + max_caller_tree_stack_size - base_stack_size
+            entry = {
+                "max_static_stack_size": max_static_stack_size,
+                "call_stack": [
+                    {
+                        "function": f["display_name"],
+                        "name": f["name"],
+                        "stack_size": f.get("stack_size", "???"),
+                    }
+                    for f in (sym["deepest_callee_tree"][1][1:] + sym["deepest_caller_tree"][1])
+                    # deepest_callee_tree[1][1:] skips the function itself (included in caller tree)
+                ],
+            }
+            if function_max_stacks.get(name) is not None:
+                entry["max_stack_size"] = function_max_stacks[name]
+
+            report_max_map[name] = entry
 
         for function_name in function_names:
             if function_name not in report_max_map:
-                print(f"WARNING:  Couldn't find symbol '{function_name}' to report")
+                print(f"WARNING: Couldn't find symbol '{function_name}' to report")
 
         self.user_defined_stack_report = report_max_map
-        return report_max_map,  "\n".join(reported_fn_with_stack_error)
+        return report_max_map
 
     def export_to_json(self, feature_tag, export_json_path):
         fn_symbols = []
@@ -739,8 +749,6 @@ class Collector:
             # symbols non-circular before serializing them to the database
             non_circular_sym = {}
             filepath = "NONE"
-            identifier = "NONE"
-            # print(sym["name"])
             for sym_ele in sym.keys():
                 if sym_ele in [
                     'line', 'type', 'size', 'called_from_other_file',
