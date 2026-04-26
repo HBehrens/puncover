@@ -7,6 +7,8 @@
 
 # puncover
 
+![puncover logo](images/puncover-logo.png)
+
 ![](https://raw.githubusercontent.com/HBehrens/puncover/master/images/overview.png)
 
 Analyzes C/C++ binaries for code size, static variables and stack usages. It
