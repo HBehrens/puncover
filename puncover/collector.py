@@ -726,7 +726,9 @@ class Collector:
             )
             # caller_tree[1] = [sym, caller, grandcaller, ...]; reverse for top-down order
             # callee_tree[1] = [sym, callee, leaf, ...]; skip sym (already in reversed caller tree)
-            ordered = list(reversed(sym["deepest_caller_tree"][1])) + sym["deepest_callee_tree"][1][1:]
+            ordered = (
+                list(reversed(sym["deepest_caller_tree"][1])) + sym["deepest_callee_tree"][1][1:]
+            )
             entry = {
                 "max_static_stack_size": max_static_stack_size,
                 "call_stack": [
