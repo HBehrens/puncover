@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     {% block head %}
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 
@@ -19,7 +21,7 @@
               <div class="container-fluid">
                 <div class="navbar-header">
                   <a class="navbar-brand" href="{{ url_for('overview') }}">
-                    Puncover
+                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="puncover" height="20" style="margin-right: 6px; vertical-align: text-bottom;">Puncover
                   </a>
                 </div>
               </div>
