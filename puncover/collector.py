@@ -73,6 +73,8 @@ class StubGccTool:
         re.IGNORECASE,
     )
 
+    indirect_call_pattern = None
+
 
 class Collector:
     def __init__(self, gcc_tools):
@@ -436,7 +438,7 @@ class Collector:
                 if callee_file and caller_file and callee_file != caller_file:
                     callee["called_from_other_file"] = True
 
-    def enhance_call_tree_from_assembly_line(self, function, line):
+    def add_function_call_from_assembly_line(self, function, line):
         if "<" not in line:
             return False
 
@@ -449,6 +451,21 @@ class Collector:
                 return True
 
         return False
+
+    def annotate_indirect_call(self, function, line):
+        if self.gcc_tools.indirect_call_pattern is None:
+            return False
+
+        match = self.gcc_tools.indirect_call_pattern.match(line)
+        if match:
+            function["performs_indirect_call"] = True
+            return True
+
+        return False
+
+    def enhance_call_tree_from_assembly_line(self, function, line):
+        self.add_function_call_from_assembly_line(function, line)
+        self.annotate_indirect_call(function, line)
 
     def enhance_call_tree(self):
         for f in self.all_functions():

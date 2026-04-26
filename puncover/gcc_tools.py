@@ -17,6 +17,9 @@ class GCCTools:
                 r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+(J|JAL|JR|JALR|BEQZ|BNEZ|BEQ|BNE|NLT|BGE|BLTU|BGEU)()\s+([\d\sa-f]+)",
                 re.IGNORECASE,
             )
+
+            # TODO: i don't know how to detect indirect calls in riscv
+            self.indirect_call_pattern = None
         else:  # ARM
             #  934:	f7ff bba8 	b.w	88 <jump_to_pbl_function>
             # 8e4:	f000 f824 	bl	930 <app_log>
@@ -26,6 +29,11 @@ class GCCTools:
             self.enhance_call_tree_pattern = re.compile(
                 r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)",
                 re.IGNORECASE,
+            )
+
+            # 805d83c:	47b0      	blx	r6
+            self.indirect_call_pattern = re.compile(
+                r"^\s*([\da-f]+):\s+[\d\sa-f]{9}\s+BLX\s+(\w+)$", re.IGNORECASE
             )
 
     def gcc_tool_path(self, name):
