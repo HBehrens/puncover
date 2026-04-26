@@ -270,6 +270,13 @@ $t():
         self.assertEqual(f1[collector.CALLEES], [f2])
         self.assertEqual(f2[collector.CALLERS], [f1])
 
+    def test_bad_dynamic_call_causes_exit_with_error(self):
+        c = Collector(None)
+        dynamic_calls = ["f1->f2"]
+        with self.assertRaises(SystemExit) as cm:
+            c.add_dynamic_calls(dynamic_calls=dynamic_calls)
+        self.assertEqual(cm.exception.code, 1)
+
     def test_annotate_indirect_call(self):
         import re
         from unittest.mock import MagicMock
