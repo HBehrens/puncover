@@ -617,9 +617,7 @@ class TestReportMaxStaticStackUsage(unittest.TestCase):
             h.deepest_caller_tree(f)
 
     def test_max_static_stack_size(self):
-        result = self.cc.report_max_static_stack_usages_from_function_names(
-            ["thread_fn"], "json"
-        )
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
         self.assertIn("thread_fn", result)
         # callee tree: 10+20+30=60, caller tree: 10 (no callers), base: 10
         # max = 60 + 10 - 10 = 60
@@ -634,9 +632,7 @@ class TestReportMaxStaticStackUsage(unittest.TestCase):
         self.assertEqual(128, result["thread_fn"]["max_stack_size"])
 
     def test_max_stack_size_limit_absent_when_not_specified(self):
-        result = self.cc.report_max_static_stack_usages_from_function_names(
-            ["thread_fn"], "json"
-        )
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
         self.assertNotIn("max_stack_size", result["thread_fn"])
 
     def test_missing_symbol_returns_empty_entry(self):
@@ -653,18 +649,14 @@ class TestReportMaxStaticStackUsage(unittest.TestCase):
         self.assertIn("leaf_fn", result)
 
     def test_call_stack_entries_have_expected_keys(self):
-        result = self.cc.report_max_static_stack_usages_from_function_names(
-            ["thread_fn"], "json"
-        )
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
         for frame in result["thread_fn"]["call_stack"]:
             self.assertIn("function", frame)
             self.assertIn("name", frame)
             self.assertIn("stack_size", frame)
 
     def test_unsupported_report_type_returns_empty(self):
-        result = self.cc.report_max_static_stack_usages_from_function_names(
-            ["thread_fn"], "xml"
-        )
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "xml")
         self.assertEqual({}, result)
 
     def test_cpp_style_separator_not_confused_with_name(self):

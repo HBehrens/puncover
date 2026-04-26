@@ -686,15 +686,19 @@ class Collector:
                 if qualified_name:
                     self.symbols_by_qualified_name[qualified_name] = s
 
-    def report_max_static_stack_usages_from_function_names(self, function_names_and_opt_max_stack, report_type):
+    def report_max_static_stack_usages_from_function_names(
+        self, function_names_and_opt_max_stack, report_type
+    ):
         if report_type not in SUPPORTED_REPORT_TYPES:
-            print(f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}")
+            print(
+                f"ERROR - requested report type {report_type} not supported, select one of {SUPPORTED_REPORT_TYPES}"
+            )
             return {}
 
         # Parse "name" or "name:::limit" entries; use ::: to avoid confusion with C++ ::
         function_names = []
         function_max_stacks = {}
-        for entry in (function_names_and_opt_max_stack or []):
+        for entry in function_names_and_opt_max_stack or []:
             if ":::" in entry:
                 fn_name, limit = entry.split(":::", 1)
                 function_names.append(fn_name)
@@ -713,7 +717,9 @@ class Collector:
             max_callee_tree_stack_size = sym["deepest_callee_tree"][0]
             max_caller_tree_stack_size = sym["deepest_caller_tree"][0]
             # base_stack_size is counted in both callee and caller trees, so subtract once
-            max_static_stack_size = max_callee_tree_stack_size + max_caller_tree_stack_size - base_stack_size
+            max_static_stack_size = (
+                max_callee_tree_stack_size + max_caller_tree_stack_size - base_stack_size
+            )
             entry = {
                 "max_static_stack_size": max_static_stack_size,
                 "call_stack": [
@@ -751,11 +757,15 @@ class Collector:
             filepath = "NONE"
             for sym_ele in sym.keys():
                 if sym_ele in [
-                    'line', 'type', 'size', 'called_from_other_file',
-                    'stack_size', 'stack_qualifiers'
+                    "line",
+                    "type",
+                    "size",
+                    "called_from_other_file",
+                    "stack_size",
+                    "stack_qualifiers",
                 ]:
                     non_circular_sym[sym_ele] = sym[sym_ele]
-                elif sym_ele == 'name':
+                elif sym_ele == "name":
                     # do not override display name if it came first
                     if "name" not in non_circular_sym:
                         non_circular_sym[sym_ele] = sym[sym_ele]
@@ -764,12 +774,12 @@ class Collector:
                 elif sym_ele == "asm":
                     non_circular_sym["disasm"] = sym[sym_ele]
                 elif sym_ele == "display_name":
-                    non_circular_sym['name'] = sym[sym_ele]
+                    non_circular_sym["name"] = sym[sym_ele]
                 elif sym_ele == "file":
                     # TODO why is /-root missing, handle windows...
                     filepath = "/" + str(sym["file"]["path"])
                     non_circular_sym[sym_ele] = filepath
-                elif sym_ele in ['callees']:
+                elif sym_ele in ["callees"]:
                     callexs = []
                     for callex in sym[sym_ele]:
                         from_addr = int(sym["address"], 16)
@@ -777,7 +787,7 @@ class Collector:
                         call = {"from": from_addr, "to": to_addr, "dynamic": False}
                         callexs += [call]
                     non_circular_sym[sym_ele] = callexs
-                elif sym_ele in ['calls_float_function', 'next_function', 'prev_function', 'path']:
+                elif sym_ele in ["calls_float_function", "next_function", "prev_function", "path"]:
                     # todo nothing?
                     pass
                 else:
