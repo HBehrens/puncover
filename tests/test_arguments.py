@@ -291,7 +291,10 @@ class TestConfigFile(unittest.TestCase):
             patch("puncover.puncover.renderers.register_urls"),
             patch("puncover.puncover.app.run"),
             patch("puncover.puncover.is_port_in_use", return_value=False),
-            patch("puncover.puncover.get_arm_tools_prefix_path", return_value="/usr/bin/arm-none-eabi-"),
+            patch(
+                "puncover.puncover.get_arm_tools_prefix_path",
+                return_value="/usr/bin/arm-none-eabi-",
+            ),
             patch("puncover.puncover.Timer"),
         ]
 
@@ -303,6 +306,7 @@ class TestConfigFile(unittest.TestCase):
                 p.start()
             try:
                 from puncover.puncover import app, create_builder
+
                 yield SimpleNamespace(create_builder=create_builder, app=app)
             finally:
                 for p in patches:

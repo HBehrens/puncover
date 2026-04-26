@@ -75,10 +75,12 @@ def main():
     parser = configargparse.ArgumentParser(
         description="Analyses C/C++ build output for code size, static variables, and stack usage.",
         formatter_class=configargparse.ArgumentDefaultsHelpFormatter,
-        default_config_files=['./puncover_config.yaml'],
-        config_file_parser_class=configargparse.YAMLConfigFileParser
+        default_config_files=["./puncover_config.yaml"],
+        config_file_parser_class=configargparse.YAMLConfigFileParser,
     )
-    parser.add_argument('-c', '--config', required=False, is_config_file=True, help='config file path')
+    parser.add_argument(
+        "-c", "--config", required=False, is_config_file=True, help="config file path"
+    )
     parser.add_argument(
         "--gcc-tools-base",
         "--gcc_tools_base",
