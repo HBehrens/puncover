@@ -1,5 +1,4 @@
 import fnmatch
-import json
 import os
 import pathlib
 import re
