@@ -35,14 +35,18 @@ You can also use `uvx` to run the script without installing globally:
 
 ```bash
 uvx puncover project.elf
+```
 
-### Report export and non-intereactive usage
+### Report export and non-interactive usage
 
-For montitor firmware changes in CI it can be useful to run puncover and save a json report.
+To monitor firmware changes in CI it can be useful to run puncover and save a
+JSON report.
 
-In this case you want puncover to exit after the report was generated.
-
-To generate a report add these flags `--generate-report --no-interactive --report-type json` and for a distinguishing entry to save more then one report in one file also add a report tag `--report-tag $COMMIT_FEATURE`. The report is saved under this tag as a object entry.
+To generate a report add these flags
+`--generate-report --non-interactive --report-type json` and for a
+distinguishing entry to save more than one report in one file also add a report
+tag `--report-tag $COMMIT_FEATURE`. The report is saved under this tag as an
+object entry.
 
 ## Running Tests Locally
 
@@ -119,7 +123,6 @@ Only for reference, the release script should take care of all of this.
    ```
 
 7. Create GitHub releases:
-
    - `gh release create --generate-notes x.y.z`
    - attach the artifacts to the release too: `gh release upload x.y.z dist/*`
 

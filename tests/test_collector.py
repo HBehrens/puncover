@@ -655,6 +655,26 @@ class TestReportMaxStaticStackUsage(unittest.TestCase):
             self.assertIn("name", frame)
             self.assertIn("stack_size", frame)
 
+    def test_call_stack_order_is_caller_to_callee(self):
+        # thread_fn has no callers; its callees are middle_fn -> leaf_fn
+        # Expected order (top-down): [thread_fn, middle_fn, leaf_fn]
+        result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "json")
+        names = [f["function"] for f in result["thread_fn"]["call_stack"]]
+        self.assertEqual(["thread_fn", "middle_fn", "leaf_fn"], names)
+
+    def test_call_stack_order_includes_callers_before_function(self):
+        # middle_fn has thread_fn as caller and leaf_fn as callee
+        # Expected order: [thread_fn, middle_fn, leaf_fn]
+        result = self.cc.report_max_static_stack_usages_from_function_names(["middle_fn"], "json")
+        names = [f["function"] for f in result["middle_fn"]["call_stack"]]
+        self.assertEqual(["thread_fn", "middle_fn", "leaf_fn"], names)
+
+    def test_invalid_stack_limit_returns_empty(self):
+        result = self.cc.report_max_static_stack_usages_from_function_names(
+            ["thread_fn:::notanint"], "json"
+        )
+        self.assertEqual({}, result)
+
     def test_unsupported_report_type_returns_empty(self):
         result = self.cc.report_max_static_stack_usages_from_function_names(["thread_fn"], "xml")
         self.assertEqual({}, result)

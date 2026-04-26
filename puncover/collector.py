@@ -700,8 +700,13 @@ class Collector:
         for entry in function_names_and_opt_max_stack or []:
             if ":::" in entry:
                 fn_name, limit = entry.split(":::", 1)
+                try:
+                    parsed_limit = int(limit)
+                except ValueError:
+                    print(f"ERROR: stack limit for '{fn_name}' must be an integer, got '{limit}'")
+                    return {}
                 function_names.append(fn_name)
-                function_max_stacks[fn_name] = int(limit)
+                function_max_stacks[fn_name] = parsed_limit
             else:
                 function_names.append(entry)
                 function_max_stacks[entry] = None
@@ -719,6 +724,9 @@ class Collector:
             max_static_stack_size = (
                 max_callee_tree_stack_size + max_caller_tree_stack_size - base_stack_size
             )
+            # caller_tree[1] = [sym, caller, grandcaller, ...]; reverse for top-down order
+            # callee_tree[1] = [sym, callee, leaf, ...]; skip sym (already in reversed caller tree)
+            ordered = list(reversed(sym["deepest_caller_tree"][1])) + sym["deepest_callee_tree"][1][1:]
             entry = {
                 "max_static_stack_size": max_static_stack_size,
                 "call_stack": [
@@ -727,8 +735,7 @@ class Collector:
                         "name": f["name"],
                         "stack_size": f.get("stack_size", "???"),
                     }
-                    for f in (sym["deepest_callee_tree"][1][1:] + sym["deepest_caller_tree"][1])
-                    # deepest_callee_tree[1][1:] skips the function itself (included in caller tree)
+                    for f in ordered
                 ],
             }
             if function_max_stacks.get(name) is not None:
