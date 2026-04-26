@@ -251,6 +251,38 @@ $t():
             )
             self.assertFalse(m.called)
 
+    def test_annotate_indirect_call(self):
+        import re
+        from unittest.mock import MagicMock
+
+        gcc_tools = MagicMock()
+        gcc_tools.indirect_call_pattern = re.compile(
+            r"^\s*([\da-f]+):\s+[\d\sa-f]{9}\s+BLX\s+(\w+)$", re.IGNORECASE
+        )
+        c = Collector(gcc_tools)
+
+        # indirect call via register — should set flag
+        f = {}
+        self.assertTrue(c.annotate_indirect_call(f, "805d83c:\t47b0     \tblx\tr6"))
+        self.assertTrue(f.get("performs_indirect_call"))
+
+        # direct call with label — should NOT match
+        f2 = {}
+        self.assertFalse(c.annotate_indirect_call(f2, "8e4:\tf000 f824\tblx\t930 <app_log>"))
+        self.assertFalse(f2.get("performs_indirect_call"))
+
+        # unrelated instruction — should NOT match
+        f3 = {}
+        self.assertFalse(c.annotate_indirect_call(f3, " 89e:\te9d3 0100\tldrd\tr0, r1, [r3]"))
+        self.assertFalse(f3.get("performs_indirect_call"))
+
+    def test_annotate_indirect_call_none_pattern(self):
+        # When indirect_call_pattern is None (e.g. RISC-V), should return False and not crash
+        c = Collector(None)
+        f = {}
+        self.assertFalse(c.annotate_indirect_call(f, "805d83c:\t47b0     \tblx\tr6"))
+        self.assertFalse(f.get("performs_indirect_call"))
+
     def test_stack_usage_line(self):
         line = "puncover.c:14:40:0	16	dynamic,bounded"
         c = Collector(None)
