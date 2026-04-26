@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -277,6 +279,75 @@ class TestArguments(unittest.TestCase):
             run_kwargs = env.app.run.call_args[1]
             self.assertEqual(run_kwargs["host"], "0.0.0.0")
             self.assertEqual(run_kwargs["port"], 5000)
+
+
+class TestConfigFile(unittest.TestCase):
+    def _create_mock_environment(self):
+        mock_builder = MagicMock()
+        mock_builder.collector = MagicMock()
+        return [
+            patch("puncover.puncover.create_builder", return_value=mock_builder),
+            patch("puncover.puncover.renderers.register_jinja_filters"),
+            patch("puncover.puncover.renderers.register_urls"),
+            patch("puncover.puncover.app.run"),
+            patch("puncover.puncover.is_port_in_use", return_value=False),
+            patch("puncover.puncover.get_arm_tools_prefix_path", return_value="/usr/bin/arm-none-eabi-"),
+            patch("puncover.puncover.Timer"),
+        ]
+
+    @contextmanager
+    def _patched_main(self, test_args):
+        patches = self._create_mock_environment()
+        with patch("sys.argv", test_args):
+            for p in patches:
+                p.start()
+            try:
+                from puncover.puncover import app, create_builder
+                yield SimpleNamespace(create_builder=create_builder, app=app)
+            finally:
+                for p in patches:
+                    p.stop()
+
+    def test_config_file_via_flag(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("gcc_tools_base: /cfg/gcc\nelf_file: /cfg/file.elf\n")
+            config_path = f.name
+        try:
+            with self._patched_main(["puncover", "-c", config_path]) as env:
+                main()
+                call_args = env.create_builder.call_args
+                self.assertEqual(call_args[0][0], "/cfg/gcc")
+                self.assertEqual(call_args[1]["elf_file"], "/cfg/file.elf")
+        finally:
+            os.unlink(config_path)
+
+    def test_default_config_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "puncover_config.yaml")
+            with open(config_path, "w") as f:
+                f.write("gcc_tools_base: /default/gcc\nelf_file: /default/file.elf\n")
+            orig_dir = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                with self._patched_main(["puncover"]) as env:
+                    main()
+                    call_args = env.create_builder.call_args
+                    self.assertEqual(call_args[0][0], "/default/gcc")
+                    self.assertEqual(call_args[1]["elf_file"], "/default/file.elf")
+            finally:
+                os.chdir(orig_dir)
+
+    def test_cli_args_override_config_file(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("gcc_tools_base: /cfg/gcc\nelf_file: /cfg/file.elf\nport: 1234\n")
+            config_path = f.name
+        try:
+            with self._patched_main(["puncover", "-c", config_path, "--port", "9999"]) as env:
+                main()
+                env.app.run.assert_called_once()
+                self.assertEqual(env.app.run.call_args[1]["port"], 9999)
+        finally:
+            os.unlink(config_path)
 
 
 if __name__ == "__main__":
