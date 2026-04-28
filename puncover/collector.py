@@ -35,6 +35,12 @@ COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
 CALLEES = "callees"
 CALLERS = "callers"
 
+CALLS_FLOAT_FUNCTION = "calls_float_function"
+PERFORMS_INDIRECT_CALL = "performs_indirect_call"
+UNRESOLVED_CALLS_IN_CALL_TREE = "unresolved_calls_in_call_tree"
+MISSING_STACKSIZE_IN_CALL_TREE = "missing_stacksize_in_call_tree"
+UNBOUND_STACKSIZE_IN_CALL_TREE = "unbound_stacksize_in_call_tree"
+
 DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
@@ -470,7 +476,7 @@ class Collector:
 
         match = self.gcc_tools.indirect_call_pattern.match(line)
         if match:
-            function["performs_indirect_call"] = True
+            function[PERFORMS_INDIRECT_CALL] = True
             return True
 
         return False
@@ -682,17 +688,17 @@ class Collector:
         float_functions = [f for f in self.all_functions() if is_float_function_name(f[NAME])]
         for f in self.all_functions():
             callees = f[CALLEES]
-            f["calls_float_function"] = any([ff in callees for ff in float_functions])
+            f[CALLS_FLOAT_FUNCTION] = any([ff in callees for ff in float_functions])
 
         for file in self.all_files():
-            file["calls_float_function"] = any([f["calls_float_function"] for f in file[FUNCTIONS]])
+            file[CALLS_FLOAT_FUNCTION] = any([f[CALLS_FLOAT_FUNCTION] for f in file[FUNCTIONS]])
 
         def folder_calls_float_function(folder):
-            result = any([f["calls_float_function"] for f in folder[FILES]])
+            result = any([f[CALLS_FLOAT_FUNCTION] for f in folder[FILES]])
             for sub_folder in folder[SUB_FOLDERS]:
                 if folder_calls_float_function(sub_folder):
                     result = True
-            folder["calls_float_function"] = result
+            folder[CALLS_FLOAT_FUNCTION] = result
             return result
 
         for folder in self.root_folders():
