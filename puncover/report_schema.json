@@ -273,12 +273,98 @@
           ],
           "default": null,
           "title": "Functions"
+        },
+        "variables": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/VariableSymbol"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variables"
         }
       },
       "required": [
         "timestamp"
       ],
       "title": "TagEntry",
+      "type": "object"
+    },
+    "VariableSymbol": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "address": {
+          "title": "Address",
+          "type": "integer"
+        },
+        "section_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Index"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "size"
+      ],
+      "title": "VariableSymbol",
       "type": "object"
     }
   },

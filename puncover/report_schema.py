@@ -54,10 +54,21 @@ class FunctionSymbol(BaseModel):
     asm: str | None = None
 
 
+class VariableSymbol(BaseModel):
+    name: str
+    file: str | None = None
+    line: int | None = None
+    address: int
+    section_index: int | None = None
+    size: int
+    type: str | None = None
+
+
 class TagEntry(BaseModel):
     timestamp: str
     stack_report: dict[str, FunctionStackReport] | None = None
     functions: list[FunctionSymbol] | None = None
+    variables: list[VariableSymbol] | None = None
 
 
 class Report(RootModel[dict[str, TagEntry]]):
