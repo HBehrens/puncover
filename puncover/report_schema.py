@@ -14,7 +14,8 @@ import json
 from pathlib import Path
 from typing import Union
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, Field, RootModel
+from pydantic.json_schema import GenerateJsonSchema
 
 SCHEMA_PATH = Path(__file__).parent / "report_schema.json"
 
@@ -31,9 +32,32 @@ class FunctionStackReport(BaseModel):
     max_stack_size: int | None = None  # only present when user supplied a limit via :::
 
 
+class FunctionCall(BaseModel):
+    from_addr: int = Field(serialization_alias="from", alias="from", validation_alias="from")
+    to: int
+    dynamic: bool
+
+
+class FunctionSymbol(BaseModel):
+    name: str
+    file: str | None = None
+    line: int | None = None
+    address: int
+    section_index: int | None = None
+    size: int
+    callers: list[FunctionCall] | None = None
+    callees: list[FunctionCall] | None = None
+    called_from_other_file: bool | None = None
+    stack_size: int | None = None
+    stack_qualifiers: str | None = None
+    disasm: list[str] | None = None
+    asm: str | None = None
+
+
 class TagEntry(BaseModel):
     timestamp: str
     stack_report: dict[str, FunctionStackReport] | None = None
+    functions: list[FunctionSymbol] | None = None
 
 
 class Report(RootModel[dict[str, TagEntry]]):
@@ -41,7 +65,9 @@ class Report(RootModel[dict[str, TagEntry]]):
 
 
 def generate_schema() -> dict:
-    return Report.model_json_schema()
+    schema = Report.model_json_schema()
+    schema["$schema"] = GenerateJsonSchema.schema_dialect
+    return schema
 
 
 def write_schema(path: Path = SCHEMA_PATH) -> None:
