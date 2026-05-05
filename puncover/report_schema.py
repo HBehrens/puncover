@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Union
 
 from pydantic import BaseModel, Field, RootModel
+from pydantic.experimental.missing_sentinel import MISSING
 from pydantic.json_schema import GenerateJsonSchema
 
 SCHEMA_PATH = Path(__file__).parent / "report_schema.json"
@@ -29,7 +30,7 @@ class CallFrame(BaseModel):
 class FunctionStackReport(BaseModel):
     max_static_stack_size: int
     call_stack: list[CallFrame]
-    max_stack_size: int | None = None  # only present when user supplied a limit via :::
+    max_stack_size: int | MISSING = MISSING  # only present when user supplied a limit via :::
 
 
 class FunctionCall(BaseModel):
@@ -40,35 +41,35 @@ class FunctionCall(BaseModel):
 
 class FunctionSymbol(BaseModel):
     name: str
-    file: str | None = None
-    line: int | None = None
+    file: str | MISSING = MISSING
+    line: int | MISSING = MISSING
     address: int
-    section_index: int | None = None
+    section_index: int | MISSING = MISSING
     size: int
-    callers: list[FunctionCall] | None = None
-    callees: list[FunctionCall] | None = None
-    called_from_other_file: bool | None = None
-    stack_size: int | None = None
-    stack_qualifiers: str | None = None
-    disasm: list[str] | None = None
-    asm: str | None = None
+    callers: list[FunctionCall] | MISSING = MISSING
+    callees: list[FunctionCall] | MISSING = MISSING
+    called_from_other_file: bool | MISSING = MISSING
+    stack_size: int | MISSING = MISSING
+    stack_qualifiers: str | MISSING = MISSING
+    disasm: list[str] | MISSING = MISSING
+    asm: str | MISSING = MISSING
 
 
 class VariableSymbol(BaseModel):
     name: str
-    file: str | None = None
-    line: int | None = None
+    file: str | MISSING = MISSING
+    line: int | MISSING = MISSING
     address: int
-    section_index: int | None = None
+    section_index: int | MISSING = MISSING
     size: int
-    type: str | None = None
+    type: str | MISSING = MISSING
 
 
 class TagEntry(BaseModel):
     timestamp: str
-    stack_report: dict[str, FunctionStackReport] | None = None
-    functions: list[FunctionSymbol] | None = None
-    variables: list[VariableSymbol] | None = None
+    stack_report: dict[str, FunctionStackReport] | MISSING = MISSING
+    functions: list[FunctionSymbol] | MISSING = MISSING
+    variables: list[VariableSymbol] | MISSING = MISSING
 
 
 class Report(RootModel[dict[str, TagEntry]]):

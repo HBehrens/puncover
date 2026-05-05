@@ -67,16 +67,8 @@
           "type": "array"
         },
         "max_stack_size": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Max Stack Size"
+          "title": "Max Stack Size",
+          "type": "integer"
         }
       },
       "required": [
@@ -93,141 +85,61 @@
           "type": "string"
         },
         "file": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "File"
+          "title": "File",
+          "type": "string"
         },
         "line": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Line"
+          "title": "Line",
+          "type": "integer"
         },
         "address": {
           "title": "Address",
           "type": "integer"
         },
         "section_index": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Section Index"
+          "title": "Section Index",
+          "type": "integer"
         },
         "size": {
           "title": "Size",
           "type": "integer"
         },
         "callers": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/FunctionCall"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Callers"
+          "items": {
+            "$ref": "#/$defs/FunctionCall"
+          },
+          "title": "Callers",
+          "type": "array"
         },
         "callees": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/FunctionCall"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Callees"
+          "items": {
+            "$ref": "#/$defs/FunctionCall"
+          },
+          "title": "Callees",
+          "type": "array"
         },
         "called_from_other_file": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Called From Other File"
+          "title": "Called From Other File",
+          "type": "boolean"
         },
         "stack_size": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Stack Size"
+          "title": "Stack Size",
+          "type": "integer"
         },
         "stack_qualifiers": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Stack Qualifiers"
+          "title": "Stack Qualifiers",
+          "type": "string"
         },
         "disasm": {
-          "anyOf": [
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Disasm"
+          "items": {
+            "type": "string"
+          },
+          "title": "Disasm",
+          "type": "array"
         },
         "asm": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Asm"
+          "title": "Asm",
+          "type": "string"
         }
       },
       "required": [
@@ -245,49 +157,25 @@
           "type": "string"
         },
         "stack_report": {
-          "anyOf": [
-            {
-              "additionalProperties": {
-                "$ref": "#/$defs/FunctionStackReport"
-              },
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Stack Report"
+          "additionalProperties": {
+            "$ref": "#/$defs/FunctionStackReport"
+          },
+          "title": "Stack Report",
+          "type": "object"
         },
         "functions": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/FunctionSymbol"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Functions"
+          "items": {
+            "$ref": "#/$defs/FunctionSymbol"
+          },
+          "title": "Functions",
+          "type": "array"
         },
         "variables": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/VariableSymbol"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Variables"
+          "items": {
+            "$ref": "#/$defs/VariableSymbol"
+          },
+          "title": "Variables",
+          "type": "array"
         }
       },
       "required": [
@@ -303,60 +191,28 @@
           "type": "string"
         },
         "file": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "File"
+          "title": "File",
+          "type": "string"
         },
         "line": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Line"
+          "title": "Line",
+          "type": "integer"
         },
         "address": {
           "title": "Address",
           "type": "integer"
         },
         "section_index": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Section Index"
+          "title": "Section Index",
+          "type": "integer"
         },
         "size": {
           "title": "Size",
           "type": "integer"
         },
         "type": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Type"
+          "title": "Type",
+          "type": "string"
         }
       },
       "required": [
