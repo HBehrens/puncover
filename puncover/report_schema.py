@@ -35,7 +35,7 @@ class FunctionStackReport(BaseModel):
 
 class FunctionCall(BaseModel):
     from_addr: int = Field(serialization_alias="from", alias="from", validation_alias="from")
-    to: int
+    to: int | MISSING = MISSING
     dynamic: bool
 
 

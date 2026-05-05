@@ -47,7 +47,6 @@
       },
       "required": [
         "from",
-        "to",
         "dynamic"
       ],
       "title": "FunctionCall",
