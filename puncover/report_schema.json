@@ -121,6 +121,14 @@
           "title": "Called From Other File",
           "type": "boolean"
         },
+        "calls_float_function": {
+          "title": "Calls Float Function",
+          "type": "boolean"
+        },
+        "performs_indirect_call": {
+          "title": "Performs Indirect Call",
+          "type": "boolean"
+        },
         "stack_size": {
           "title": "Stack Size",
           "type": "integer"

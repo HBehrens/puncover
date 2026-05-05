@@ -785,6 +785,8 @@ class Collector:
                     "type",
                     "size",
                     "called_from_other_file",
+                    "calls_float_function",
+                    "performs_indirect_call",  # TODO add for manual resolution
                     "stack_size",
                     "stack_qualifiers",
                 ]:
@@ -812,8 +814,6 @@ class Collector:
                         callexs += [call]
                     non_circular_sym[sym_ele] = callexs
                 elif sym_ele in [
-                    "calls_float_function",
-                    "performs_indirect_call",  # TODO add for manual resolution
                     "next_function",
                     "prev_function",
                     "path",

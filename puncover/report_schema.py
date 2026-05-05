@@ -49,6 +49,8 @@ class FunctionSymbol(BaseModel):
     callers: list[FunctionCall] | MISSING = MISSING
     callees: list[FunctionCall] | MISSING = MISSING
     called_from_other_file: bool | MISSING = MISSING
+    calls_float_function: bool | MISSING = MISSING
+    performs_indirect_call: bool | MISSING = MISSING
     stack_size: int | MISSING = MISSING
     stack_qualifiers: str | MISSING = MISSING
     disasm: list[str] | MISSING = MISSING
