@@ -30,6 +30,28 @@
       "title": "CallFrame",
       "type": "object"
     },
+    "FunctionCall": {
+      "properties": {
+        "from": {
+          "title": "From",
+          "type": "integer"
+        },
+        "to": {
+          "title": "To",
+          "type": "integer"
+        },
+        "dynamic": {
+          "title": "Dynamic",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "from",
+        "dynamic"
+      ],
+      "title": "FunctionCall",
+      "type": "object"
+    },
     "FunctionStackReport": {
       "properties": {
         "max_static_stack_size": {
@@ -44,16 +66,8 @@
           "type": "array"
         },
         "max_stack_size": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Max Stack Size"
+          "title": "Max Stack Size",
+          "type": "integer"
         }
       },
       "required": [
@@ -63,6 +77,86 @@
       "title": "FunctionStackReport",
       "type": "object"
     },
+    "FunctionSymbol": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "address": {
+          "title": "Address",
+          "type": "integer"
+        },
+        "section_index": {
+          "title": "Section Index",
+          "type": "integer"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        },
+        "callers": {
+          "items": {
+            "$ref": "#/$defs/FunctionCall"
+          },
+          "title": "Callers",
+          "type": "array"
+        },
+        "callees": {
+          "items": {
+            "$ref": "#/$defs/FunctionCall"
+          },
+          "title": "Callees",
+          "type": "array"
+        },
+        "called_from_other_file": {
+          "title": "Called From Other File",
+          "type": "boolean"
+        },
+        "calls_float_function": {
+          "title": "Calls Float Function",
+          "type": "boolean"
+        },
+        "performs_indirect_call": {
+          "title": "Performs Indirect Call",
+          "type": "boolean"
+        },
+        "stack_size": {
+          "title": "Stack Size",
+          "type": "integer"
+        },
+        "stack_qualifiers": {
+          "title": "Stack Qualifiers",
+          "type": "string"
+        },
+        "disasm": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disasm",
+          "type": "array"
+        },
+        "asm": {
+          "title": "Asm",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "size"
+      ],
+      "title": "FunctionSymbol",
+      "type": "object"
+    },
     "TagEntry": {
       "properties": {
         "timestamp": {
@@ -70,25 +164,70 @@
           "type": "string"
         },
         "stack_report": {
-          "anyOf": [
-            {
-              "additionalProperties": {
-                "$ref": "#/$defs/FunctionStackReport"
-              },
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Stack Report"
+          "additionalProperties": {
+            "$ref": "#/$defs/FunctionStackReport"
+          },
+          "title": "Stack Report",
+          "type": "object"
+        },
+        "functions": {
+          "items": {
+            "$ref": "#/$defs/FunctionSymbol"
+          },
+          "title": "Functions",
+          "type": "array"
+        },
+        "variables": {
+          "items": {
+            "$ref": "#/$defs/VariableSymbol"
+          },
+          "title": "Variables",
+          "type": "array"
         }
       },
       "required": [
         "timestamp"
       ],
       "title": "TagEntry",
+      "type": "object"
+    },
+    "VariableSymbol": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "address": {
+          "title": "Address",
+          "type": "integer"
+        },
+        "section_index": {
+          "title": "Section Index",
+          "type": "integer"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "size"
+      ],
+      "title": "VariableSymbol",
       "type": "object"
     }
   },
@@ -97,5 +236,6 @@
   },
   "description": "Top-level report: keys are report tags, values are tagged run entries.",
   "title": "Report",
-  "type": "object"
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

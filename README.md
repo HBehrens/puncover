@@ -7,6 +7,8 @@
 
 # puncover
 
+![puncover logo](images/puncover-logo.png)
+
 ![](https://raw.githubusercontent.com/HBehrens/puncover/master/images/overview.png)
 
 Analyzes C/C++ binaries for code size, static variables and stack usages. It
@@ -36,6 +38,14 @@ You can also use `uvx` to run the script without installing globally:
 ```bash
 uvx puncover project.elf
 ```
+
+### Analysing stack usage
+
+In order to evaluate the stack usage of function and call trees, it is necessary to build with the `-fstack-usage` flag.
+
+This tells GCC to generate stack usage files (.su) for each compilation unit.
+
+For puncover to evaluate these .su files the `--build_dir` option needs to point to the build folder of the firmware.
 
 ### Report export and non-interactive usage
 

@@ -35,6 +35,12 @@ COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
 CALLEES = "callees"
 CALLERS = "callers"
 
+CALLS_FLOAT_FUNCTION = "calls_float_function"
+PERFORMS_INDIRECT_CALL = "performs_indirect_call"
+UNRESOLVED_CALLS_IN_CALL_TREE = "unresolved_calls_in_call_tree"
+MISSING_STACKSIZE_IN_CALL_TREE = "missing_stacksize_in_call_tree"
+UNBOUND_STACKSIZE_IN_CALL_TREE = "unbound_stacksize_in_call_tree"
+
 DEEPEST_CALLEE_TREE = "deepest_callee_tree"
 DEEPEST_CALLER_TREE = "deepest_caller_tree"
 
@@ -181,9 +187,11 @@ class Collector:
         types = {
             "A": TYPE_FUNCTION,
             "T": TYPE_FUNCTION,
+            "W": TYPE_FUNCTION,
             "D": TYPE_VARIABLE,
             "B": TYPE_VARIABLE,
             "R": TYPE_VARIABLE,
+            "V": TYPE_VARIABLE,
         }
 
         self.add_symbol(
@@ -346,7 +354,15 @@ class Collector:
                 symbol[STACK_QUALIFIERS] = stack_qualifier
                 return True
 
-        warning("Couldn't find symbol for %s:%d:%s" % (base_file_name, line, symbol_name))
+        # when a i.e. a function is compiled into the object file, but unused
+        # then during the complilation it is mentioned in the .su file,
+        # later during linking the function may be optimized out and not get into the final .elf
+        # TODO this causes many warnings for fw optimizing during linking,
+        # as long as each function in the ELF gets a .su value maybe this does not need to
+        # generate a warning for symbols not in the ELF, which are mentioned here?
+        warning(
+            f"Couldn't find symbol for {base_file_name}:{line}:{symbol_name}) - may be optimized out?"
+        )
         return False
 
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
@@ -460,7 +476,7 @@ class Collector:
 
         match = self.gcc_tools.indirect_call_pattern.match(line)
         if match:
-            function["performs_indirect_call"] = True
+            function[PERFORMS_INDIRECT_CALL] = True
             return True
 
         return False
@@ -672,17 +688,17 @@ class Collector:
         float_functions = [f for f in self.all_functions() if is_float_function_name(f[NAME])]
         for f in self.all_functions():
             callees = f[CALLEES]
-            f["calls_float_function"] = any([ff in callees for ff in float_functions])
+            f[CALLS_FLOAT_FUNCTION] = any([ff in callees for ff in float_functions])
 
         for file in self.all_files():
-            file["calls_float_function"] = any([f["calls_float_function"] for f in file[FUNCTIONS]])
+            file[CALLS_FLOAT_FUNCTION] = any([f[CALLS_FLOAT_FUNCTION] for f in file[FUNCTIONS]])
 
         def folder_calls_float_function(folder):
-            result = any([f["calls_float_function"] for f in folder[FILES]])
+            result = any([f[CALLS_FLOAT_FUNCTION] for f in folder[FILES]])
             for sub_folder in folder[SUB_FOLDERS]:
                 if folder_calls_float_function(sub_folder):
                     result = True
-            folder["calls_float_function"] = result
+            folder[CALLS_FLOAT_FUNCTION] = result
             return result
 
         for folder in self.root_folders():
@@ -769,7 +785,7 @@ class Collector:
         self.user_defined_stack_report = report_max_map
         return report_max_map
 
-    def export_to_json(self, feature_tag, export_json_path):
+    def prepare_report_for_json_export(self, export_json_data):
         fn_symbols = []
         var_symbols = []
         if not self.symbols_by_qualified_name:
@@ -779,13 +795,14 @@ class Collector:
             # and memory explodes into 10's of GB's serializing it so make
             # symbols non-circular before serializing them to the database
             non_circular_sym = {}
-            filepath = "NONE"
             for sym_ele in sym.keys():
                 if sym_ele in [
                     "line",
                     "type",
                     "size",
                     "called_from_other_file",
+                    "calls_float_function",
+                    "performs_indirect_call",  # TODO add for manual resolution
                     "stack_size",
                     "stack_qualifiers",
                 ]:
@@ -801,7 +818,7 @@ class Collector:
                 elif sym_ele == "display_name":
                     non_circular_sym["name"] = sym[sym_ele]
                 elif sym_ele == "file":
-                    # TODO why is /-root missing, handle windows...
+                    # TODO why is /-root missing and handle windows paths...
                     filepath = "/" + str(sym["file"]["path"])
                     non_circular_sym[sym_ele] = filepath
                 elif sym_ele in ["callees"]:
@@ -812,7 +829,15 @@ class Collector:
                         call = {"from": from_addr, "to": to_addr, "dynamic": False}
                         callexs += [call]
                     non_circular_sym[sym_ele] = callexs
-                elif sym_ele in ["calls_float_function", "next_function", "prev_function", "path"]:
+                elif sym_ele in [
+                    "next_function",
+                    "prev_function",
+                    "path",
+                    "callers",
+                    "base_file",
+                    "deepest_callee_tree",
+                    "deepest_caller_tree",
+                ]:
                     # todo nothing?
                     pass
                 else:
@@ -822,8 +847,8 @@ class Collector:
             non_circular_sym.pop("type")
             symbols += [non_circular_sym]
         # if file exist
-        export_json_path[feature_tag]["functions"] = fn_symbols
-        export_json_path[feature_tag]["variables"] = var_symbols
+        export_json_data["functions"] = fn_symbols
+        export_json_data["variables"] = var_symbols
 
     def add_dynamic_calls(self, dynamic_calls):
         for dynamic_call in dynamic_calls or []:

@@ -213,7 +213,7 @@ def main():
                     args.report_max_static_stack_usage, args.report_type
                 )
             )
-
+        builder.collector.prepare_report_for_json_export(tag_data)
         export_json[args.report_tag] = tag_data
         with open(args.report_filename + ".json", "w") as f:
             json.dump(export_json, f, indent=4, ensure_ascii=False)
