@@ -769,7 +769,7 @@ class Collector:
         self.user_defined_stack_report = report_max_map
         return report_max_map
 
-    def export_to_json(self, feature_tag, export_json_path):
+    def prepare_report_for_json_export(self, export_json_data):
         fn_symbols = []
         var_symbols = []
         if not self.symbols_by_qualified_name:
@@ -779,13 +779,14 @@ class Collector:
             # and memory explodes into 10's of GB's serializing it so make
             # symbols non-circular before serializing them to the database
             non_circular_sym = {}
-            filepath = "NONE"
             for sym_ele in sym.keys():
                 if sym_ele in [
                     "line",
                     "type",
                     "size",
                     "called_from_other_file",
+                    "calls_float_function",
+                    "performs_indirect_call",  # TODO add for manual resolution
                     "stack_size",
                     "stack_qualifiers",
                 ]:
@@ -801,7 +802,7 @@ class Collector:
                 elif sym_ele == "display_name":
                     non_circular_sym["name"] = sym[sym_ele]
                 elif sym_ele == "file":
-                    # TODO why is /-root missing, handle windows...
+                    # TODO why is /-root missing and handle windows paths...
                     filepath = "/" + str(sym["file"]["path"])
                     non_circular_sym[sym_ele] = filepath
                 elif sym_ele in ["callees"]:
@@ -812,7 +813,15 @@ class Collector:
                         call = {"from": from_addr, "to": to_addr, "dynamic": False}
                         callexs += [call]
                     non_circular_sym[sym_ele] = callexs
-                elif sym_ele in ["calls_float_function", "next_function", "prev_function", "path"]:
+                elif sym_ele in [
+                    "next_function",
+                    "prev_function",
+                    "path",
+                    "callers",
+                    "base_file",
+                    "deepest_callee_tree",
+                    "deepest_caller_tree",
+                ]:
                     # todo nothing?
                     pass
                 else:
@@ -822,5 +831,5 @@ class Collector:
             non_circular_sym.pop("type")
             symbols += [non_circular_sym]
         # if file exist
-        export_json_path[feature_tag]["functions"] = fn_symbols
-        export_json_path[feature_tag]["variables"] = var_symbols
+        export_json_data["functions"] = fn_symbols
+        export_json_data["variables"] = var_symbols
