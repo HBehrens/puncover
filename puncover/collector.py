@@ -861,7 +861,7 @@ class Collector:
             callee = self.symbol(name=callee_str, qualified=False)
             if callee is None or caller is None:
                 print(
-                    f"Invalid dynamic call given {callee_str}:{callee} to {caller_str}:{caller}. "
+                    f"Invalid dynamic call given {callee_str} to {caller_str}. "
                     "Symbol name not found in given elf file resulting in None as symbol."
                 )
                 exit(1)
