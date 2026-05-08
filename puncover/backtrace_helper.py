@@ -36,6 +36,24 @@ class BacktraceHelper:
         for c in f[list_attribute]:
             if c not in visited:
                 candidate = self.deepest_call_tree(c, list_attribute, cache_attribute, visited)
+                # mark a functions deepest call incomplete when calls or stack sizes of callpaths are unknown
+                if collector.PERFORMS_INDIRECT_CALL in c and c[collector.PERFORMS_INDIRECT_CALL]:
+                    if collector.UNRESOLVED_CALLS_IN_CALL_TREE not in f:
+                        f[collector.UNRESOLVED_CALLS_IN_CALL_TREE] = 1
+                    else:
+                        f[collector.UNRESOLVED_CALLS_IN_CALL_TREE] += 1
+                if collector.STACK_SIZE not in c:
+                    if collector.MISSING_STACKSIZE_IN_CALL_TREE not in f:
+                        f[collector.MISSING_STACKSIZE_IN_CALL_TREE] = 1
+                    else:
+                        f[collector.MISSING_STACKSIZE_IN_CALL_TREE] += 1
+                if collector.STACK_QUALIFIERS in c and c[collector.STACK_QUALIFIERS] == "dynamic":
+                    # TODO with dynamic,bounded then we would need to evaluate call addresse within the fuction -
+                    # since there are more then on point in the function maybe in-between calls were allocation happens...
+                    if collector.UNBOUND_STACKSIZE_IN_CALL_TREE not in f:
+                        f[collector.UNBOUND_STACKSIZE_IN_CALL_TREE] = 1
+                    else:
+                        f[collector.UNBOUND_STACKSIZE_IN_CALL_TREE] += 1
                 if candidate[0] > result[0]:
                     result = candidate
 

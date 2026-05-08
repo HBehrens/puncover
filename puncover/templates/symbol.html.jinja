@@ -74,7 +74,46 @@
     {% endif %}
 
     {% if (symbol.deepest_caller_tree[1] | length > 1) or (symbol.deepest_callee_tree[1] | length > 1) %}
-        <h1>Stack Worst-Case Scenarios</h1>
+        <h1>Found scenario for worst-case stack usage</h1>
+        Be aware: This is the best estimate on the given information.
+        Real stack usage might be higher, due to many reasons (like context changes into interrupts).
+
+        {% if symbol.unresolved_calls_in_call_tree %}
+            <div class="alert alert-warning" role="alert">
+                WARNING: There
+                {% if symbol.unresolved_calls_in_call_tree == 1 %}
+                is {{symbol.unresolved_calls_in_call_tree}} function
+                {% else %}
+                are {{symbol.unresolved_calls_in_call_tree}} functions
+                {% endif %}
+                with dynamic calls, and cannot be automatically resolved at compile time from the ELF. <br/>
+                The given scenario cannot accurately be estimated without these, since the call tree is incomplete.
+            </div>
+        {% endif %}
+        {% if symbol.missing_stacksize_in_call_tree %}
+            <div class="alert alert-warning" role="alert">
+                WARNING: There
+                {% if symbol.missing_stacksize_in_call_tree == 1 %}
+                is {{symbol.missing_stacksize_in_call_tree}} function
+                {% else %}
+                are {{symbol.missing_stacksize_in_call_tree}} functions
+                {% endif %}
+                with missing stack sizes in the symbol dataset. <br/>
+                The given scenario cannot accurately be estimated without these functions stack-sizes.
+            </div>
+        {% endif %}
+        {% if symbol.unbound_stacksize_in_call_tree %}
+            <div class="alert alert-warning" role="alert">
+                WARNING: There
+                {% if symbol.unbound_stacksize_in_call_tree == 1 %}
+                is {{symbol.unbound_stacksize_in_call_tree}} function
+                {% else %}
+                are {{symbol.unbound_stacksize_in_call_tree}} functions
+                {% endif %}
+                with dynamic stack size. <br/>
+                The given scenario cannot accurately be estimated without more precise constraints for these functions.
+            </div>
+        {% endif %}
         {% if symbol.deepest_callee_tree[1] | length > 1 %}
         {{ lists.function_stats(symbol.deepest_callee_tree[1][1:] | reverse | list, stack_base=symbol.deepest_caller_tree[1]|symbol_stack_size) }}
         {% else %}
