@@ -181,9 +181,11 @@ class Collector:
         types = {
             "A": TYPE_FUNCTION,
             "T": TYPE_FUNCTION,
+            "W": TYPE_FUNCTION,
             "D": TYPE_VARIABLE,
             "B": TYPE_VARIABLE,
             "R": TYPE_VARIABLE,
+            "V": TYPE_VARIABLE,
         }
 
         self.add_symbol(
