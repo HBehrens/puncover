@@ -251,6 +251,32 @@ $t():
             )
             self.assertFalse(m.called)
 
+    def test_manually_given_dynamic_call(self):
+        c = Collector(None)
+        f1 = c.add_symbol(name="f1", address="00000abc", type=collector.TYPE_FUNCTION)
+        f2 = c.add_symbol(name="f2", address="00000123", type=collector.TYPE_FUNCTION)
+        c.enhance_call_tree()  # add empty call lists
+
+        dynamic_calls = ["f1->f2"]
+
+        # no call relation known beforehand
+        self.assertEqual(f1[collector.CALLEES], [])
+        self.assertEqual(f2[collector.CALLERS], [])
+
+        # add a dynamic call
+        c.add_dynamic_calls(dynamic_calls=dynamic_calls)
+
+        # know caller and callee are known to eachother
+        self.assertEqual(f1[collector.CALLEES], [f2])
+        self.assertEqual(f2[collector.CALLERS], [f1])
+
+    def test_bad_dynamic_call_causes_exit_with_error(self):
+        c = Collector(None)
+        dynamic_calls = ["f1->f2"]
+        with self.assertRaises(SystemExit) as cm:
+            c.add_dynamic_calls(dynamic_calls=dynamic_calls)
+        self.assertEqual(cm.exception.code, 1)
+
     def test_annotate_indirect_call(self):
         import re
         from unittest.mock import MagicMock

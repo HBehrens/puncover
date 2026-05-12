@@ -849,3 +849,20 @@ class Collector:
         # if file exist
         export_json_data["functions"] = fn_symbols
         export_json_data["variables"] = var_symbols
+
+    def add_dynamic_calls(self, dynamic_calls):
+        for dynamic_call in dynamic_calls or []:
+            call_pair = dynamic_call.split("->")
+            if len(call_pair) != 2:
+                print("Warning invalid dynamic call format: %s" % call_pair)
+                continue
+            caller_str, callee_str = call_pair
+            caller = self.symbol(name=caller_str, qualified=False)
+            callee = self.symbol(name=callee_str, qualified=False)
+            if callee is None or caller is None:
+                print(
+                    f"Invalid dynamic call given {callee_str} to {caller_str}. "
+                    "Symbol name not found in given elf file resulting in None as symbol."
+                )
+                exit(1)
+            self.add_function_call(caller, callee)
