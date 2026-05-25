@@ -311,7 +311,8 @@ class HTMLRenderer(View):
         return result_str + ("?" + query_string if query_string else "")
 
     def url_for_symbol(self, value):
-        if value[collector.TYPE] in [collector.TYPE_FUNCTION]:
+        symbol_type = value.get(collector.TYPE, None)
+        if symbol_type in [collector.TYPE_FUNCTION]:
             return self.url_for("path", path=self.collector.qualified_symbol_name(value))
 
         # file or folder
