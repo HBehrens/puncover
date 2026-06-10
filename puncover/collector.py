@@ -465,6 +465,8 @@ class Collector:
         if match:
             callee = self.symbol_by_addr(match.group(3))
             if callee:
+                if TYPE in callee and callee[TYPE] != TYPE_FUNCTION:
+                    return False
                 self.add_function_call(function, callee)
                 return True
 
