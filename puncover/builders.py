@@ -44,6 +44,7 @@ class Builder:
         for f in self.collector.all_functions():
             self.backtrace_helper.deepest_callee_tree(f)
             self.backtrace_helper.deepest_caller_tree(f)
+        self.backtrace_helper.annotate_call_tree_flags()
 
 
 class ElfBuilder(Builder):

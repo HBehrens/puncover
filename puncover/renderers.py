@@ -311,7 +311,12 @@ class HTMLRenderer(View):
         return result_str + ("?" + query_string if query_string else "")
 
     def url_for_symbol(self, value):
-        if value[collector.TYPE] in [collector.TYPE_FUNCTION]:
+        # A breadcrumb passes folder=None for a file at the root of --src_root,
+        # and some symbols have no TYPE (nm letters not in our map); neither must
+        # raise (would be an HTTP 500). Render a plain, un-linked entry instead.
+        if value is None:
+            return ""
+        if value.get(collector.TYPE) in [collector.TYPE_FUNCTION]:
             return self.url_for("path", path=self.collector.qualified_symbol_name(value))
 
         # file or folder

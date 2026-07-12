@@ -434,6 +434,39 @@ $t():
         )
         self.assertEqual(4, c.count_assembly_code_bytes("878:	000001ba 	.word	0x000001ba"))
 
+    def test_report_stack_skips_non_function_symbols(self):
+        # A variable whose display_name matches a requested name must not crash
+        # (variables have no deepest_*_tree). Regression test for F3.
+        c = Collector(None)
+        v = c.add_symbol("myvar", "0x1000", size=4, type=collector.TYPE_VARIABLE)
+        v[collector.DISPLAY_NAME] = "myvar"
+        result = c.report_max_static_stack_usages_from_function_names(["myvar"], "json")
+        self.assertEqual({}, result)
+
+    def test_json_export_skips_typeless_symbol(self):
+        # A symbol with no TYPE (nm letter not in our map) must be skipped, not
+        # crash the whole report. Regression test for F4.
+        c = Collector(None)
+        s = c.add_symbol("foo", "0x2000", size=4)  # no type, no asm -> TYPE never set
+        s[collector.DISPLAY_NAME] = "foo"
+        self.assertNotIn(collector.TYPE, s)
+        c.build_symbol_name_index()
+        data = {}
+        c.prepare_report_for_json_export(data)  # must not raise
+        self.assertEqual([], data["functions"])
+        self.assertEqual([], data["variables"])
+
+    def test_self_recursion_sets_flag(self):
+        # A direct self-call records SELF_RECURSIVE but still adds no self-edge,
+        # so the recursion is not lost silently (F5).
+        c = Collector(None)
+        f = c.add_symbol("f", "0x10", type=collector.TYPE_FUNCTION, stack_size=8)
+        c.enhance_call_tree()
+        c.add_function_call(f, f)
+        self.assertTrue(f.get(collector.SELF_RECURSIVE))
+        self.assertEqual([], f[collector.CALLEES])
+        self.assertEqual([], f[collector.CALLERS])
+
     def test_enhance_function_size_from_assembly(self):
         c = Collector(None)
         c.symbols = {

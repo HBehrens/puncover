@@ -194,6 +194,23 @@ class TestRenderer(unittest.TestCase):
                         actual = c.url_for("/")
                         self.assertEqual("/?foo=bar", actual)
 
+    def test_url_for_symbol_guards_none_and_typeless(self):
+        """url_for_symbol must not raise on None (breadcrumb folder at the root
+        of --src_root) or on a symbol without a TYPE. Regression test for the
+        renderer HTTP 500."""
+        from flask import Flask
+
+        app = Flask(__name__)
+        with app.test_request_context():
+            c = Mock()
+            c.root_folders = Mock(return_value=[])
+            c.all_symbols = Mock(return_value=[])
+            c.all_functions = Mock(return_value=[])
+            c.all_variables = Mock(return_value=[])
+            r = renderers.HTMLRenderer(c)
+            self.assertEqual("", r.url_for_symbol(None))
+            self.assertEqual("", r.url_for_symbol({}))  # no TYPE, no PATH
+
     def test_none_sum_empty_list(self):
         """Test that none_sum returns None for an empty list"""
         self.assertIsNone(renderers.none_sum([]))
