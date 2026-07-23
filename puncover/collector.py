@@ -785,6 +785,79 @@ class Collector:
         self.user_defined_stack_report = report_max_map
         return report_max_map
 
+    def add_indirect_callees_from_file(self, filepath):
+        """Add indirect callee edges to the call graph from a JSON file.
+
+        This method lets external tools pre-compute caller→callee relationships that puncover
+        cannot discover from assembly alone (typically because they go through function pointers.
+        The JSON file is produced by those tools and consumed here in a toolchain-agnostic way.        
+
+        **File format** (``version: 1``)::
+
+            {
+              "version": 1,
+              "indirect_callees": [
+                {
+                  "caller": "function_using_callback_pointers",
+                  "callees": ["callback_1", "callback_2"]
+                }
+              ]
+            }
+
+        ``caller`` and each name in ``callees`` must be raw C symbol names as
+        they appear in ``nm`` output (i.e. not C++ demangled).
+
+        This method must be called **after** :py:meth:`enhance` (so that
+        ``CALLEES`` / ``CALLERS`` lists exist on every function symbol) and
+        **before** the call-tree depth computation in
+        :py:class:`~puncover.builders.Builder`.
+
+        The ``PERFORMS_INDIRECT_CALL`` flag is intentionally left unchanged on
+        the caller – there may be additional unresolved indirect calls in the
+        same function that are not covered by this file.
+
+        Args:
+            filepath: path to the JSON indirect-callees file
+        """
+        import json as _json
+
+        self.build_symbol_name_index()
+
+        with open(filepath) as f:
+            data = _json.load(f)
+
+        for entry in data.get("indirect_callees", []):
+            caller_name = entry.get("caller")
+            callee_names = entry.get("callees", [])
+
+            if not caller_name:
+                warning("indirect callees file: entry missing 'caller' field, skipping")
+                continue
+
+            caller = self.symbol(caller_name, qualified=False)
+            if not caller:
+                warning(
+                    f"indirect callees file: caller '{caller_name}' not found in symbol table"
+                )
+                continue
+
+            resolved = 0
+            for callee_name in callee_names:
+                callee = self.symbol(callee_name, qualified=False)
+                if not callee:
+                    warning(
+                        f"indirect callees file: callee '{callee_name}' not found "
+                        f"in symbol table (caller: '{caller_name}')"
+                    )
+                    continue
+                self.add_function_call(caller, callee)
+                resolved += 1
+
+            print(
+                f"Added {resolved}/{len(callee_names)} indirect callee(s) "
+                f"for '{caller_name}' from {filepath}"
+            )
+
     def prepare_report_for_json_export(self, export_json_data):
         fn_symbols = []
         var_symbols = []

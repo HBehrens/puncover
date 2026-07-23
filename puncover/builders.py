@@ -7,11 +7,12 @@ from puncover.backtrace_helper import BacktraceHelper
 
 
 class Builder:
-    def __init__(self, collector, src_root):
+    def __init__(self, collector, src_root, indirect_callees_file=None):
         self.files = {}
         self.collector = collector
         self.backtrace_helper = BacktraceHelper(collector)
         self.src_root = pathlib.Path(src_root)
+        self.indirect_callees_file = indirect_callees_file
 
     def store_file_time(self, path, store_empty=False):
         self.files[path] = 0 if store_empty else os.path.getmtime(path)
@@ -23,6 +24,8 @@ class Builder:
         self.collector.parse_elf(self.get_elf_path())
         self.collector.enhance(self.src_root)
         self.collector.parse_su_dir(self.get_su_dir())
+        if self.indirect_callees_file:
+            self.collector.add_indirect_callees_from_file(self.indirect_callees_file)
         self.build_call_trees()
 
     def needs_build(self):
@@ -47,8 +50,13 @@ class Builder:
 
 
 class ElfBuilder(Builder):
-    def __init__(self, collector, src_root, elf_file, su_dir):
-        Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
+    def __init__(self, collector, src_root, elf_file, su_dir, indirect_callees_file=None):
+        Builder.__init__(
+            self,
+            collector,
+            src_root if src_root else dirname(dirname(elf_file)),
+            indirect_callees_file=indirect_callees_file,
+        )
         self.store_file_time(elf_file, store_empty=True)
         self.elf_file = pathlib.Path(elf_file)
         self.su_dir = su_dir

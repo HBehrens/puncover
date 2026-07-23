@@ -280,6 +280,58 @@ class TestArguments(unittest.TestCase):
             self.assertEqual(run_kwargs["host"], "0.0.0.0")
             self.assertEqual(run_kwargs["port"], 5000)
 
+    def test_add_indirect_callees_file_hyphen_format(self):
+        """Test that --add-indirect-callees-file argument works (hyphen format)."""
+        test_args = [
+            "puncover",
+            "--gcc_tools_base",
+            "/path/to/gcc",
+            "--elf_file",
+            "/path/to/file.elf",
+            "--add-indirect-callees-file",
+            "/path/to/callees.json",
+        ]
+
+        with self._patched_main(test_args) as env:
+            main()
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["indirect_callees_file"], "/path/to/callees.json")
+
+    def test_add_indirect_callees_file_underscore_format(self):
+        """Test that --add_indirect_callees_file argument works (underscore format)."""
+        test_args = [
+            "puncover",
+            "--gcc_tools_base",
+            "/path/to/gcc",
+            "--elf_file",
+            "/path/to/file.elf",
+            "--add_indirect_callees_file",
+            "/path/to/callees.json",
+        ]
+
+        with self._patched_main(test_args) as env:
+            main()
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertEqual(call_args[1]["indirect_callees_file"], "/path/to/callees.json")
+
+    def test_add_indirect_callees_file_defaults_to_none(self):
+        """Test that --add-indirect-callees-file defaults to None when not specified."""
+        test_args = [
+            "puncover",
+            "--gcc_tools_base",
+            "/path/to/gcc",
+            "--elf_file",
+            "/path/to/file.elf",
+        ]
+
+        with self._patched_main(test_args) as env:
+            main()
+            env.create_builder.assert_called_once()
+            call_args = env.create_builder.call_args
+            self.assertIsNone(call_args[1]["indirect_callees_file"])
+
 
 class TestConfigFile(unittest.TestCase):
     def _create_mock_environment(self):

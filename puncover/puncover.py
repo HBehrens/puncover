@@ -36,10 +36,10 @@ def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
 
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
+def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None, indirect_callees_file=None):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
-        return ElfBuilder(c, src_root, elf_file, su_dir)
+        return ElfBuilder(c, src_root, elf_file, su_dir, indirect_callees_file=indirect_callees_file)
     else:
         raise Exception("Unable to configure builder for collector")
 
@@ -156,6 +156,17 @@ def main():
     )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     parser.add_argument(
+        "--add-indirect-callees-file",
+        "--add_indirect_callees_file",
+        dest="add_indirect_callees_file",
+        metavar="FILE",
+        help=(
+            "JSON file listing indirect caller/callee relationships to inject into the "
+            "call graph before computing stack depths.  Produced by external tools. "
+            'Format: {"version": 1, "indirect_callees": [{"caller": "fn", "callees": ["callee1", ...]}]}'
+        ),
+    )
+    parser.add_argument(
         "--report-schema",
         action="store_true",
         help="print the JSON schema for the report output and exit",
@@ -180,7 +191,11 @@ def main():
         exit(1)
 
     builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
+        args.gcc_tools_base,
+        elf_file=elf_file,
+        src_root=args.src_root,
+        su_dir=args.build_dir,
+        indirect_callees_file=args.add_indirect_callees_file,
     )
     builder.build_if_needed()
 
