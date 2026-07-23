@@ -85,6 +85,21 @@ class TestCollector(unittest.TestCase):
             },
         )
 
+    def test_parses_function_line_with_gcc_suffix(self):
+        c = Collector(None)
+        file_path = "/tmp/puncover.c"
+        if os.name == "nt":
+            file_path = "C:\\tmp\\puncover.c"
+        line = "00000100 00000010 T foo.isra.0 " + file_path + ":1"
+        self.assertTrue(c.parse_size_line(line))
+        self.assertEqual("foo.isra.0", c.symbols[0x00000100]["name"])
+
+    def test_prefers_more_specific_symbol_name_for_same_address(self):
+        c = Collector(None)
+        c.add_symbol("foo", "00000100")
+        c.add_symbol("foo.isra.0", "00000100")
+        self.assertEqual("foo.isra.0", c.symbols[0x00000100]["name"])
+
     def test_ignores_incomplete_size_line_1(self):
         c = Collector(None)
         line = "0000059c D __dso_handle"
@@ -424,6 +439,8 @@ $t():
             )
         )
         self.assertTrue(f("bool SDCardTask::isLogging() const", "SDCardTask::isLogging() const"))
+        self.assertTrue(f("foo.isra", "foo.isra.0"))
+        self.assertTrue(f("foo.constprop", "foo.constprop.12"))
 
     def test_count_bytes(self):
         c = Collector(None)

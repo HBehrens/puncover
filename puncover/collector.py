@@ -131,8 +131,9 @@ class Collector:
         int_address = int(address, 16)
         sym = self.symbols.get(int_address, {})
         if NAME in sym and sym[NAME] != name:
-            # warning("Name for symbol at %s inconsistent (was '%s', now '%s')" % (address, sym[NAME], name))
-            pass
+            # prefer the more specific variant (e.g. foo.isra.0 over foo)
+            if name.startswith(sym[NAME] + ".") and len(name) > len(sym[NAME]):
+                sym[NAME] = name
         else:
             sym[NAME] = name
         if size:
@@ -160,11 +161,11 @@ class Collector:
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
     if os.name == "nt":
         parse_size_line_re = re.compile(
-            r"^([\da-f]{8,16})\s+([\da-f]{8,16})\s+(.)\s+(\w+)(\s+([a-zA-Z]:.+)):(\d+)?"
+            r"^([\da-f]{8,16})\s+([\da-f]{8,16})\s+(.)\s+([^\s]+)(\s+([a-zA-Z]:.+)):(\d+)?"
         )
     else:
         parse_size_line_re = re.compile(
-            r"^([\da-f]{8,16})\s+([\da-f]{8,16})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?"
+            r"^([\da-f]{8,16})\s+([\da-f]{8,16})\s+(.)\s+([^\s]+)(\s+([^:]+):(\d+))?"
         )
 
     def parse_size_line(self, line):
@@ -336,6 +337,18 @@ class Collector:
             return False
 
         if a == b:
+            return True
+
+        def normalize_gcc_suffix(name):
+            return re.sub(
+                r"\.(isra|constprop|part|clone)\.\d+$",
+                lambda m: "." + m.group(1),
+                name,
+            )
+
+        normalized_a = normalize_gcc_suffix(a)
+        normalized_b = normalize_gcc_suffix(b)
+        if normalized_a == normalized_b:
             return True
 
         simplified_a = self.display_name_simplified(a)
