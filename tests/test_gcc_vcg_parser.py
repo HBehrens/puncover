@@ -2,7 +2,7 @@ import unittest
 
 from mock import patch
 
-from puncover.gcc_vcg_parser import VCG_Parser, VCGLabel, VCGNode
+from puncover.gcc_vcg_parser import VCG_Parser, VCGLabel, VCGEdge, VCGNode
 
 
 class Test_VCG_Parser(unittest.TestCase):
@@ -71,3 +71,14 @@ class Test_VCG_Parser(unittest.TestCase):
         )
         test = vcgp.parse_node(test_node)
         self.assertEqual(ref, test, "test vcg node with stack use marker parse matches")
+
+    def test_parse_edge(self):
+        vcgp = VCG_Parser()
+        test_edge = 'sourcename: "/app/src/led.c:led_state_normal_run" targetname: "smf_set_state" label: "/app/src/led.c:219:3"'
+        ref = VCGEdge(
+            sourcename="/app/src/led.c:led_state_normal_run",
+            targetname="smf_set_state",
+            label="/app/src/led.c:219:3",
+        )
+        test = vcgp.parse_edge(test_edge)
+        self.assertEqual(ref, test, "test vcg edge parse matches")

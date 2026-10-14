@@ -16,6 +16,11 @@ class VCGNode(BaseModel):
     title: str | None | MISSING = MISSING
     label: VCGLabel | None | MISSING = MISSING
 
+class VCGEdge(BaseModel):
+    sourcename: str | None | MISSING = MISSING
+    targetname: str | None | MISSING = MISSING
+    label: str | None | MISSING = MISSING
+
 class VCG_Parser:
     su_marker_pattern = r"(\d+)\s+bytes\s+\((.*?)\)"
 
@@ -82,8 +87,17 @@ class VCG_Parser:
         else:
             return VCGNode()
 
-    def parse_edge(self, edge_str):
-        pass
+    def parse_edge(self, node_str):
+        attributes = self.parse_vcg_attributes(node_str)
+        print("zzz", attributes)
+        sourcename = attributes["sourcename"] if "sourcename" in attributes else None
+        targetname = attributes["targetname"] if "targetname" in attributes else None
+        label = attributes["label"] if "label" in attributes else None
+        if sourcename and targetname:
+            return VCGEdge(sourcename=sourcename, targetname=targetname, label=label)
+        else:
+            # TODO log error/warning or empty ok?
+            return VCGEdge()
 
     def parse_vcg_file(self, edge_str):
         pass
