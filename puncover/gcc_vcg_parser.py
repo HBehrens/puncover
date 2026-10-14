@@ -12,6 +12,10 @@ class VCGLabel(BaseModel):
     stack_size: int | None | MISSING = MISSING
     stack_qualifier: str | None | MISSING = MISSING
 
+class VCGNode(BaseModel):
+    title: str | None | MISSING = MISSING
+    label: VCGLabel | None | MISSING = MISSING
+
 class VCG_Parser:
     su_marker_pattern = r"(\d+)\s+bytes\s+\((.*?)\)"
 
@@ -58,10 +62,25 @@ class VCG_Parser:
             return VCGLabel()
 
     def parse_vcg_attributes(self, attr_str):
-        pass
+        attribute_pattern = r'(\w+)\s*:\s*(?:"([^"]*)"|(\S+))'
+        attributes = re.findall(attribute_pattern, attr_str)
+        parsed_dict = {
+            match[0]: match[1] if match[1] else match[2]
+            for match in attributes
+        }
+        return parsed_dict
 
     def parse_node(self, node_str):
-        pass
+        attributes = self.parse_vcg_attributes(node_str)
+        title = attributes["title"] if "title" in attributes else None
+        label = attributes["label"] if "label" in attributes else None
+        vcg_label = self.parse_vcg_label_attributes(label)
+        if title and label:
+            return VCGNode(title=title, label=vcg_label)
+        if title:
+            return VCGNode(title=title)
+        else:
+            return VCGNode()
 
     def parse_edge(self, edge_str):
         pass
