@@ -1,8 +1,11 @@
 import fnmatch
+import json
 import os
 import pathlib
 import re
 import sys
+
+import rapidjson
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -34,6 +37,7 @@ COLLAPSED_NAME = "collapsed_name"
 COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
 CALLEES = "callees"
 CALLERS = "callers"
+GCC_INDIRECT_CALL_LABEL = "__indirect_call"
 
 CALLS_FLOAT_FUNCTION = "calls_float_function"
 PERFORMS_INDIRECT_CALL = "performs_indirect_call"
@@ -116,6 +120,14 @@ class Collector:
     def symbol_by_addr(self, addr):
         int_addr = int(addr, 16)
         return self.symbols.get(int_addr, None)
+
+    def function_by_name(self, name):
+        matched_function = filter(
+            lambda sym: sym[NAME] == name and sym.get(TYPE, None) == TYPE_FUNCTION,
+            self.symbols.values(),
+        )
+        # TODO what if 2 fn's have the same name?
+        return next(matched_function, None)
 
     def add_symbol(
         self,
@@ -402,7 +414,92 @@ class Collector:
 
         self.elf_mtime = os.path.getmtime(elf_file)
 
-    def parse_su_dir(self, su_dir):
+    def get_ci_edges_and_nodes(self, ci_file_content):
+        """
+        TODO: Maybe a proper VCG parser would be better.
+        This came out of beeing happy, that 30 lines convert VCG to json.
+        Now it is a 80 line code wart...
+
+        Using rapidjson was for accepting trailing commas.
+        The mess of a decoder was to unit repeated edge and node keys...
+        """
+
+        def has_edges_or_nodes(data):
+            nr_edges = sum([1 if d[0] == "edge" else 0 for d in data])
+            nr_nodes = sum([1 if d[0] == "node" else 0 for d in data])
+            return nr_edges != 0 or nr_nodes != 0
+
+        def extract_edges_and_nodes(data):
+            new_data = {}
+            edges = []
+            nodes = []
+            for d in data:
+                if d[0] == "edge":
+                    edges += [d[1]]
+                elif d[0] == "node":
+                    nodes += [d[1]]
+                else:
+                    new_data[d[0]] = d[1]
+            # add grouped data
+            new_data["edges"] = edges
+            new_data["nodes"] = nodes
+            return new_data
+
+        class KVPairsDecoder(rapidjson.Decoder):
+            def start_object(self, *args, **kwargs):
+                return []
+
+            def end_object(self, data, *args, **kwargs):
+                if has_edges_or_nodes(data):
+                    return extract_edges_and_nodes(data)
+                elif isinstance(data, list):
+                    return {t[0]: t[1] for t in data}
+                else:
+                    return data
+
+        kv_decoder = KVPairsDecoder(parse_mode=rapidjson.PM_TRAILING_COMMAS)
+
+        unquouted_keys = [
+            "graph",
+            "title",
+            "edge",
+            "sourcename",
+            "node",
+            "targetname",
+            "shape",
+            "label",
+        ]
+        unquouted_values = [" ellipse "]  # the only exception / symbol?
+
+        # add "s around keys
+        for attr in unquouted_keys:
+            attr_unquotes = attr + ":"
+            attr_quotes = '"' + attr + '":'
+            ci_file_content = ci_file_content.replace(attr_unquotes, attr_quotes)
+            # sometimes there is an extra space in the middle -.-
+            attr_unquotes = attr + " :"
+            ci_file_content = ci_file_content.replace(attr_unquotes, attr_quotes)
+        ci_file_content = ci_file_content.replace(
+            unquouted_values[0], '"' + unquouted_values[0] + '"'
+        )
+        # add commas after closing quotes and braces
+        ci_file_content = re.sub(r'(?<=[A-Za-z0-9>])"(?!:)', '",', ci_file_content)
+        ci_file_content = ci_file_content.replace('}"', '},"')
+        ci_file_content = ci_file_content.replace('}\n"', '},\n"')
+        # add top level objects braces
+        ci_file_content = "{" + ci_file_content + "}"
+        ci_file_content = ci_file_content.replace('""', '","')
+        ci_file_content = ci_file_content.replace('" "', '","')
+        ci_file_content = ci_file_content.replace("\\0", "0")
+
+        try:
+            # From string: use rapidjson.loads
+            ci = kv_decoder(ci_file_content)
+            return ci, True
+        except Exception:
+            return ci_file_content, False
+
+    def parse_build_dir(self, build_dir, calls_from_build_dir):
         def gen_find(filepat, top):
             for path, dirlist, filelist in os.walk(top):
                 for name in fnmatch.filter(filelist, filepat):
@@ -417,16 +514,87 @@ class Collector:
                 for item in s:
                     yield item
 
-        def get_stack_usage_lines(su_dir):
-            names = gen_find("*.su", su_dir)
+        def get_stack_usage_lines(build_dir):
+            names = gen_find("*.su", build_dir)
             files = gen_open(names)
             lines = gen_cat(files)
             return lines
 
-        if su_dir:
-            print("parsing stack usages starting at %s" % su_dir)
-            for line in get_stack_usage_lines(su_dir):
+        if build_dir:
+            print("parsing stack usages starting at %s" % build_dir)
+            for line in get_stack_usage_lines(build_dir):
                 self.parse_stack_usage_line(line)
+            print("parsing callgraph starting at %s" % build_dir)
+
+            call_edges = []
+            call_files = gen_find("*.ci", build_dir)
+            ci_file_dump = {}
+            ci_file_dump_error = {}
+            for ci_file in call_files:
+                ci_file_content = open(ci_file).read()
+                if True:
+                    ci_file_dump[ci_file] = ci_file_content
+                cu_call_data, success = self.get_ci_edges_and_nodes(ci_file_content)
+                if success:
+                    call_edges += cu_call_data["graph"].get("edges", [])
+                else:
+                    ci_file_dump_error[ci_file] = cu_call_data
+            if ci_file_dump:
+                open("vcg_debug_dump.json", "w").write(
+                    json.dumps(
+                        {"files": ci_file_dump, "processed_with_errors": ci_file_dump_error},
+                        indent=4,
+                    )
+                )
+            unique_calls = set((c["sourcename"], c["targetname"]) for c in call_edges)
+            unique_calls_list = sorted(list(unique_calls))
+
+            if calls_from_build_dir:
+                warning_cnt = 0
+                for call in unique_calls_list:
+                    call_from, call_to = call
+                    call_from_file_name, call_from_function_name = (
+                        call_from.split(":", 2) if ":" in call_from else ("", call_from)
+                    )
+                    call_to_file_name, call_to_function_name = (
+                        call_to.split(":", 2) if ":" in call_to else ("", call_to)
+                    )
+                    # TODO is there a general schema to what GCC adds to the names?
+                    # can the name left of the first dot be used?
+                    call_from_function_name = (
+                        call_from_function_name.replace(".isra", "")
+                        .replace(".constprop", "")
+                        .replace(".part", "")
+                        .replace(".0", "")
+                    )
+                    call_to_function_name = (
+                        call_to_function_name.replace(".isra", "")
+                        .replace(".constprop", "")
+                        .replace(".part", "")
+                        .replace(".0", "")
+                    )
+                    # find symbols of the call
+                    from_sym = self.function_by_name(call_from_function_name)
+                    to_sym = self.function_by_name(call_to_function_name)
+                    if from_sym and to_sym:
+                        self.add_function_call(from_sym, to_sym)
+                    elif from_sym and call_to_function_name == GCC_INDIRECT_CALL_LABEL:
+                        self.add_unresolved_indirect_call(from_sym)
+                    else:
+                        print("WARNING: Did not find:")
+                        warning_cnt += 1
+                        if not from_sym:
+                            print(f"\t- from {call_from_function_name}")
+                        if not to_sym:
+                            print(f"\t- to {call_to_function_name}")
+                print(
+                    "len(call_edges)",
+                    len(call_edges),
+                    "len unique_calls",
+                    len(unique_calls_list),
+                    "warning not found:",
+                    warning_cnt,
+                )
 
     def sorted_by_size(self, symbols):
         return sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
@@ -445,12 +613,25 @@ class Collector:
             if ASM in symbol:
                 symbol[ASM] = list([self.enhanced_assembly_line(line) for line in symbol[ASM]])
 
+    def add_unresolved_indirect_call(self, function):
+        # TODO how to best represent the concept of an unresolved call?
+        # a real symbol for each, a single unresolved dummy or just a counter?
+        # ... go for adding an anonymous sym to only the functions callees but not the sym db for now
+        sym = {
+            NAME: GCC_INDIRECT_CALL_LABEL,
+            TYPE: TYPE_FUNCTION,
+            CALLEES: [],
+            CALLERS: [function],
+        }
+        function[CALLEES] = function.get(CALLEES, []) + [sym]
+
     def add_function_call(self, caller, callee):
         if caller != callee:
-            if callee not in caller[CALLEES]:
-                caller[CALLEES].append(callee)
-            if caller not in callee[CALLERS]:
-                callee[CALLERS].append(caller)
+            # TODO check calls are of type function...?
+            if callee not in caller.get(CALLEES, []):
+                caller[CALLEES] = caller.get(CALLEES, []) + [callee]
+            if caller not in callee.get(CALLERS, []):
+                callee[CALLERS] = callee.get(CALLERS, []) + [caller]
                 caller_file = caller.get("file", None)
                 callee_file = callee.get("file", None)
                 if callee_file and caller_file and callee_file != caller_file:
@@ -465,6 +646,8 @@ class Collector:
         if match:
             callee = self.symbol_by_addr(match.group(3))
             if callee:
+                if TYPE in callee and callee[TYPE] != TYPE_FUNCTION:
+                    return False
                 self.add_function_call(function, callee)
                 return True
 
@@ -477,24 +660,27 @@ class Collector:
         match = self.gcc_tools.indirect_call_pattern.match(line)
         if match:
             function[PERFORMS_INDIRECT_CALL] = True
+            self.add_unresolved_indirect_call(function)
             return True
 
         return False
 
-    def enhance_call_tree_from_assembly_line(self, function, line):
+    def enhance_call_tree_from_assembly_line(self, function, line, calls_from_build_dir=False):
         self.add_function_call_from_assembly_line(function, line)
         self.annotate_indirect_call(function, line)
 
-    def enhance_call_tree(self):
+    def enhance_call_tree(self, build_dir="", calls_from_build_dir=False):
         for f in self.all_functions():
             for k in [CALLERS, CALLEES]:
                 f[k] = f.get(k, [])
 
-        for f in self.all_functions():
-            if ASM in f:
-                [self.enhance_call_tree_from_assembly_line(f, line) for line in f[ASM]]
+        self.parse_build_dir(build_dir, calls_from_build_dir)
+        if not calls_from_build_dir:
+            for f in self.all_functions():
+                if ASM in f:
+                    [self.enhance_call_tree_from_assembly_line(f, line) for line in f[ASM]]
 
-    def enhance(self, src_root):
+    def enhance(self, src_root, build_dir, calls_from_build_dir):
         self.normalize_files_paths(src_root)
         print("enhancing function sizes")
         self.enhance_function_size_from_assembly()
@@ -505,7 +691,7 @@ class Collector:
         print("enhancing assembly")
         self.enhance_assembly()
         print("enhancing call tree")
-        self.enhance_call_tree()
+        self.enhance_call_tree(build_dir, calls_from_build_dir)
         print("enhancing siblings")
         self.enhance_sibling_symbols()
         self.enhance_symbol_flags()
@@ -849,3 +1035,20 @@ class Collector:
         # if file exist
         export_json_data["functions"] = fn_symbols
         export_json_data["variables"] = var_symbols
+
+    def export_function_calls_to_file(self, export_filename):
+        calls = []
+        for sym in self.all_functions():
+            symname = sym[DISPLAY_NAME] if DISPLAY_NAME in sym else sym[NAME]
+            fn_calls = []
+            for callee in sym.get(CALLEES, []):
+                calleename = callee[DISPLAY_NAME] if DISPLAY_NAME in callee else callee[NAME]
+                if calleename == "__indirect_call":  # only compare resolved static calls
+                    continue
+                fn_calls += [calleename]
+            calls += [{"from": symname, "to": sorted(fn_calls)}]
+        print(f"found {len(calls)} function calls to export to")
+        export_filename = (
+            export_filename if ".json" in export_filename else export_filename + ".json"
+        )
+        open(export_filename, "w").write(json.dumps(calls, indent=4))

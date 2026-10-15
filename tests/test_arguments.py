@@ -176,10 +176,10 @@ class TestArguments(unittest.TestCase):
 
         with self._patched_main(test_args) as env:
             main()
-            # Verify create_builder was called with the su_dir (build_dir) argument
+            # Verify create_builder was called with the build_dir argument
             env.create_builder.assert_called_once()
             call_args = env.create_builder.call_args
-            self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
+            self.assertEqual(call_args[1]["build_dir"], "/path/to/build")
 
     def test_build_dir_hyphen_format(self):
         """Test that --build-dir argument works (hyphen format)."""
@@ -195,10 +195,10 @@ class TestArguments(unittest.TestCase):
 
         with self._patched_main(test_args) as env:
             main()
-            # Verify create_builder was called with the su_dir (build_dir) argument
+            # Verify create_builder was called with the build_dir argument
             env.create_builder.assert_called_once()
             call_args = env.create_builder.call_args
-            self.assertEqual(call_args[1]["su_dir"], "/path/to/build")
+            self.assertEqual(call_args[1]["build_dir"], "/path/to/build")
 
     def test_host_argument(self):
         """Test that --host argument works."""
@@ -272,7 +272,7 @@ class TestArguments(unittest.TestCase):
             self.assertEqual(call_args[0][0], "/usr/bin/arm-zephyr-eabi-")  # gcc_base_filename
             self.assertEqual(call_args[1]["elf_file"], "/build/zephyr/zephyr.elf")
             self.assertEqual(call_args[1]["src_root"], "/zephyr")
-            self.assertEqual(call_args[1]["su_dir"], "/build")
+            self.assertEqual(call_args[1]["build_dir"], "/build")
 
             # Check app.run arguments
             env.app.run.assert_called_once()
