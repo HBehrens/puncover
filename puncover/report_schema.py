@@ -31,6 +31,12 @@ class FunctionStackReport(BaseModel):
     max_static_stack_size: int
     call_stack: list[CallFrame]
     max_stack_size: int | MISSING = MISSING  # only present when user supplied a limit via :::
+    unresolved_calls_in_call_tree: int | MISSING = (
+        MISSING  # only present on incomplete callgraph info
+    )
+    missing_stacksize_in_call_tree: int | MISSING = (
+        MISSING  # only present on incomplete callgraph info
+    )
 
 
 class FunctionCall(BaseModel):

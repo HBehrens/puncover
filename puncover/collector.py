@@ -762,6 +762,7 @@ class Collector:
             ordered = (
                 list(reversed(sym["deepest_caller_tree"][1])) + sym["deepest_callee_tree"][1][1:]
             )
+
             entry = {
                 "max_static_stack_size": max_static_stack_size,
                 "call_stack": [
@@ -773,6 +774,10 @@ class Collector:
                     for f in ordered
                 ],
             }
+            if UNRESOLVED_CALLS_IN_CALL_TREE in sym:
+                entry["unresolved_calls_in_call_tree"] = sym[UNRESOLVED_CALLS_IN_CALL_TREE]
+            if MISSING_STACKSIZE_IN_CALL_TREE in sym:
+                entry["missing_stacksize_in_call_tree"] = sym[MISSING_STACKSIZE_IN_CALL_TREE]
             if function_max_stacks.get(name) is not None:
                 entry["max_stack_size"] = function_max_stacks[name]
 
@@ -866,3 +871,24 @@ class Collector:
                 f"/{max_static_stack_size:>5}b - {progressbar_20_full * '█'}{progressbar_20_empty * '-'}│"
             )
         print("└" + 73 * "─" + "┘")
+        print("WARNING: Given calltree info may limit this analysis: ")
+        for function_name in self.user_defined_stack_report:
+            stack_report = self.user_defined_stack_report[function_name]
+            print("* ", function_name)
+            if (
+                "unresolved_calls_in_call_tree" in stack_report
+                and stack_report["unresolved_calls_in_call_tree"] > 0
+            ):
+                print(
+                    "\t* number of unresolved_calls_in_call_tree: ",
+                    stack_report["unresolved_calls_in_call_tree"],
+                )
+
+            if (
+                "missing_stacksize_in_call_tree" in stack_report
+                and stack_report["missing_stacksize_in_call_tree"] > 0
+            ):
+                print(
+                    "\t* number of missing_stacksize_in_call_tree: ",
+                    stack_report["missing_stacksize_in_call_tree"],
+                )

@@ -68,6 +68,14 @@
         "max_stack_size": {
           "title": "Max Stack Size",
           "type": "integer"
+        },
+        "unresolved_calls_in_call_tree": {
+          "title": "Unresolved Calls In Call Tree",
+          "type": "integer"
+        },
+        "missing_stacksize_in_call_tree": {
+          "title": "Missing Stacksize In Call Tree",
+          "type": "integer"
         }
       },
       "required": [
