@@ -126,6 +126,12 @@ def main():
         help="generate a JSON report file",
     )
     parser.add_argument(
+        "--print-stack-size-report",
+        "--print_stack_size_report",
+        action="store_true",
+        help="print the the found worst case stack usage for each funtion given by --report-max-static-stack-usage",
+    )
+    parser.add_argument(
         "--report-type",
         "--report_type",
         default="json",
@@ -198,6 +204,8 @@ def main():
                     args.report_max_static_stack_usage, args.report_type
                 )
             )
+            builder.collector.print_stack_size_report()
+            # if args.print_stack_size_report:
         builder.collector.prepare_report_for_json_export(tag_data)
         export_json[args.report_tag] = tag_data
         with open(args.report_filename + ".json", "w") as f:
