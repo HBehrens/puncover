@@ -490,13 +490,13 @@ class Collector:
         ci_file_content = "{" + ci_file_content + "}"
         ci_file_content = ci_file_content.replace('""', '","')
         ci_file_content = ci_file_content.replace('" "', '","')
-        ci_file_content = ci_file_content.replace('\\0', '0')
+        ci_file_content = ci_file_content.replace("\\0", "0")
 
         try:
             # From string: use rapidjson.loads
             ci = kv_decoder(ci_file_content)
             return ci, True
-        except:
+        except Exception:
             return ci_file_content, False
 
     def parse_build_dir(self, build_dir, calls_from_build_dir):
@@ -540,10 +540,12 @@ class Collector:
                 else:
                     ci_file_dump_error[ci_file] = cu_call_data
             if ci_file_dump:
-                open("vcg_debug_dump.json", "w").write(json.dumps({
-                    "files": ci_file_dump,
-                    "processed_with_errors": ci_file_dump_error
-                }, indent=4))
+                open("vcg_debug_dump.json", "w").write(
+                    json.dumps(
+                        {"files": ci_file_dump, "processed_with_errors": ci_file_dump_error},
+                        indent=4,
+                    )
+                )
             unique_calls = set((c["sourcename"], c["targetname"]) for c in call_edges)
             unique_calls_list = sorted(list(unique_calls))
 
@@ -1041,7 +1043,7 @@ class Collector:
             fn_calls = []
             for callee in sym.get(CALLEES, []):
                 calleename = callee[DISPLAY_NAME] if DISPLAY_NAME in callee else callee[NAME]
-                if calleename == "__indirect_call": # only compare resolved static calls
+                if calleename == "__indirect_call":  # only compare resolved static calls
                     continue
                 fn_calls += [calleename]
             calls += [{"from": symname, "to": sorted(fn_calls)}]
