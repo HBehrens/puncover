@@ -36,10 +36,12 @@ def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
 
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
+def create_builder(
+    gcc_base_filename, elf_file=None, build_dir=None, src_root=None, calls_from_build_dir=False
+):
     c = Collector(GCCTools(gcc_base_filename))
     if elf_file:
-        return ElfBuilder(c, src_root, elf_file, su_dir)
+        return ElfBuilder(c, src_root, elf_file, build_dir, calls_from_build_dir)
     else:
         raise Exception("Unable to configure builder for collector")
 
@@ -102,6 +104,12 @@ def main():
     parser.add_argument("--build_dir", "--build-dir", help="location of your build output")
     parser.add_argument("--debug", action="store_true", help="enable Flask debugger")
     parser.add_argument(
+        "--get-function-calls-from-build-dir-only",
+        "--get_function_calls_from_build_dir_only",
+        action="store_true",
+        help="enable Flask debugger",
+    )
+    parser.add_argument(
         "--port",
         dest="port",
         default=get_default_port(),
@@ -124,6 +132,12 @@ def main():
         "--generate_report",
         action="store_true",
         help="generate a JSON report file",
+    )
+    parser.add_argument(
+        "--export-function-call-to-file",
+        "--export_function_call_to_file",
+        default=None,
+        help="generate a file listing all function calls",
     )
     parser.add_argument(
         "--report-type",
@@ -180,7 +194,11 @@ def main():
         exit(1)
 
     builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
+        args.gcc_tools_base,
+        elf_file=elf_file,
+        src_root=args.src_root,
+        build_dir=args.build_dir,
+        calls_from_build_dir=args.get_function_calls_from_build_dir_only,
     )
     builder.build_if_needed()
 
@@ -202,6 +220,9 @@ def main():
         export_json[args.report_tag] = tag_data
         with open(args.report_filename + ".json", "w") as f:
             json.dump(export_json, f, indent=4, ensure_ascii=False)
+
+    if args.export_function_call_to_file:
+        builder.collector.export_function_calls_to_file(args.export_function_call_to_file)
 
     if args.non_interactive:
         return

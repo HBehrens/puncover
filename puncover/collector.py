@@ -1,8 +1,11 @@
 import fnmatch
+import json
 import os
 import pathlib
 import re
 import sys
+
+from puncover.gcc_vcg_parser import FunctionCalleeEntry, VCG_Parser, deepest_call_tree
 
 NAME = "name"
 DISPLAY_NAME = "display_name"
@@ -34,6 +37,7 @@ COLLAPSED_NAME = "collapsed_name"
 COLLAPSED_SUB_FOLDERS = "collapsed_sub_folders"
 CALLEES = "callees"
 CALLERS = "callers"
+GCC_INDIRECT_CALL_LABEL = "__indirect_call"
 
 CALLS_FLOAT_FUNCTION = "calls_float_function"
 PERFORMS_INDIRECT_CALL = "performs_indirect_call"
@@ -402,7 +406,7 @@ class Collector:
 
         self.elf_mtime = os.path.getmtime(elf_file)
 
-    def parse_su_dir(self, su_dir):
+    def parse_build_dir(self, build_dir, calls_from_build_dir):
         def gen_find(filepat, top):
             for path, dirlist, filelist in os.walk(top):
                 for name in fnmatch.filter(filelist, filepat):
@@ -417,16 +421,71 @@ class Collector:
                 for item in s:
                     yield item
 
-        def get_stack_usage_lines(su_dir):
-            names = gen_find("*.su", su_dir)
+        def get_stack_usage_lines(build_dir):
+            names = gen_find("*.su", build_dir)
             files = gen_open(names)
             lines = gen_cat(files)
             return lines
 
-        if su_dir:
-            print("parsing stack usages starting at %s" % su_dir)
-            for line in get_stack_usage_lines(su_dir):
+        if build_dir:
+            print("parsing stack usages starting at %s" % build_dir)
+            for line in get_stack_usage_lines(build_dir):
                 self.parse_stack_usage_line(line)
+            print("parsing callgraph starting at %s" % build_dir)
+
+            fn_callee_map = {}
+            all_edges = []
+            call_files = gen_find("*.ci", build_dir)
+            vcgp = VCG_Parser()
+            for ci_file in call_files:
+                ci_file_content = open(ci_file).read()
+                vcg_graph = vcgp.parse_vcg_graph(ci_file_content)
+                all_edges += vcg_graph.edges
+                for n in vcg_graph.nodes:
+                    fn_name = (
+                        n.label.function_name
+                        if "function_name" in n.label.model_fields_set
+                        else n.title
+                    )
+                    if "." in fn_name:  # removes .constprop.0, .isra, ...
+                        split_dots = fn_name.split(".")
+                        fn_name = split_dots[0]
+                    is_symbol_mapped = fn_name in fn_callee_map
+                    is_stack_size_defined = is_symbol_mapped and isinstance(
+                        fn_callee_map[fn_name].node.label.stack_size, int
+                    )
+                    if not is_symbol_mapped:
+                        fn_callee_map[fn_name] = FunctionCalleeEntry(
+                            title=fn_name,
+                            node=n,
+                            worst_stack_use=-1,
+                            edges=[],
+                            visited=False,
+                        )
+                    elif not is_stack_size_defined and isinstance(n.label.stack_size, int):
+                        fn_callee_map[fn_name].node.label = n.label
+                    else:
+                        # TODO add definition or declaration source path?!
+                        pass
+
+            err_unmatched_edges = set()
+            for e in all_edges:
+                fn_name = e.sourcename
+                fn_name_and_path = fn_name.split(":", 1)
+                if fn_name not in fn_callee_map and len(fn_name_and_path) == 2:
+                    fn_name = fn_name_and_path[1]
+                if "." in fn_name:  # removes .constprop.0, .isra, ...
+                    split_dots = fn_name.split(".")
+                    fn_name = split_dots[0]
+                if fn_name in fn_callee_map:
+                    fn_callee_map[fn_name].edges += [e]
+                else:
+                    print("err #", len(err_unmatched_edges), " no node matches call edge:", e)
+                    err_unmatched_edges.add(fn_name)
+
+            fn_node = fn_callee_map["bg_thread_main"]
+            r = deepest_call_tree(fn_node, fn_callee_map)
+            print("bg_thread_main", r)
 
     def sorted_by_size(self, symbols):
         return sorted(symbols, key=lambda k: k.get("size", 0), reverse=True)
@@ -445,12 +504,25 @@ class Collector:
             if ASM in symbol:
                 symbol[ASM] = list([self.enhanced_assembly_line(line) for line in symbol[ASM]])
 
+    def add_unresolved_indirect_call(self, function):
+        # TODO how to best represent the concept of an unresolved call?
+        # a real symbol for each, a single unresolved dummy or just a counter?
+        # ... go for adding an anonymous sym to only the functions callees but not the sym db for now
+        sym = {
+            NAME: GCC_INDIRECT_CALL_LABEL,
+            TYPE: TYPE_FUNCTION,
+            CALLEES: [],
+            CALLERS: [function],
+        }
+        function[CALLEES] = function.get(CALLEES, []) + [sym]
+
     def add_function_call(self, caller, callee):
         if caller != callee:
-            if callee not in caller[CALLEES]:
-                caller[CALLEES].append(callee)
-            if caller not in callee[CALLERS]:
-                callee[CALLERS].append(caller)
+            # TODO check calls are of type function...?
+            if callee not in caller.get(CALLEES, []):
+                caller[CALLEES] = caller.get(CALLEES, []) + [callee]
+            if caller not in callee.get(CALLERS, []):
+                callee[CALLERS] = callee.get(CALLERS, []) + [caller]
                 caller_file = caller.get("file", None)
                 callee_file = callee.get("file", None)
                 if callee_file and caller_file and callee_file != caller_file:
@@ -465,6 +537,8 @@ class Collector:
         if match:
             callee = self.symbol_by_addr(match.group(3))
             if callee:
+                if TYPE in callee and callee[TYPE] != TYPE_FUNCTION:
+                    return False
                 self.add_function_call(function, callee)
                 return True
 
@@ -477,24 +551,27 @@ class Collector:
         match = self.gcc_tools.indirect_call_pattern.match(line)
         if match:
             function[PERFORMS_INDIRECT_CALL] = True
+            self.add_unresolved_indirect_call(function)
             return True
 
         return False
 
-    def enhance_call_tree_from_assembly_line(self, function, line):
+    def enhance_call_tree_from_assembly_line(self, function, line, calls_from_build_dir=False):
         self.add_function_call_from_assembly_line(function, line)
         self.annotate_indirect_call(function, line)
 
-    def enhance_call_tree(self):
+    def enhance_call_tree(self, build_dir="", calls_from_build_dir=False):
         for f in self.all_functions():
             for k in [CALLERS, CALLEES]:
                 f[k] = f.get(k, [])
 
-        for f in self.all_functions():
-            if ASM in f:
-                [self.enhance_call_tree_from_assembly_line(f, line) for line in f[ASM]]
+        self.parse_build_dir(build_dir, calls_from_build_dir)
+        if not calls_from_build_dir:
+            for f in self.all_functions():
+                if ASM in f:
+                    [self.enhance_call_tree_from_assembly_line(f, line) for line in f[ASM]]
 
-    def enhance(self, src_root):
+    def enhance(self, src_root, build_dir, calls_from_build_dir):
         self.normalize_files_paths(src_root)
         print("enhancing function sizes")
         self.enhance_function_size_from_assembly()
@@ -505,7 +582,7 @@ class Collector:
         print("enhancing assembly")
         self.enhance_assembly()
         print("enhancing call tree")
-        self.enhance_call_tree()
+        self.enhance_call_tree(build_dir, calls_from_build_dir)
         print("enhancing siblings")
         self.enhance_sibling_symbols()
         self.enhance_symbol_flags()
@@ -849,3 +926,20 @@ class Collector:
         # if file exist
         export_json_data["functions"] = fn_symbols
         export_json_data["variables"] = var_symbols
+
+    def export_function_calls_to_file(self, export_filename):
+        calls = []
+        for sym in self.all_functions():
+            symname = sym[DISPLAY_NAME] if DISPLAY_NAME in sym else sym[NAME]
+            fn_calls = []
+            for callee in sym.get(CALLEES, []):
+                calleename = callee[DISPLAY_NAME] if DISPLAY_NAME in callee else callee[NAME]
+                if calleename == GCC_INDIRECT_CALL_LABEL:  # only compare resolved static calls
+                    continue
+                fn_calls += [calleename]
+            calls += [{"from": symname, "to": sorted(fn_calls)}]
+        print(f"found {len(calls)} function calls to export to")
+        export_filename = (
+            export_filename if ".json" in export_filename else export_filename + ".json"
+        )
+        open(export_filename, "w").write(json.dumps(calls, indent=4))

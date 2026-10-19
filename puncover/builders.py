@@ -21,8 +21,7 @@ class Builder:
             self.store_file_time(f)
         self.collector.reset()
         self.collector.parse_elf(self.get_elf_path())
-        self.collector.enhance(self.src_root)
-        self.collector.parse_su_dir(self.get_su_dir())
+        self.collector.enhance(self.src_root, self.get_build_dir(), self.calls_from_build_dir)
         self.build_call_trees()
 
     def needs_build(self):
@@ -37,7 +36,7 @@ class Builder:
         pass
 
     @abc.abstractmethod
-    def get_su_dir(self):
+    def get_build_dir(self):
         pass
 
     def build_call_trees(self):
@@ -47,14 +46,15 @@ class Builder:
 
 
 class ElfBuilder(Builder):
-    def __init__(self, collector, src_root, elf_file, su_dir):
+    def __init__(self, collector, src_root, elf_file, build_dir, calls_from_build_dir):
         Builder.__init__(self, collector, src_root if src_root else dirname(dirname(elf_file)))
         self.store_file_time(elf_file, store_empty=True)
         self.elf_file = pathlib.Path(elf_file)
-        self.su_dir = su_dir
+        self.build_dir = build_dir
+        self.calls_from_build_dir = calls_from_build_dir
 
     def get_elf_path(self):
         return self.elf_file
 
-    def get_su_dir(self):
-        return self.su_dir
+    def get_build_dir(self):
+        return self.build_dir
