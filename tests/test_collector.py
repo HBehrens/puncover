@@ -718,3 +718,67 @@ class TestReportMaxStaticStackUsage(unittest.TestCase):
         )
         self.assertIn("thread_fn", result)
         self.assertNotIn("thread_fn:::128", result)
+
+
+class TestStackUsageOverrides(unittest.TestCase):
+    def setUp(self):
+        self.cc = Collector(
+            None,
+            stack_usage_overrides={
+                "__gnu_Unwind_RaiseException": 512,
+                "foo::bar(int)": 64,
+                "missing_fn": 8,
+            },
+        )
+        self.unwind = self.cc.add_symbol(
+            "__gnu_Unwind_RaiseException", "0x0001", type=collector.TYPE_FUNCTION
+        )
+        self.unwind[collector.DISPLAY_NAME] = "__gnu_Unwind_RaiseException"
+        self.bar = self.cc.add_symbol(
+            "_ZN3foo3barEi", "0x0002", type=collector.TYPE_FUNCTION, stack_size=16
+        )
+        self.bar[collector.DISPLAY_NAME] = "foo::bar(int)"
+        self.other = self.cc.add_symbol(
+            "other", "0x0003", type=collector.TYPE_FUNCTION, stack_size=24
+        )
+        self.other[collector.DISPLAY_NAME] = "other"
+
+    def test_parse_overrides(self):
+        self.assertEqual(
+            {"a": 512, "ns::f(int)": 16},
+            Collector.parse_stack_usage_overrides(["a:::512", "ns::f(int):::0x10"]),
+        )
+        self.assertEqual({}, Collector.parse_stack_usage_overrides(None))
+
+    def test_parse_overrides_invalid(self):
+        for entry in ["a", "a:::", ":::12", "a:::x"]:
+            with self.assertRaises(ValueError):
+                Collector.parse_stack_usage_overrides([entry])
+
+    def test_override_without_su_info(self):
+        self.cc.apply_stack_usage_overrides()
+        self.assertEqual(512, self.unwind[collector.STACK_SIZE])
+        self.assertEqual(collector.STACK_QUALIFIER_MANUAL, self.unwind[collector.STACK_QUALIFIERS])
+
+    def test_override_replaces_su_value_by_display_name(self):
+        self.cc.apply_stack_usage_overrides()
+        self.assertEqual(64, self.bar[collector.STACK_SIZE])
+
+    def test_override_by_mangled_name(self):
+        self.cc.stack_usage_overrides = {"_ZN3foo3barEi": 128}
+        self.cc.apply_stack_usage_overrides()
+        self.assertEqual(128, self.bar[collector.STACK_SIZE])
+
+    def test_other_functions_untouched(self):
+        self.cc.apply_stack_usage_overrides()
+        self.assertEqual(24, self.other[collector.STACK_SIZE])
+        self.assertNotIn(collector.STACK_QUALIFIERS, self.other)
+
+    def test_override_used_in_call_tree(self):
+        from puncover.backtrace_helper import BacktraceHelper
+
+        self.cc.enhance_call_tree()
+        self.cc.add_function_call(self.other, self.unwind)
+        self.cc.apply_stack_usage_overrides()
+        h = BacktraceHelper(self.cc)
+        self.assertEqual(24 + 512, h.deepest_callee_tree(self.other)[0])

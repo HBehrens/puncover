@@ -13,6 +13,7 @@ LINE = "line"
 ASM = "asm"
 STACK_SIZE = "stack_size"
 STACK_QUALIFIERS = "stack_qualifiers"
+STACK_QUALIFIER_MANUAL = "manual"
 ADDRESS = "address"
 TYPE = "type"
 TYPE_FUNCTION = "function"
@@ -84,12 +85,13 @@ class StubGccTool:
 
 
 class Collector:
-    def __init__(self, gcc_tools):
+    def __init__(self, gcc_tools, stack_usage_overrides=None):
         if gcc_tools is None:
             self.gcc_tools = StubGccTool()
         else:
             self.gcc_tools = gcc_tools
 
+        self.stack_usage_overrides = stack_usage_overrides or {}
         self.symbols = {}
         self.file_elements = {}
         self.symbols_by_qualified_name = None
@@ -364,6 +366,42 @@ class Collector:
             f"Couldn't find symbol for {base_file_name}:{line}:{symbol_name}) - may be optimized out?"
         )
         return False
+
+    @staticmethod
+    def parse_stack_usage_overrides(entries):
+        """Parse "name:::bytes" entries into a {name: bytes} dict. Raises ValueError."""
+        overrides = {}
+        for entry in entries or []:
+            name, sep, size = entry.rpartition(":::")
+            if not sep or not name:
+                raise ValueError(
+                    f"stack usage override '{entry}' must have the format name:::bytes"
+                )
+            try:
+                overrides[name] = int(size, 0)
+            except ValueError:
+                raise ValueError(
+                    f"stack usage for '{name}' must be an integer, got '{size}'"
+                ) from None
+        return overrides
+
+    def apply_stack_usage_overrides(self):
+        """Set user-defined stack sizes, matched by mangled or demangled symbol name.
+
+        Useful for functions from precompiled libraries without .su information.
+        Overrides take precedence over values parsed from .su files.
+        """
+        remaining = dict(self.stack_usage_overrides)
+        for symbol in self.all_functions():
+            for key in (symbol.get(NAME), symbol.get(DISPLAY_NAME)):
+                if key in self.stack_usage_overrides:
+                    symbol[STACK_SIZE] = self.stack_usage_overrides[key]
+                    symbol[STACK_QUALIFIERS] = STACK_QUALIFIER_MANUAL
+                    remaining.pop(key, None)
+                    break
+
+        for name in remaining:
+            warning(f"Couldn't find function '{name}' for stack usage override")
 
     windows_path_pattern = re.compile(r"^([a-zA-Z]+)(:)(\\)(.+)$")
 

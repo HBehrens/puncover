@@ -36,8 +36,10 @@ def get_default_port():
     return DEFAULT_PORT if not is_port_in_use(DEFAULT_PORT) else DEFAULT_PORT_FALLBACK
 
 
-def create_builder(gcc_base_filename, elf_file=None, su_dir=None, src_root=None):
-    c = Collector(GCCTools(gcc_base_filename))
+def create_builder(
+    gcc_base_filename, elf_file=None, su_dir=None, src_root=None, stack_usage_overrides=None
+):
+    c = Collector(GCCTools(gcc_base_filename), stack_usage_overrides=stack_usage_overrides)
     if elf_file:
         return ElfBuilder(c, src_root, elf_file, su_dir)
     else:
@@ -154,6 +156,18 @@ def main():
             "May be specified multiple times."
         ),
     )
+    parser.add_argument(
+        "--stack-usage-override",
+        "--stack_usage_override",
+        action="append",
+        dest="stack_usage_override",
+        help=(
+            "manually define the stack usage of a function, e.g. for precompiled libraries "
+            "without .su files; format: name:::bytes where name is the mangled or demangled "
+            "function name (e.g. __gnu_Unwind_RaiseException:::512). Takes precedence over "
+            ".su files. May be specified multiple times."
+        ),
+    )
     parser.add_argument("--version", action="version", version="%(prog)s " + version)
     parser.add_argument(
         "--report-schema",
@@ -179,8 +193,17 @@ def main():
         )
         exit(1)
 
+    try:
+        stack_usage_overrides = Collector.parse_stack_usage_overrides(args.stack_usage_override)
+    except ValueError as e:
+        parser.error(str(e))
+
     builder = create_builder(
-        args.gcc_tools_base, elf_file=elf_file, src_root=args.src_root, su_dir=args.build_dir
+        args.gcc_tools_base,
+        elf_file=elf_file,
+        src_root=args.src_root,
+        su_dir=args.build_dir,
+        stack_usage_overrides=stack_usage_overrides,
     )
     builder.build_if_needed()
 

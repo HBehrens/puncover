@@ -280,6 +280,38 @@ class TestArguments(unittest.TestCase):
             self.assertEqual(run_kwargs["host"], "0.0.0.0")
             self.assertEqual(run_kwargs["port"], 5000)
 
+    def test_stack_usage_override(self):
+        test_args = [
+            "puncover",
+            "--elf_file",
+            "/path/to/file.elf",
+            "--stack-usage-override",
+            "__gnu_Unwind_RaiseException:::512",
+            "--stack_usage_override",
+            "foo(int):::0x20",
+        ]
+
+        with self._patched_main(test_args) as env:
+            main()
+            call_args = env.create_builder.call_args
+            self.assertEqual(
+                {"__gnu_Unwind_RaiseException": 512, "foo(int)": 32},
+                call_args[1]["stack_usage_overrides"],
+            )
+
+    def test_stack_usage_override_invalid(self):
+        test_args = [
+            "puncover",
+            "--elf_file",
+            "/path/to/file.elf",
+            "--stack-usage-override",
+            "__gnu_Unwind_RaiseException:::lots",
+        ]
+
+        with self._patched_main(test_args), patch("sys.stderr"):
+            with self.assertRaises(SystemExit):
+                main()
+
 
 class TestConfigFile(unittest.TestCase):
     def _create_mock_environment(self):

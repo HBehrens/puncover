@@ -47,6 +47,25 @@ This tells GCC to generate stack usage files (.su) for each compilation unit.
 
 For puncover to evaluate these .su files the `--build_dir` option needs to point to the build folder of the firmware.
 
+Functions from precompiled libraries (e.g. libgcc or libstdc++) usually come
+without .su files. If you know their stack usage, define it with
+`--stack-usage-override name:::bytes`, where `name` is the mangled or demangled
+function name. The option may be given multiple times and takes precedence over
+values from .su files:
+
+```bash
+puncover --build_dir build --stack-usage-override __gnu_Unwind_RaiseException:::512 project.elf
+```
+
+or in `puncover_config.yaml`:
+
+```yaml
+stack-usage-override:
+  - __gnu_Unwind_RaiseException:::512
+```
+
+Such functions are shown with the stack qualifier `manual`.
+
 ### Report export and non-interactive usage
 
 To monitor firmware changes in CI it can be useful to run puncover and save a
